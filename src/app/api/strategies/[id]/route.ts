@@ -8,17 +8,21 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description } = body;
+    const { name, description, setups } = body;
 
     const strategy = await prisma.strategy.update({
       where: { id },
       data: {
         name,
         description: description || null,
+        setups: setups && setups.length > 0 ? JSON.stringify(setups) : null,
       },
     });
 
-    return NextResponse.json(strategy);
+    return NextResponse.json({
+      ...strategy,
+      setups: strategy.setups ? JSON.parse(strategy.setups) : [],
+    });
   } catch (error) {
     console.error('Error updating strategy:', error);
     return NextResponse.json({ error: 'Failed to update strategy' }, { status: 500 });

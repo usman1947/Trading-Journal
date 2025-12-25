@@ -24,6 +24,7 @@ export interface Strategy {
   id: string;
   name: string;
   description?: string | null;
+  setups?: string[] | null;
   trades?: Trade[];
   createdAt: string;
   updatedAt: string;
