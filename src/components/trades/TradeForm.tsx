@@ -107,7 +107,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
       side: trade?.side || 'LONG',
       tradeTime: trade?.tradeTime || new Date().toISOString(),
       setup: trade?.setup || '',
-      risk: trade?.risk || 0,
+      risk: trade?.risk || Number(process.env.NEXT_PUBLIC_DEFAULT_RISK) || 25,
       result: trade?.result ?? undefined,
       execution: trade?.execution || 'PASS',
       notes: trade?.notes || '',
