@@ -13,6 +13,7 @@ import {
   Divider,
   Box,
   Typography,
+  Tooltip,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -24,7 +25,8 @@ import {
 } from '@mui/icons-material';
 import { useAppSelector } from '@/store/hooks';
 
-const DRAWER_WIDTH = 240;
+export const DRAWER_WIDTH = 240;
+export const DRAWER_WIDTH_COLLAPSED = 64;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
@@ -39,65 +41,89 @@ export default function Sidebar() {
   const pathname = usePathname();
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
 
+  const drawerWidth = sidebarOpen ? DRAWER_WIDTH : DRAWER_WIDTH_COLLAPSED;
+
   return (
     <Drawer
-      variant="persistent"
-      open={sidebarOpen}
+      variant="permanent"
       sx={{
-        width: sidebarOpen ? DRAWER_WIDTH : 0,
+        width: drawerWidth,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
-          width: DRAWER_WIDTH,
+          width: drawerWidth,
           boxSizing: 'border-box',
           borderRight: '1px solid',
           borderColor: 'divider',
+          overflowX: 'hidden',
+          transition: (theme) =>
+            theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
         },
       }}
     >
       <Toolbar>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden' }}>
           <TradesIcon color="primary" />
-          <Typography variant="h6" color="primary" fontWeight="bold">
-            TradeJournal
-          </Typography>
+          {sidebarOpen && (
+            <Typography variant="h6" color="primary" fontWeight="bold" noWrap>
+              TradeJournal
+            </Typography>
+          )}
         </Box>
       </Toolbar>
       <Divider />
-      <List sx={{ px: 1 }}>
+      <List sx={{ px: sidebarOpen ? 1 : 0.5 }}>
         {menuItems.map((item) => {
           const isActive = pathname === item.path ||
             (item.path !== '/' && pathname.startsWith(item.path));
 
-          return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                component={Link}
-                href={item.path}
-                selected={isActive}
-                sx={{
-                  borderRadius: 2,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'white',
-                    },
+          const listItemButton = (
+            <ListItemButton
+              component={Link}
+              href={item.path}
+              selected={isActive}
+              sx={{
+                borderRadius: 2,
+                minHeight: 48,
+                justifyContent: sidebarOpen ? 'initial' : 'center',
+                px: sidebarOpen ? 2 : 2.5,
+                '&.Mui-selected': {
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'primary.dark',
                   },
+                  '& .MuiListItemIcon-root': {
+                    color: 'white',
+                  },
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: sidebarOpen ? 40 : 0,
+                  mr: sidebarOpen ? 'auto' : 0,
+                  justifyContent: 'center',
+                  color: isActive ? 'inherit' : 'text.secondary',
                 }}
               >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 40,
-                    color: isActive ? 'inherit' : 'text.secondary',
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
+                {item.icon}
+              </ListItemIcon>
+              {sidebarOpen && <ListItemText primary={item.text} />}
+            </ListItemButton>
+          );
+
+          return (
+            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+              {sidebarOpen ? (
+                listItemButton
+              ) : (
+                <Tooltip title={item.text} placement="right">
+                  {listItemButton}
+                </Tooltip>
+              )}
             </ListItem>
           );
         })}
