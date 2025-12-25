@@ -16,11 +16,11 @@ interface StatsCardsProps {
 }
 
 export default function StatsCards({ analytics }: StatsCardsProps) {
-  const profitFactor = analytics.profitFactor ?? 0;
-  const avgRMultiple = analytics.averageRMultiple ?? 0;
   const totalResult = analytics.totalResult ?? 0;
   const winRate = analytics.winRate ?? 0;
   const executionRate = analytics.executionRate ?? 0;
+  const avgWinnerR = analytics.averageWinnerR ?? 0;
+  const avgLoserR = analytics.averageLoserR ?? 0;
 
   const stats = [
     {
@@ -35,12 +35,6 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
       subtitle: `${analytics.winningTrades ?? 0}W / ${analytics.losingTrades ?? 0}L`,
       color: winRate >= 50 ? 'success.main' : 'error.main',
       icon: <AssessmentIcon />,
-    },
-    {
-      title: 'Profit Factor',
-      value: profitFactor === Infinity ? '∞' : profitFactor.toFixed(2),
-      color: profitFactor >= 1 ? 'success.main' : 'error.main',
-      icon: <TrendingUpIcon />,
     },
     {
       title: 'Total Trades',
@@ -61,6 +55,18 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
       icon: <TrendingDownIcon />,
     },
     {
+      title: 'Avg Winner R',
+      value: `+${avgWinnerR.toFixed(2)}R`,
+      color: 'success.main',
+      icon: <TrendingUpIcon />,
+    },
+    {
+      title: 'Avg Loser R',
+      value: `${avgLoserR.toFixed(2)}R`,
+      color: 'error.main',
+      icon: <TrendingDownIcon />,
+    },
+    {
       title: 'Largest Win',
       value: formatCurrency(analytics.largestWin ?? 0),
       color: 'success.main',
@@ -71,12 +77,6 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
       value: formatCurrency(Math.abs(analytics.largestLoss ?? 0)),
       color: 'error.main',
       icon: <TrendingDownIcon />,
-    },
-    {
-      title: 'Avg R-Multiple',
-      value: `${avgRMultiple >= 0 ? '+' : ''}${avgRMultiple.toFixed(2)}R`,
-      color: avgRMultiple >= 0 ? 'success.main' : 'error.main',
-      icon: <AssessmentIcon />,
     },
     {
       title: 'Total Risk',

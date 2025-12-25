@@ -39,8 +39,8 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
       losingTrades: 0,
       averageWin: 0,
       averageLoss: 0,
-      profitFactor: 0,
-      averageRMultiple: 0,
+      averageWinnerR: 0,
+      averageLoserR: 0,
       largestWin: 0,
       largestLoss: 0,
       totalRisk: 0,
@@ -57,11 +57,18 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
   const totalWins = winningTrades.reduce((sum, t) => sum + (t.result ?? 0), 0);
   const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.result ?? 0), 0));
 
-  // Calculate R-multiples based on result/risk
-  const tradesWithResult = trades.filter((t) => t.result !== null && t.risk > 0);
-  const averageRMultiple =
-    tradesWithResult.length > 0
-      ? tradesWithResult.reduce((sum, t) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
+  // Calculate average R-multiples for winners and losers
+  const winnersWithRisk = winningTrades.filter((t) => t.risk > 0);
+  const losersWithRisk = losingTrades.filter((t) => t.risk > 0);
+
+  const averageWinnerR =
+    winnersWithRisk.length > 0
+      ? winnersWithRisk.reduce((sum, t) => sum + ((t.result ?? 0) / t.risk), 0) / winnersWithRisk.length
+      : 0;
+
+  const averageLoserR =
+    losersWithRisk.length > 0
+      ? losersWithRisk.reduce((sum, t) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
       : 0;
 
   return {
@@ -72,8 +79,8 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     losingTrades: losingTrades.length,
     averageWin: winningTrades.length > 0 ? totalWins / winningTrades.length : 0,
     averageLoss: losingTrades.length > 0 ? totalLosses / losingTrades.length : 0,
-    profitFactor: totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0,
-    averageRMultiple,
+    averageWinnerR,
+    averageLoserR,
     largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t) => t.result ?? 0)) : 0,
     largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t) => t.result ?? 0)) : 0,
     totalRisk,

@@ -18,8 +18,8 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
       losingTrades: 0,
       averageWin: 0,
       averageLoss: 0,
-      profitFactor: 0,
-      averageRMultiple: 0,
+      averageWinnerR: 0,
+      averageLoserR: 0,
       largestWin: 0,
       largestLoss: 0,
       totalRisk: 0,
@@ -35,12 +35,18 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
   const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.result ?? 0), 0));
   const totalRisk = trades.reduce((sum, t) => sum + (t.risk ?? 0), 0);
 
-  // Calculate R-multiples for trades with risk > 0
-  const tradesWithRisk = completedTrades.filter((t) => t.risk > 0);
-  const rMultiples = tradesWithRisk.map((t) => calculateRMultiple(t.result ?? 0, t.risk));
-  const averageRMultiple =
-    rMultiples.length > 0
-      ? rMultiples.reduce((sum, r) => sum + r, 0) / rMultiples.length
+  // Calculate average R-multiples for winners and losers
+  const winnersWithRisk = winningTrades.filter((t) => t.risk > 0);
+  const losersWithRisk = losingTrades.filter((t) => t.risk > 0);
+
+  const averageWinnerR =
+    winnersWithRisk.length > 0
+      ? winnersWithRisk.reduce((sum, t) => sum + calculateRMultiple(t.result ?? 0, t.risk), 0) / winnersWithRisk.length
+      : 0;
+
+  const averageLoserR =
+    losersWithRisk.length > 0
+      ? losersWithRisk.reduce((sum, t) => sum + calculateRMultiple(t.result ?? 0, t.risk), 0) / losersWithRisk.length
       : 0;
 
   // Calculate execution rate (% of PASS trades)
@@ -55,8 +61,8 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
     losingTrades: losingTrades.length,
     averageWin: winningTrades.length > 0 ? totalWins / winningTrades.length : 0,
     averageLoss: losingTrades.length > 0 ? totalLosses / losingTrades.length : 0,
-    profitFactor: totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0,
-    averageRMultiple,
+    averageWinnerR,
+    averageLoserR,
     largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t) => t.result ?? 0)) : 0,
     largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t) => t.result ?? 0)) : 0,
     totalRisk,

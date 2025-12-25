@@ -99,8 +99,8 @@ export interface AnalyticsData {
   losingTrades: number;
   averageWin: number;
   averageLoss: number;
-  profitFactor: number;
-  averageRMultiple: number;
+  averageWinnerR: number;
+  averageLoserR: number;
   largestWin: number;
   largestLoss: number;
   totalRisk: number;
