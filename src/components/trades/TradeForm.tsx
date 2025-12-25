@@ -1,0 +1,425 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Box,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Card,
+  CardContent,
+  Typography,
+  InputAdornment,
+  ToggleButtonGroup,
+  ToggleButton,
+  IconButton,
+  ImageList,
+  ImageListItem,
+  ImageListItemBar,
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import { DateTimePicker } from '@mui/x-date-pickers';
+import {
+  CloudUpload as UploadIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
+import { useFormik } from 'formik';
+import * as yup from 'yup';
+import {
+  useCreateTradeMutation,
+  useUpdateTradeMutation,
+  useGetStrategiesQuery,
+  useUploadScreenshotsMutation,
+} from '@/store';
+import { useAppDispatch } from '@/store/hooks';
+import { showSnackbar } from '@/store/slices/uiSlice';
+import ScreenshotUpload from '@/components/common/ScreenshotUpload';
+import type { Trade, TradeFormData } from '@/types';
+
+const validationSchema = yup.object({
+  symbol: yup.string().required('Symbol is required'),
+  side: yup.string().oneOf(['LONG', 'SHORT']).required(),
+  tradeTime: yup.date().required('Time is required'),
+  risk: yup.number().positive('Must be positive').required('Risk is required'),
+  result: yup.number().nullable(),
+  execution: yup.string().oneOf(['PASS', 'FAIL']).required(),
+  setup: yup.string().nullable(),
+  notes: yup.string().nullable(),
+});
+
+interface TradeFormProps {
+  trade?: Trade;
+  mode: 'create' | 'edit';
+}
+
+interface PendingFile {
+  file: File;
+  preview: string;
+}
+
+export default function TradeForm({ trade, mode }: TradeFormProps) {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const [createTrade, { isLoading: creating }] = useCreateTradeMutation();
+  const [updateTrade, { isLoading: updating }] = useUpdateTradeMutation();
+  const [uploadScreenshots] = useUploadScreenshotsMutation();
+  const { data: strategies = [] } = useGetStrategiesQuery({});
+
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const newFiles: PendingFile[] = Array.from(files).map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+
+    setPendingFiles((prev) => [...prev, ...newFiles]);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      handleFileSelect(e.dataTransfer.files);
+    },
+    [handleFileSelect]
+  );
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles((prev) => {
+      const newFiles = [...prev];
+      URL.revokeObjectURL(newFiles[index].preview);
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
+  };
+
+  const formik = useFormik<TradeFormData>({
+    initialValues: {
+      symbol: trade?.symbol || '',
+      side: trade?.side || 'LONG',
+      tradeTime: trade?.tradeTime || new Date().toISOString(),
+      setup: trade?.setup || '',
+      risk: trade?.risk || 0,
+      result: trade?.result ?? undefined,
+      execution: trade?.execution || 'PASS',
+      notes: trade?.notes || '',
+      strategyId: trade?.strategyId || '',
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      try {
+        if (mode === 'create') {
+          const newTrade = await createTrade(values).unwrap();
+
+          // Upload pending screenshots if any
+          if (pendingFiles.length > 0) {
+            const formData = new FormData();
+            pendingFiles.forEach((pf) => {
+              formData.append('files', pf.file);
+            });
+            try {
+              await uploadScreenshots({ tradeId: newTrade.id, formData }).unwrap();
+            } catch {
+              console.error('Failed to upload screenshots');
+            }
+          }
+
+          dispatch(showSnackbar({ message: 'Trade created successfully', severity: 'success' }));
+        } else {
+          await updateTrade({ id: trade!.id, ...values }).unwrap();
+          dispatch(showSnackbar({ message: 'Trade updated successfully', severity: 'success' }));
+        }
+
+        router.push('/trades');
+      } catch {
+        dispatch(showSnackbar({ message: 'Failed to save trade', severity: 'error' }));
+      }
+    },
+  });
+
+  const isLoading = creating || updating;
+
+  return (
+    <form onSubmit={formik.handleSubmit}>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Trade Details
+              </Typography>
+
+              <Grid container spacing={2}>
+                {/* Symbol */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Symbol"
+                    name="symbol"
+                    value={formik.values.symbol}
+                    onChange={formik.handleChange}
+                    error={formik.touched.symbol && Boolean(formik.errors.symbol)}
+                    helperText={formik.touched.symbol && formik.errors.symbol}
+                    placeholder="AAPL, SPY, ES..."
+                  />
+                </Grid>
+
+                {/* Time */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <DateTimePicker
+                    label="Time"
+                    value={new Date(formik.values.tradeTime)}
+                    onChange={(date) => formik.setFieldValue('tradeTime', date?.toISOString())}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        error: formik.touched.tradeTime && Boolean(formik.errors.tradeTime),
+                      },
+                    }}
+                  />
+                </Grid>
+
+                {/* Side */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Side
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={formik.values.side}
+                    exclusive
+                    onChange={(_, value) => value && formik.setFieldValue('side', value)}
+                    fullWidth
+                  >
+                    <ToggleButton value="LONG" color="success">
+                      Long
+                    </ToggleButton>
+                    <ToggleButton value="SHORT" color="error">
+                      Short
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Grid>
+
+                {/* Execution */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Execution
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={formik.values.execution}
+                    exclusive
+                    onChange={(_, value) => value && formik.setFieldValue('execution', value)}
+                    fullWidth
+                  >
+                    <ToggleButton value="PASS" color="success">
+                      Pass
+                    </ToggleButton>
+                    <ToggleButton value="FAIL" color="error">
+                      Fail
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Grid>
+
+                {/* Risk */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Risk $"
+                    name="risk"
+                    type="number"
+                    value={formik.values.risk}
+                    onChange={formik.handleChange}
+                    error={formik.touched.risk && Boolean(formik.errors.risk)}
+                    helperText={formik.touched.risk && formik.errors.risk}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                {/* Result */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Result $"
+                    name="result"
+                    type="number"
+                    value={formik.values.result ?? ''}
+                    onChange={formik.handleChange}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    }}
+                    helperText="Leave empty for open trades"
+                  />
+                </Grid>
+
+                {/* Setup */}
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Setup"
+                    name="setup"
+                    value={formik.values.setup || ''}
+                    onChange={formik.handleChange}
+                    placeholder="e.g., Breakout, VWAP bounce, Gap fill..."
+                  />
+                </Grid>
+
+                {/* Notes */}
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Notes (Optional)"
+                    name="notes"
+                    multiline
+                    rows={3}
+                    value={formik.values.notes || ''}
+                    onChange={formik.handleChange}
+                    placeholder="Additional observations..."
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Strategy
+              </Typography>
+
+              <FormControl fullWidth>
+                <InputLabel>Strategy</InputLabel>
+                <Select
+                  name="strategyId"
+                  value={formik.values.strategyId || ''}
+                  label="Strategy"
+                  onChange={formik.handleChange}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {strategies.map((strategy: { id: string; name: string }) => (
+                    <MenuItem key={strategy.id} value={strategy.id}>
+                      {strategy.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              {mode === 'edit' && trade ? (
+                <ScreenshotUpload
+                  tradeId={trade.id}
+                  screenshots={trade.screenshots || []}
+                />
+              ) : (
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Screenshots
+                  </Typography>
+
+                  {/* Upload Area */}
+                  <Box
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
+                    }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop}
+                    sx={{
+                      border: '2px dashed',
+                      borderColor: dragOver ? 'primary.main' : 'divider',
+                      borderRadius: 2,
+                      p: 3,
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      backgroundColor: dragOver ? 'action.hover' : 'background.paper',
+                      transition: 'all 0.2s',
+                      mb: 2,
+                    }}
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.multiple = true;
+                      input.accept = 'image/*';
+                      input.onchange = (e) =>
+                        handleFileSelect((e.target as HTMLInputElement).files);
+                      input.click();
+                    }}
+                  >
+                    <UploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                    <Typography color="text.secondary" variant="body2">
+                      Drag & drop images or click to upload
+                    </Typography>
+                  </Box>
+
+                  {/* Pending Files Preview */}
+                  {pendingFiles.length > 0 && (
+                    <ImageList cols={2} gap={8}>
+                      {pendingFiles.map((pf, index) => (
+                        <ImageListItem
+                          key={index}
+                          sx={{
+                            borderRadius: 1,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <img
+                            src={pf.preview}
+                            alt={pf.file.name}
+                            style={{ height: 100, objectFit: 'cover' }}
+                          />
+                          <ImageListItemBar
+                            sx={{ background: 'rgba(0,0,0,0.5)' }}
+                            actionIcon={
+                              <IconButton
+                                sx={{ color: 'white' }}
+                                onClick={() => removePendingFile(index)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            }
+                          />
+                        </ImageListItem>
+                      ))}
+                    </ImageList>
+                  )}
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => router.push('/trades')}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : mode === 'create' ? 'Create Trade' : 'Update Trade'}
+            </Button>
+          </Box>
+        </Grid>
+      </Grid>
+    </form>
+  );
+}

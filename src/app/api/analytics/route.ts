@@ -1,0 +1,21 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAnalytics } from '@/lib/analytics';
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const filters = {
+      dateFrom: searchParams.get('dateFrom') || undefined,
+      dateTo: searchParams.get('dateTo') || undefined,
+      symbol: searchParams.get('symbol') || undefined,
+      assetType: searchParams.get('assetType') as 'STOCK' | 'OPTION' | 'FUTURES' | undefined,
+      strategyId: searchParams.get('strategyId') || undefined,
+    };
+
+    const analytics = await getAnalytics(filters);
+    return NextResponse.json(analytics);
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
+  }
+}

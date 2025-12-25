@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Trade {
+  id          String       @id @default(cuid())
+  symbol      String
+  side        String       // LONG, SHORT
+  tradeTime   DateTime     // When the trade was taken
+  setup       String?      // Trade setup description
+  risk        Float        // Risk amount in dollars
+  result      Float?       // P&L result in dollars
+  execution   String       @default("PASS") // PASS, FAIL
+  notes       String?
+  screenshots Screenshot[]
+  strategy    Strategy?    @relation(fields: [strategyId], references: [id])
+  strategyId  String?
+  tags        TagOnTrade[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Strategy {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  trades      Trade[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Tag {
+  id     String       @id @default(cuid())
+  name   String       @unique
+  color  String       @default("#1976d2")
+  trades TagOnTrade[]
+}
+
+model TagOnTrade {
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  tradeId String
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId   String
+
+  @@id([tradeId, tagId])
+}
+
+model Screenshot {
+  id        String   @id @default(cuid())
+  filename  String
+  path      String
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  tradeId   String
+  createdAt DateTime @default(now())
+}
+
+model DailyJournal {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  notes     String
+  mood      String?  // BULLISH, BEARISH, NEUTRAL
+  lessons   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Settings {
+  id          String @id @default("default")
+  defaultRisk Float  @default(100) // Default R value for R-multiple
+  currency    String @default("USD")
+  theme       String @default("light")
+}

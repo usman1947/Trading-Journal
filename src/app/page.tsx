@@ -1,101 +1,238 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { Card, CardContent, Typography, Box, Skeleton, Chip } from '@mui/material';
+import Grid from '@mui/material/Grid';
+import {
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
+  ShowChart as ShowChartIcon,
+  Assessment as AssessmentIcon,
+  CheckCircle as PassIcon,
+} from '@mui/icons-material';
+import { useGetAnalyticsQuery, useGetDailyStatsQuery } from '@/store';
+import { formatCurrency, formatPercent } from '@/utils/formatters';
+import PnLChart from '@/components/analytics/PnLChart';
+import CalendarView from '@/components/analytics/CalendarView';
+
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ReactNode;
+  color?: 'success' | 'error' | 'primary' | 'secondary' | 'warning';
+}
+
+function StatCard({ title, value, subtitle, icon, color = 'primary' }: StatCardProps) {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography color="text.secondary" variant="body2" gutterBottom>
+              {title}
+            </Typography>
+            <Typography variant="h4" component="div" color={`${color}.main`} fontWeight="bold">
+              {value}
+            </Typography>
+            {subtitle && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {subtitle}
+              </Typography>
+            )}
+          </Box>
+          <Box
+            sx={{
+              backgroundColor: `${color}.light`,
+              borderRadius: 2,
+              p: 1,
+              opacity: 0.2,
+            }}
+          >
+            {icon}
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+export default function Dashboard() {
+  const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery({});
+  const { data: dailyStats, isLoading: dailyStatsLoading } = useGetDailyStatsQuery({});
+
+  if (analyticsLoading) {
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom fontWeight="bold">
+          Dashboard
+        </Typography>
+        <Grid container spacing={3}>
+          {[1, 2, 3, 4].map((i) => (
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
+              <Skeleton variant="rounded" height={140} />
+            </Grid>
+          ))}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Skeleton variant="rounded" height={400} />
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Skeleton variant="rounded" height={400} />
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  }
+
+  const stats = analytics || {
+    totalResult: 0,
+    winRate: 0,
+    totalTrades: 0,
+    profitFactor: 0,
+    averageRMultiple: 0,
+    executionRate: 0,
+    totalRisk: 0,
+  };
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" fontWeight="bold">
+          Dashboard
+        </Typography>
+        <Chip
+          label={`${stats.totalTrades} Total Trades`}
+          color="primary"
+          variant="outlined"
+        />
+      </Box>
+
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard
+            title="Total Result"
+            value={formatCurrency(stats.totalResult)}
+            subtitle={`Avg R: ${stats.averageRMultiple?.toFixed(2) || '0.00'}R`}
+            icon={stats.totalResult >= 0 ? <TrendingUpIcon fontSize="large" /> : <TrendingDownIcon fontSize="large" />}
+            color={stats.totalResult >= 0 ? 'success' : 'error'}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard
+            title="Win Rate"
+            value={formatPercent(stats.winRate).replace('+', '')}
+            subtitle={`${stats.winningTrades || 0}W / ${stats.losingTrades || 0}L`}
+            icon={<AssessmentIcon fontSize="large" />}
+            color={stats.winRate >= 50 ? 'success' : 'error'}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard
+            title="Profit Factor"
+            value={stats.profitFactor === Infinity ? '∞' : stats.profitFactor?.toFixed(2) || '0.00'}
+            subtitle="Gross Profit / Gross Loss"
+            icon={<ShowChartIcon fontSize="large" />}
+            color={stats.profitFactor >= 1 ? 'success' : 'error'}
           />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard
+            title="Execution Rate"
+            value={formatPercent(stats.executionRate || 0).replace('+', '')}
+            subtitle="% of PASS trades"
+            icon={<PassIcon fontSize="large" />}
+            color={stats.executionRate >= 80 ? 'success' : 'warning'}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Card sx={{ height: 400 }}>
+            <CardContent sx={{ height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                P&L Over Time
+              </Typography>
+              <Box sx={{ height: 'calc(100% - 40px)' }}>
+                <PnLChart data={dailyStats || []} loading={dailyStatsLoading} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: 400 }}>
+            <CardContent sx={{ height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                Trade Calendar
+              </Typography>
+              <Box sx={{ height: 'calc(100% - 40px)', overflow: 'auto' }}>
+                <CalendarView data={dailyStats || []} loading={dailyStatsLoading} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Key Metrics
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid size={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Largest Win
+                  </Typography>
+                  <Typography variant="h6" color="success.main">
+                    {formatCurrency(stats.largestWin || 0)}
+                  </Typography>
+                </Grid>
+                <Grid size={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Largest Loss
+                  </Typography>
+                  <Typography variant="h6" color="error.main">
+                    {formatCurrency(Math.abs(stats.largestLoss || 0))}
+                  </Typography>
+                </Grid>
+                <Grid size={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Avg Win
+                  </Typography>
+                  <Typography variant="h6" color="success.main">
+                    {formatCurrency(stats.averageWin || 0)}
+                  </Typography>
+                </Grid>
+                <Grid size={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Avg Loss
+                  </Typography>
+                  <Typography variant="h6" color="error.main">
+                    {formatCurrency(stats.averageLoss || 0)}
+                  </Typography>
+                </Grid>
+                <Grid size={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Risk
+                  </Typography>
+                  <Typography variant="h6" color="warning.main">
+                    {formatCurrency(stats.totalRisk || 0)}
+                  </Typography>
+                </Grid>
+                <Grid size={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Avg R-Multiple
+                  </Typography>
+                  <Typography variant="h6" color={stats.averageRMultiple >= 0 ? 'success.main' : 'error.main'}>
+                    {stats.averageRMultiple >= 0 ? '+' : ''}{(stats.averageRMultiple || 0).toFixed(2)}R
+                  </Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }
