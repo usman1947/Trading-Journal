@@ -86,6 +86,7 @@ export interface TradeFilters {
   side?: TradeSide;
   execution?: Execution;
   strategyId?: string;
+  setup?: string;
   resultMin?: number;
   resultMax?: number;
 }

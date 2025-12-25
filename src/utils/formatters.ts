@@ -27,6 +27,16 @@ export function formatDateTime(date: string | Date): string {
   return format(d, 'MMM dd, yyyy HH:mm');
 }
 
+export function formatDateOnly(date: string | Date): string {
+  const d = typeof date === 'string' ? parseISO(date) : date;
+  return format(d, 'MMM dd, yyyy');
+}
+
+export function formatTimeOnly(date: string | Date): string {
+  const d = typeof date === 'string' ? parseISO(date) : date;
+  return format(d, 'HH:mm');
+}
+
 export function formatTimeAgo(date: string | Date): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
   return formatDistance(d, new Date(), { addSuffix: true });

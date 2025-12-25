@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Table,
@@ -12,7 +13,7 @@ import {
   Paper,
   Skeleton,
 } from '@mui/material';
-import { useGetStrategyStatsQuery } from '@/store';
+import { useGetStrategiesAnalyticsQuery } from '@/store';
 import { formatCurrency, formatPercent, formatRMultiple } from '@/utils/formatters';
 
 interface StrategyStats {
@@ -25,7 +26,8 @@ interface StrategyStats {
 }
 
 export default function StrategyBreakdown() {
-  const { data: stats, isLoading } = useGetStrategyStatsQuery({});
+  const router = useRouter();
+  const { data: stats, isLoading } = useGetStrategiesAnalyticsQuery({});
 
   if (isLoading) {
     return <Skeleton variant="rounded" height={300} />;
@@ -55,7 +57,12 @@ export default function StrategyBreakdown() {
         </TableHead>
         <TableBody>
           {stats.map((strategy: StrategyStats) => (
-            <TableRow key={strategy.strategyId}>
+            <TableRow
+              key={strategy.strategyId}
+              hover
+              onClick={() => router.push(`/strategies/${strategy.strategyId}`)}
+              sx={{ cursor: 'pointer' }}
+            >
               <TableCell>
                 <Typography fontWeight="medium">{strategy.strategyName}</Typography>
               </TableCell>

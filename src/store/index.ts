@@ -78,6 +78,12 @@ export const api = createApi({
       invalidatesTags: ['Strategies'],
     }),
 
+    // Setups
+    getSetups: builder.query({
+      query: () => '/setups',
+      providesTags: ['Trades', 'Strategies'],
+    }),
+
     // Tags
     getTags: builder.query({
       query: () => '/tags',
@@ -136,6 +142,10 @@ export const api = createApi({
       providesTags: ['Analytics'],
     }),
     getStrategyStats: builder.query({
+      query: (id) => `/strategies/${id}/stats`,
+      providesTags: (_result, _error, id) => [{ type: 'Strategies', id }, 'Trades'],
+    }),
+    getStrategiesAnalytics: builder.query({
       query: () => '/analytics/strategies',
       providesTags: ['Analytics', 'Strategies'],
     }),
@@ -171,15 +181,6 @@ export const api = createApi({
       invalidatesTags: ['Trades'],
     }),
 
-    // CSV Import
-    importTrades: builder.mutation({
-      query: (trades) => ({
-        url: '/trades/import',
-        method: 'POST',
-        body: { trades },
-      }),
-      invalidatesTags: ['Trades', 'Analytics'],
-    }),
   }),
 });
 
@@ -206,6 +207,7 @@ export const {
   useCreateStrategyMutation,
   useUpdateStrategyMutation,
   useDeleteStrategyMutation,
+  useGetSetupsQuery,
   useGetTagsQuery,
   useCreateTagMutation,
   useDeleteTagMutation,
@@ -215,9 +217,9 @@ export const {
   useGetAnalyticsQuery,
   useGetDailyStatsQuery,
   useGetStrategyStatsQuery,
+  useGetStrategiesAnalyticsQuery,
   useGetSettingsQuery,
   useUpdateSettingsMutation,
   useUploadScreenshotsMutation,
   useDeleteScreenshotMutation,
-  useImportTradesMutation,
 } = api;

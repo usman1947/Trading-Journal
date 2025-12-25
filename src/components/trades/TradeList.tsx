@@ -16,7 +16,7 @@ import {
 import { useGetTradesQuery, useDeleteTradeMutation } from '@/store';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
-import { formatCurrency, formatDateTime } from '@/utils/formatters';
+import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import type { Trade } from '@/types';
 
@@ -56,10 +56,17 @@ export default function TradeList() {
       ),
     },
     {
+      field: 'tradeDate',
+      headerName: 'Date',
+      width: 110,
+      valueGetter: (_, row) => row.tradeTime,
+      valueFormatter: (value) => formatDateOnly(value),
+    },
+    {
       field: 'tradeTime',
       headerName: 'Time',
-      width: 150,
-      valueFormatter: (value) => formatDateTime(value),
+      width: 90,
+      valueFormatter: (value) => formatTimeOnly(value),
     },
     {
       field: 'strategy',
@@ -76,7 +83,7 @@ export default function TradeList() {
     {
       field: 'risk',
       headerName: 'Risk $',
-      width: 100,
+      width: 80,
       renderCell: (params: GridRenderCellParams<Trade>) => (
         <Typography color="warning.main">
           {formatCurrency(params.value as number)}
@@ -149,7 +156,7 @@ export default function TradeList() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 100,
+      width: 60,
       sortable: false,
       renderCell: (params: GridRenderCellParams<Trade>) => (
         <Box>

@@ -20,9 +20,10 @@ import {
   ImageList,
   ImageListItem,
   ImageListItemBar,
+  Autocomplete,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { DateTimePicker } from '@mui/x-date-pickers';
+import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
@@ -33,6 +34,7 @@ import {
   useCreateTradeMutation,
   useUpdateTradeMutation,
   useGetStrategiesQuery,
+  useGetSetupsQuery,
   useUploadScreenshotsMutation,
 } from '@/store';
 import { useAppDispatch } from '@/store/hooks';
@@ -68,6 +70,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
   const [updateTrade, { isLoading: updating }] = useUpdateTradeMutation();
   const [uploadScreenshots] = useUploadScreenshotsMutation();
   const { data: strategies = [] } = useGetStrategiesQuery({});
+  const { data: existingSetups = [] } = useGetSetupsQuery({});
 
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -172,16 +175,42 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                   />
                 </Grid>
 
-                {/* Time */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <DateTimePicker
-                    label="Time"
+                {/* Date */}
+                <Grid size={{ xs: 12, sm: 3 }}>
+                  <DatePicker
+                    label="Date"
                     value={new Date(formik.values.tradeTime)}
-                    onChange={(date) => formik.setFieldValue('tradeTime', date?.toISOString())}
+                    onChange={(date) => {
+                      if (date) {
+                        const currentTime = new Date(formik.values.tradeTime);
+                        date.setHours(currentTime.getHours(), currentTime.getMinutes(), currentTime.getSeconds());
+                        formik.setFieldValue('tradeTime', date.toISOString());
+                      }
+                    }}
                     slotProps={{
                       textField: {
                         fullWidth: true,
                         error: formik.touched.tradeTime && Boolean(formik.errors.tradeTime),
+                      },
+                    }}
+                  />
+                </Grid>
+
+                {/* Time */}
+                <Grid size={{ xs: 12, sm: 3 }}>
+                  <TimePicker
+                    label="Time"
+                    value={new Date(formik.values.tradeTime)}
+                    onChange={(time) => {
+                      if (time) {
+                        const currentDate = new Date(formik.values.tradeTime);
+                        currentDate.setHours(time.getHours(), time.getMinutes(), time.getSeconds());
+                        formik.setFieldValue('tradeTime', currentDate.toISOString());
+                      }
+                    }}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
                       },
                     }}
                   />
@@ -262,13 +291,25 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
 
                 {/* Setup */}
                 <Grid size={{ xs: 12 }}>
-                  <TextField
-                    fullWidth
-                    label="Setup"
-                    name="setup"
+                  <Autocomplete
+                    freeSolo
+                    options={existingSetups}
                     value={formik.values.setup || ''}
-                    onChange={formik.handleChange}
-                    placeholder="e.g., Breakout, VWAP bounce, Gap fill..."
+                    onChange={(_, newValue) => {
+                      formik.setFieldValue('setup', newValue || '');
+                    }}
+                    onInputChange={(_, newInputValue) => {
+                      formik.setFieldValue('setup', newInputValue);
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        fullWidth
+                        label="Setup"
+                        placeholder="e.g., Breakout, VWAP bounce, Gap fill..."
+                        helperText="Select existing or type a new setup"
+                      />
+                    )}
                   />
                 </Grid>
 

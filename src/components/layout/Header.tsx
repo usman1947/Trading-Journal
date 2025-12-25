@@ -13,6 +13,7 @@ import {
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
   Add as AddIcon,
+  ShowChart as LogoIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -40,14 +41,18 @@ export default function Header() {
           color="inherit"
           aria-label="toggle menu"
           onClick={() => dispatch(toggleSidebar())}
-          sx={{ mr: 2 }}
         >
           <MenuIcon />
         </IconButton>
 
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          {/* Page title could be dynamic based on route */}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}>
+          <LogoIcon color="primary" />
+          <Typography variant="h6" fontWeight="bold" color="primary">
+            Journal
+          </Typography>
+        </Box>
+
+        <Box sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Tooltip title="Add New Trade">

@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
   Card,
   CardContent,
+  CardActionArea,
   Button,
   TextField,
   Dialog,
@@ -42,6 +44,7 @@ interface Strategy {
 }
 
 export default function StrategiesPage() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { data: strategies = [], isLoading } = useGetStrategiesQuery({});
   const [createStrategy] = useCreateStrategyMutation();
@@ -167,73 +170,85 @@ export default function StrategiesPage() {
           {strategies.map((strategy: Strategy) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={strategy.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Typography variant="h6">
-                      {strategy.name}
-                    </Typography>
-                    <Box sx={{ flexShrink: 0 }}>
-                      <IconButton size="small" onClick={() => handleOpenDialog(strategy)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => setDeleteId(strategy.id)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </Box>
-
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      mb: 2,
-                      minHeight: 40,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1, pt: 1 }}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenDialog(strategy);
                     }}
                   >
-                    {strategy.description || 'No description'}
-                  </Typography>
-
-                  <Box sx={{ flex: 1, mb: 2 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                      Setups:
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteId(strategy.id);
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+                <CardActionArea
+                  onClick={() => router.push(`/strategies/${strategy.id}`)}
+                  sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+                >
+                  <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', pt: 0 }}>
+                    <Typography variant="h6" sx={{ mb: 1 }}>
+                      {strategy.name}
                     </Typography>
-                    {strategy.setups && strategy.setups.length > 0 ? (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {strategy.setups.map((setup) => (
-                          <Chip
-                            key={setup}
-                            label={setup}
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                          />
-                        ))}
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                        No setups defined
-                      </Typography>
-                    )}
-                  </Box>
 
-                  <Box sx={{ mt: 'auto' }}>
-                    <Chip
-                      label={`${strategy._count?.trades || 0} trades`}
-                      size="small"
-                      variant="filled"
-                      color="default"
-                    />
-                  </Box>
-                </CardContent>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        mb: 2,
+                        minHeight: 40,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}
+                    >
+                      {strategy.description || 'No description'}
+                    </Typography>
+
+                    <Box sx={{ flex: 1, mb: 2 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                        Setups:
+                      </Typography>
+                      {strategy.setups && strategy.setups.length > 0 ? (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {strategy.setups.map((setup) => (
+                            <Chip
+                              key={setup}
+                              label={setup}
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                          No setups defined
+                        </Typography>
+                      )}
+                    </Box>
+
+                    <Box sx={{ mt: 'auto' }}>
+                      <Chip
+                        label={`${strategy._count?.trades || 0} trades`}
+                        size="small"
+                        variant="filled"
+                        color="default"
+                      />
+                    </Box>
+                  </CardContent>
+                </CardActionArea>
               </Card>
             </Grid>
           ))}

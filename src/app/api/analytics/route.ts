@@ -8,8 +8,10 @@ export async function GET(request: NextRequest) {
       dateFrom: searchParams.get('dateFrom') || undefined,
       dateTo: searchParams.get('dateTo') || undefined,
       symbol: searchParams.get('symbol') || undefined,
-      assetType: searchParams.get('assetType') as 'STOCK' | 'OPTION' | 'FUTURES' | undefined,
       strategyId: searchParams.get('strategyId') || undefined,
+      side: searchParams.get('side') as 'LONG' | 'SHORT' | undefined,
+      execution: searchParams.get('execution') as 'PASS' | 'FAIL' | undefined,
+      setup: searchParams.get('setup') || undefined,
     };
 
     const analytics = await getAnalytics(filters);

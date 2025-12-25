@@ -18,6 +18,15 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
+  if (filters.side) {
+    where.side = filters.side;
+  }
+  if (filters.execution) {
+    where.execution = filters.execution;
+  }
+  if (filters.setup) {
+    where.setup = { contains: filters.setup };
+  }
 
   const trades = await prisma.trade.findMany({ where });
 

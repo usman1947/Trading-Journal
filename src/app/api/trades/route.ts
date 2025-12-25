@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const side = searchParams.get('side');
     const execution = searchParams.get('execution');
     const strategyId = searchParams.get('strategyId');
+    const setup = searchParams.get('setup');
 
     if (dateFrom) {
       where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(dateFrom) };
@@ -31,6 +32,9 @@ export async function GET(request: NextRequest) {
     }
     if (strategyId) {
       where.strategyId = strategyId;
+    }
+    if (setup) {
+      where.setup = { contains: setup };
     }
 
     const trades = await prisma.trade.findMany({

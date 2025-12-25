@@ -21,7 +21,6 @@ import {
   Analytics as AnalyticsIcon,
   Book as JournalIcon,
   Category as StrategiesIcon,
-  Upload as ImportIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '@/store/hooks';
 
@@ -34,7 +33,6 @@ const menuItems = [
   { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
   { text: 'Journal', icon: <JournalIcon />, path: '/journal' },
   { text: 'Strategies', icon: <StrategiesIcon />, path: '/strategies' },
-  { text: 'Import', icon: <ImportIcon />, path: '/import' },
 ];
 
 export default function Sidebar() {
