@@ -196,6 +196,7 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
   const strategyMap = new Map<string, number>();
   const totalTrades = trades.length;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   trades.forEach((trade: any) => {
     const strategyName = trade.strategy?.name || 'No Strategy';
     strategyMap.set(strategyName, (strategyMap.get(strategyName) || 0) + 1);
@@ -228,6 +229,7 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
     orderBy: { tradeTime: 'asc' },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return trades.map((trade: any) => {
     const date = new Date(trade.tradeTime);
     return {
@@ -260,6 +262,7 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
     orderBy: { tradeTime: 'asc' },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return trades.map((trade: any) => {
     const date = new Date(trade.tradeTime);
     return {
@@ -299,6 +302,7 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   const dailyMap = new Map<string, { totalPnL: number; trades: number; wins: number }>();
   const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   trades.forEach((trade: any) => {
     const date = new Date(trade.tradeTime);
     const hour = date.getHours();

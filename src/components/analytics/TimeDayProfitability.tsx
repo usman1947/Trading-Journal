@@ -23,6 +23,7 @@ interface TimeDayProfitabilityProps {
 }
 
 export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload, type }: { active?: boolean; payload?: readonly any[]; type?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -46,7 +47,7 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
           }}
         >
           <Typography variant="body2" fontWeight="bold">
-            {type === 'hourly' ? getIntervalRange(data.interval) : data.day}
+            {type === 'hourly' ? (data.interval ? getIntervalRange(data.interval) : '') : (data.day || '')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Trades: {data.trades}
@@ -80,6 +81,7 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
               </Box>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <BarChart data={data.hourly as any} margin={{ top: 20, right: 20, bottom: 20, left: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
@@ -117,6 +119,7 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
               </Box>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <BarChart data={data.daily as any} margin={{ top: 20, right: 20, bottom: 20, left: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day" />

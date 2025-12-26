@@ -2,7 +2,6 @@
 
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { format } from 'date-fns';
 
 interface TradeTimeData {
   time: string;
@@ -25,6 +24,7 @@ export default function TradeTimeChart({ data }: TradeTimeChartProps) {
     time: trade.time,
   }));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;

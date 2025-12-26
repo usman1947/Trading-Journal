@@ -2,7 +2,6 @@
 
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
-import { format } from 'date-fns';
 
 interface PnLDistributionData {
   id: string;
@@ -30,6 +29,7 @@ export default function PnLDistributionChart({ data }: PnLDistributionChartProps
   const minY = Math.floor(Math.min(...yValues, 0));
   const maxY = Math.ceil(Math.max(...yValues, 0));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;

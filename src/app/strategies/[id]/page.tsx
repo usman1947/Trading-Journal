@@ -63,8 +63,11 @@ export default function StrategyDetailPage({
   const { id } = params;
   const router = useRouter();
   const { data, isLoading, error } = useGetStrategyStatsQuery(id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [tradeTimeData, setTradeTimeData] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pnlDistribution, setPnlDistribution] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [timeDayData, setTimeDayData] = useState<any>({ hourly: [], daily: [] });
 
   // Fetch analytics data for this strategy

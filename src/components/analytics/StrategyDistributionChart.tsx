@@ -27,6 +27,7 @@ const COLORS = [
 ];
 
 export default function StrategyDistributionChart({ data }: StrategyDistributionChartProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
     if (active && payload && payload.length) {
       return (
@@ -68,10 +69,12 @@ export default function StrategyDistributionChart({ data }: StrategyDistribution
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data={data as any}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 label={(props: any) => `${props.percentage.toFixed(1)}%`}
                 outerRadius={100}
                 innerRadius={60}

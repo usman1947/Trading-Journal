@@ -44,9 +44,13 @@ export default function AnalyticsPage() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<'strategies' | 'trades'>('strategies');
   const [filters, setFilters] = useState<TradeFilters>({});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [strategyDistribution, setStrategyDistribution] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [tradeTimeData, setTradeTimeData] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pnlDistribution, setPnlDistribution] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [timeDayData, setTimeDayData] = useState<any>({ hourly: [], daily: [] });
 
   const { data: strategies = [] } = useGetStrategiesQuery({});
