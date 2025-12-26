@@ -1,6 +1,13 @@
 import prisma from './prisma';
 import type { AnalyticsData, DailyStats, StrategyStats, TradeFilters } from '@/types';
 
+type TradeRecord = {
+  result: number | null;
+  risk: number;
+  execution: string | null;
+  tradeTime: Date;
+};
+
 export async function getAnalytics(filters: TradeFilters = {}): Promise<AnalyticsData> {
   const where: Record<string, unknown> = {
     result: { not: null },
@@ -48,27 +55,27 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     };
   }
 
-  const winningTrades = trades.filter((t) => (t.result ?? 0) > 0);
-  const losingTrades = trades.filter((t) => (t.result ?? 0) < 0);
-  const passingTrades = trades.filter((t) => t.execution === 'PASS');
+  const winningTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
+  const losingTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
+  const passingTrades = trades.filter((t: TradeRecord) => t.execution === 'PASS');
 
-  const totalResult = trades.reduce((sum, t) => sum + (t.result ?? 0), 0);
-  const totalRisk = trades.reduce((sum, t) => sum + t.risk, 0);
-  const totalWins = winningTrades.reduce((sum, t) => sum + (t.result ?? 0), 0);
-  const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.result ?? 0), 0));
+  const totalResult = trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
+  const totalRisk = trades.reduce((sum: number, t: TradeRecord) => sum + t.risk, 0);
+  const totalWins = winningTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
+  const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0));
 
   // Calculate average R-multiples for winners and losers
-  const winnersWithRisk = winningTrades.filter((t) => t.risk > 0);
-  const losersWithRisk = losingTrades.filter((t) => t.risk > 0);
+  const winnersWithRisk = winningTrades.filter((t: TradeRecord) => t.risk > 0);
+  const losersWithRisk = losingTrades.filter((t: TradeRecord) => t.risk > 0);
 
   const averageWinnerR =
     winnersWithRisk.length > 0
-      ? winnersWithRisk.reduce((sum, t) => sum + ((t.result ?? 0) / t.risk), 0) / winnersWithRisk.length
+      ? winnersWithRisk.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / winnersWithRisk.length
       : 0;
 
   const averageLoserR =
     losersWithRisk.length > 0
-      ? losersWithRisk.reduce((sum, t) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
+      ? losersWithRisk.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
       : 0;
 
   return {
@@ -81,8 +88,8 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     averageLoss: losingTrades.length > 0 ? totalLosses / losingTrades.length : 0,
     averageWinnerR,
     averageLoserR,
-    largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t) => t.result ?? 0)) : 0,
-    largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t) => t.result ?? 0)) : 0,
+    largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
+    largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
     totalRisk,
     executionRate: (passingTrades.length / trades.length) * 100,
   };
@@ -107,7 +114,7 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
 
   const dailyMap = new Map<string, { pnl: number; wins: number; total: number }>();
 
-  trades.forEach((trade) => {
+  trades.forEach((trade: TradeRecord) => {
     const date = trade.tradeTime.toISOString().split('T')[0];
     const existing = dailyMap.get(date) || { pnl: 0, wins: 0, total: 0 };
     existing.pnl += trade.result ?? 0;
@@ -135,20 +142,20 @@ export async function getStrategyStats(): Promise<StrategyStats[]> {
     },
   });
 
-  return strategies.map((strategy) => {
+  return strategies.map((strategy: { id: string; name: string; trades: TradeRecord[] }) => {
     const trades = strategy.trades;
-    const winningTrades = trades.filter((t) => (t.result ?? 0) > 0);
-    const tradesWithResult = trades.filter((t) => t.result !== null && t.risk > 0);
+    const winningTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
+    const tradesWithResult = trades.filter((t: TradeRecord) => t.result !== null && t.risk > 0);
 
     return {
       strategyId: strategy.id,
       strategyName: strategy.name,
       totalTrades: trades.length,
       winRate: trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0,
-      totalPnl: trades.reduce((sum, t) => sum + (t.result ?? 0), 0),
+      totalPnl: trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0),
       averageRMultiple:
         tradesWithResult.length > 0
-          ? tradesWithResult.reduce((sum, t) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
+          ? tradesWithResult.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
           : 0,
     };
   });

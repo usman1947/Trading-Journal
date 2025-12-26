@@ -30,18 +30,18 @@ export async function GET() {
 
     // Combine and deduplicate
     const tradeSetups = trades
-      .map((t) => t.setup)
-      .filter((s): s is string => s !== null && s.trim() !== '');
+      .map((t: { setup: string | null }) => t.setup)
+      .filter((s: string | null): s is string => s !== null && s.trim() !== '');
 
     const strategySetups = strategies
-      .flatMap((s) => {
+      .flatMap((s: { setups: string | null }) => {
         try {
           return s.setups ? JSON.parse(s.setups) : [];
         } catch {
           return [];
         }
       })
-      .filter((s): s is string => typeof s === 'string' && s.trim() !== '');
+      .filter((s: unknown): s is string => typeof s === 'string' && s.trim() !== '');
 
     const allSetups = Array.from(new Set([...tradeSetups, ...strategySetups])).sort();
 

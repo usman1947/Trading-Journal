@@ -6,9 +6,7 @@
       "Bash(npx prisma:*)",
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
-      "Bash(npm run db:push:*)",
-      "Bash(where:*)",
-      "Bash(git config:*)"
+      "Bash(npx next build)"
     ]
   }
 }

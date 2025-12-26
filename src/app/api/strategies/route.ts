@@ -13,7 +13,7 @@ export async function GET() {
     });
 
     // Parse setups JSON for each strategy
-    const parsed = strategies.map((s) => ({
+    const parsed = strategies.map((s: { setups: string | null; _count: { trades: number } }) => ({
       ...s,
       setups: s.setups ? JSON.parse(s.setups) : [],
     }));
