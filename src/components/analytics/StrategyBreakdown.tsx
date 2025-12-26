@@ -23,6 +23,8 @@ interface StrategyStats {
   winRate: number;
   totalPnl: number;
   averageRMultiple: number;
+  averageWinR: number;
+  averageLossR: number;
 }
 
 export default function StrategyBreakdown() {
@@ -52,7 +54,8 @@ export default function StrategyBreakdown() {
             <TableCell align="right">Trades</TableCell>
             <TableCell align="right">Win Rate</TableCell>
             <TableCell align="right">Total P&L</TableCell>
-            <TableCell align="right">Avg R</TableCell>
+            <TableCell align="right">Avg Win R</TableCell>
+            <TableCell align="right">Avg Lose R</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -79,8 +82,13 @@ export default function StrategyBreakdown() {
                 </Typography>
               </TableCell>
               <TableCell align="right">
-                <Typography color={strategy.averageRMultiple >= 0 ? 'success.main' : 'error.main'}>
-                  {formatRMultiple(strategy.averageRMultiple)}
+                <Typography color="success.main">
+                  {formatRMultiple(strategy.averageWinR)}
+                </Typography>
+              </TableCell>
+              <TableCell align="right">
+                <Typography color="error.main">
+                  {formatRMultiple(strategy.averageLossR)}
                 </Typography>
               </TableCell>
             </TableRow>

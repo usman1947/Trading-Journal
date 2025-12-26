@@ -198,6 +198,10 @@ export default function TradeList() {
         }}
         disableRowSelectionOnClick
         sx={{
+          '& .MuiDataGrid-cell': {
+            display: 'flex',
+            alignItems: 'center',
+          },
           '& .MuiDataGrid-row:hover': {
             cursor: 'pointer',
             backgroundColor: 'action.hover',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -33,6 +33,10 @@ import {
 } from '@/store';
 import StatsCards from '@/components/analytics/StatsCards';
 import StrategyBreakdown from '@/components/analytics/StrategyBreakdown';
+import StrategyDistributionChart from '@/components/analytics/StrategyDistributionChart';
+import TradeTimeChart from '@/components/analytics/TradeTimeChart';
+import PnLDistributionChart from '@/components/analytics/PnLDistributionChart';
+import TimeDayProfitability from '@/components/analytics/TimeDayProfitability';
 import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
 import type { Trade, TradeFilters } from '@/types';
 
@@ -40,6 +44,10 @@ export default function AnalyticsPage() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<'strategies' | 'trades'>('strategies');
   const [filters, setFilters] = useState<TradeFilters>({});
+  const [strategyDistribution, setStrategyDistribution] = useState<any[]>([]);
+  const [tradeTimeData, setTradeTimeData] = useState<any[]>([]);
+  const [pnlDistribution, setPnlDistribution] = useState<any[]>([]);
+  const [timeDayData, setTimeDayData] = useState<any>({ hourly: [], daily: [] });
 
   const { data: strategies = [] } = useGetStrategiesQuery({});
   const { data: existingSetups = [] } = useGetSetupsQuery({});
@@ -49,6 +57,36 @@ export default function AnalyticsPage() {
   const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(
     viewMode === 'trades' ? filters : {}
   );
+
+  // Fetch analytics data
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      const params = new URLSearchParams();
+      if (viewMode === 'trades') {
+        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+        if (filters.dateTo) params.append('dateTo', filters.dateTo);
+      }
+      const queryString = params.toString();
+
+      try {
+        const [stratDist, tradeTime, pnlDist, timeDay] = await Promise.all([
+          fetch(`/api/analytics/strategy-distribution?${queryString}`).then(r => r.json()),
+          fetch(`/api/analytics/trade-time?${queryString}`).then(r => r.json()),
+          fetch(`/api/analytics/pnl-distribution?${queryString}`).then(r => r.json()),
+          fetch(`/api/analytics/time-day?${queryString}`).then(r => r.json()),
+        ]);
+
+        setStrategyDistribution(stratDist);
+        setTradeTimeData(tradeTime);
+        setPnlDistribution(pnlDist);
+        setTimeDayData(timeDay);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      }
+    };
+
+    fetchAnalyticsData();
+  }, [filters, viewMode]);
 
   // Filter only closed trades for the table
   const closedTrades = useMemo(() => {
@@ -329,41 +367,81 @@ export default function AnalyticsPage() {
 
       {/* Content based on view mode */}
       {viewMode === 'strategies' ? (
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Performance by Strategy
-            </Typography>
-            <StrategyBreakdown />
-          </CardContent>
-        </Card>
+        <>
+          <Box sx={{ mt: 3 }}>
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <StrategyDistributionChart data={strategyDistribution} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TradeTimeChart data={tradeTimeData} />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <PnLDistributionChart data={pnlDistribution} />
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Box sx={{ mt: 3 }}>
+            <TimeDayProfitability data={timeDayData} />
+          </Box>
+
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Performance by Strategy
+              </Typography>
+              <StrategyBreakdown />
+            </CardContent>
+          </Card>
+        </>
       ) : (
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Trades ({closedTrades.length})
-            </Typography>
-            <DataGrid
-              rows={closedTrades}
-              columns={columns}
-              loading={tradesLoading}
-              autoHeight
-              pageSizeOptions={[10, 25, 50, 100]}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 25 } },
-                sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
-              }}
-              disableRowSelectionOnClick
-              onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
-              sx={{
-                '& .MuiDataGrid-row:hover': {
-                  cursor: 'pointer',
-                  backgroundColor: 'action.hover',
-                },
-              }}
-            />
-          </CardContent>
-        </Card>
+        <>
+          <Box sx={{ mt: 3 }}>
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <StrategyDistributionChart data={strategyDistribution} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TradeTimeChart data={tradeTimeData} />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <PnLDistributionChart data={pnlDistribution} />
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Box sx={{ mt: 3 }}>
+            <TimeDayProfitability data={timeDayData} />
+          </Box>
+
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Trades ({closedTrades.length})
+              </Typography>
+              <DataGrid
+                rows={closedTrades}
+                columns={columns}
+                loading={tradesLoading}
+                autoHeight
+                pageSizeOptions={[10, 25, 50, 100]}
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 25 } },
+                  sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
+                }}
+                disableRowSelectionOnClick
+                onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
+                sx={{
+                  '& .MuiDataGrid-row:hover': {
+                    cursor: 'pointer',
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
+        </>
       )}
     </Box>
   );

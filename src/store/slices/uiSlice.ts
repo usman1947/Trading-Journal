@@ -12,7 +12,7 @@ interface UiState {
 
 const initialState: UiState = {
   sidebarOpen: true,
-  themeMode: 'light',
+  themeMode: 'dark',
   snackbar: {
     open: false,
     message: '',

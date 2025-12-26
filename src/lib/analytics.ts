@@ -145,7 +145,18 @@ export async function getStrategyStats(): Promise<StrategyStats[]> {
   return strategies.map((strategy: { id: string; name: string; trades: TradeRecord[] }) => {
     const trades = strategy.trades;
     const winningTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
+    const losingTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
     const tradesWithResult = trades.filter((t: TradeRecord) => t.result !== null && t.risk > 0);
+    const winnersWithRisk = winningTrades.filter((t: TradeRecord) => t.risk > 0);
+    const losersWithRisk = losingTrades.filter((t: TradeRecord) => t.risk > 0);
+
+    const averageWinR = winnersWithRisk.length > 0
+      ? winnersWithRisk.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / winnersWithRisk.length
+      : 0;
+
+    const averageLossR = losersWithRisk.length > 0
+      ? losersWithRisk.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
+      : 0;
 
     return {
       strategyId: strategy.id,
@@ -157,6 +168,190 @@ export async function getStrategyStats(): Promise<StrategyStats[]> {
         tradesWithResult.length > 0
           ? tradesWithResult.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
           : 0,
+      averageWinR,
+      averageLossR,
     };
   });
+}
+
+export async function getStrategyDistribution(filters: TradeFilters = {}) {
+  const where: Record<string, unknown> = {
+    result: { not: null },
+  };
+
+  if (filters.dateFrom) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
+  }
+  if (filters.dateTo) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
+  }
+
+  const trades = await prisma.trade.findMany({
+    where,
+    include: {
+      strategy: true,
+    },
+  });
+
+  const strategyMap = new Map<string, number>();
+  const totalTrades = trades.length;
+
+  trades.forEach((trade: any) => {
+    const strategyName = trade.strategy?.name || 'No Strategy';
+    strategyMap.set(strategyName, (strategyMap.get(strategyName) || 0) + 1);
+  });
+
+  return Array.from(strategyMap.entries()).map(([name, trades]) => ({
+    name,
+    trades,
+    percentage: totalTrades > 0 ? (trades / totalTrades) * 100 : 0,
+  }));
+}
+
+export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
+  const where: Record<string, unknown> = {
+    result: { not: null },
+  };
+
+  if (filters.dateFrom) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
+  }
+  if (filters.dateTo) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
+  }
+  if (filters.strategyId) {
+    where.strategyId = filters.strategyId;
+  }
+
+  const trades = await prisma.trade.findMany({
+    where,
+    orderBy: { tradeTime: 'asc' },
+  });
+
+  return trades.map((trade: any) => {
+    const date = new Date(trade.tradeTime);
+    return {
+      time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+      result: trade.result,
+      symbol: trade.symbol,
+    };
+  });
+}
+
+export async function getPnLDistribution(filters: TradeFilters = {}) {
+  const where: Record<string, unknown> = {
+    result: { not: null },
+  };
+
+  if (filters.dateFrom) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
+  }
+  if (filters.dateTo) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
+  }
+  if (filters.strategyId) {
+    where.strategyId = filters.strategyId;
+  }
+
+  const trades = await prisma.trade.findMany({
+    where,
+    orderBy: { tradeTime: 'asc' },
+  });
+
+  return trades.map((trade: any) => {
+    const date = new Date(trade.tradeTime);
+    return {
+      id: trade.id,
+      symbol: trade.symbol,
+      result: trade.result,
+      rMultiple: trade.risk > 0 ? trade.result / trade.risk : 0,
+      date: date.toLocaleDateString('en-US'),
+    };
+  });
+}
+
+export async function getTimeDayProfitability(filters: TradeFilters = {}) {
+  const where: Record<string, unknown> = {
+    result: { not: null },
+  };
+
+  if (filters.dateFrom) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
+  }
+  if (filters.dateTo) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
+  }
+  if (filters.strategyId) {
+    where.strategyId = filters.strategyId;
+  }
+
+  const trades = await prisma.trade.findMany({
+    where,
+    orderBy: { tradeTime: 'asc' },
+  });
+
+  // 30-minute interval stats
+  const intervalMap = new Map<string, { totalPnL: number; trades: number; wins: number }>();
+
+  // Daily stats (day of week)
+  const dailyMap = new Map<string, { totalPnL: number; trades: number; wins: number }>();
+  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  trades.forEach((trade: any) => {
+    const date = new Date(trade.tradeTime);
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    const dayOfWeek = daysOfWeek[date.getDay()];
+    const result = trade.result ?? 0;
+    const isWin = result > 0;
+
+    // 30-minute intervals: group by hour and 0-29 / 30-59
+    const intervalMinute = minute < 30 ? 0 : 30;
+    const intervalKey = `${hour}:${intervalMinute.toString().padStart(2, '0')}`;
+
+    const intervalData = intervalMap.get(intervalKey) || { totalPnL: 0, trades: 0, wins: 0 };
+    intervalData.totalPnL += result;
+    intervalData.trades += 1;
+    if (isWin) intervalData.wins += 1;
+    intervalMap.set(intervalKey, intervalData);
+
+    // Daily
+    const dayData = dailyMap.get(dayOfWeek) || { totalPnL: 0, trades: 0, wins: 0 };
+    dayData.totalPnL += result;
+    dayData.trades += 1;
+    if (isWin) dayData.wins += 1;
+    dailyMap.set(dayOfWeek, dayData);
+  });
+
+  const hourly = Array.from(intervalMap.entries())
+    .map(([interval, stats]) => ({
+      interval,
+      totalPnL: stats.totalPnL,
+      trades: stats.trades,
+      winRate: stats.trades > 0 ? (stats.wins / stats.trades) * 100 : 0,
+    }))
+    .sort((a, b) => {
+      // Parse time strings to compare numerically (e.g., "9:00" vs "10:30")
+      const [hourA, minA] = a.interval.split(':').map(Number);
+      const [hourB, minB] = b.interval.split(':').map(Number);
+      const timeA = hourA * 60 + minA;
+      const timeB = hourB * 60 + minB;
+      return timeA - timeB;
+    });
+
+  const daily = daysOfWeek
+    .map((day) => {
+      const stats = dailyMap.get(day) || { totalPnL: 0, trades: 0, wins: 0 };
+      return {
+        day,
+        totalPnL: stats.totalPnL,
+        trades: stats.trades,
+        winRate: stats.trades > 0 ? (stats.wins / stats.trades) * 100 : 0,
+      };
+    })
+    .filter((d) => d.trades > 0);
+
+  return { hourly, daily };
 }

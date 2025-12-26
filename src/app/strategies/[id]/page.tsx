@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -24,6 +25,9 @@ import {
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useGetStrategyStatsQuery } from '@/store';
 import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
+import TradeTimeChart from '@/components/analytics/TradeTimeChart';
+import PnLDistributionChart from '@/components/analytics/PnLDistributionChart';
+import TimeDayProfitability from '@/components/analytics/TimeDayProfitability';
 import type { Trade } from '@/types';
 
 interface StatCardProps {
@@ -59,6 +63,32 @@ export default function StrategyDetailPage({
   const { id } = params;
   const router = useRouter();
   const { data, isLoading, error } = useGetStrategyStatsQuery(id);
+  const [tradeTimeData, setTradeTimeData] = useState<any[]>([]);
+  const [pnlDistribution, setPnlDistribution] = useState<any[]>([]);
+  const [timeDayData, setTimeDayData] = useState<any>({ hourly: [], daily: [] });
+
+  // Fetch analytics data for this strategy
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      if (!id) return;
+
+      try {
+        const [tradeTime, pnlDist, timeDay] = await Promise.all([
+          fetch(`/api/analytics/trade-time?strategyId=${id}`).then(r => r.json()),
+          fetch(`/api/analytics/pnl-distribution?strategyId=${id}`).then(r => r.json()),
+          fetch(`/api/analytics/time-day?strategyId=${id}`).then(r => r.json()),
+        ]);
+
+        setTradeTimeData(tradeTime);
+        setPnlDistribution(pnlDist);
+        setTimeDayData(timeDay);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      }
+    };
+
+    fetchAnalyticsData();
+  }, [id]);
 
   const columns: GridColDef[] = [
     {
@@ -332,6 +362,22 @@ export default function StrategyDetailPage({
           </Card>
         </Grid>
       </Grid>
+
+      {/* Analytics Charts */}
+      <Box sx={{ mb: 3 }}>
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TradeTimeChart data={tradeTimeData} />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PnLDistributionChart data={pnlDistribution} />
+          </Grid>
+        </Grid>
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <TimeDayProfitability data={timeDayData} />
+      </Box>
 
       {/* Trades Table */}
       <Card>
