@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Trade {
@@ -56,7 +56,8 @@ model TagOnTrade {
 model Screenshot {
   id        String   @id @default(cuid())
   filename  String
-  path      String
+  path      String   // Cloudinary URL
+  publicId  String?  // Cloudinary public_id for deletion
   trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
   tradeId   String
   createdAt DateTime @default(now())

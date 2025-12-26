@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import prisma from '@/lib/prisma';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,23 +18,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', tradeId);
-    await mkdir(uploadDir, { recursive: true });
-
     const screenshots = [];
 
     for (const file of files) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const filename = `${Date.now()}-${file.name}`;
-      const filepath = path.join(uploadDir, filename);
-      await writeFile(filepath, buffer);
+      const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+
+      const result = await uploadToCloudinary(buffer, filename, tradeId);
 
       const screenshot = await prisma.screenshot.create({
         data: {
-          filename,
-          path: `/uploads/${tradeId}/${filename}`,
+          filename: file.name,
+          path: result.secure_url,
+          publicId: result.public_id,
           tradeId,
         },
       });

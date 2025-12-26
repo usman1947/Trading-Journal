@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { unlink } from 'fs/promises';
-import path from 'path';
 import prisma from '@/lib/prisma';
+import { deleteFromCloudinary } from '@/lib/cloudinary';
 
 export async function DELETE(
   request: NextRequest,
@@ -18,12 +17,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Screenshot not found' }, { status: 404 });
     }
 
-    // Delete file from filesystem
-    try {
-      const filepath = path.join(process.cwd(), 'public', screenshot.path);
-      await unlink(filepath);
-    } catch {
-      // File might not exist, continue with database deletion
+    // Delete from Cloudinary
+    if (screenshot.publicId) {
+      try {
+        await deleteFromCloudinary(screenshot.publicId);
+      } catch {
+        // Continue with database deletion even if Cloudinary delete fails
+        console.error('Failed to delete from Cloudinary');
+      }
     }
 
     // Delete from database
