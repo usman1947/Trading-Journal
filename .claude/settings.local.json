@@ -6,7 +6,9 @@
       "Bash(npx prisma:*)",
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
-      "Bash(npx next build)"
+      "Bash(npx next build)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix Vercel build errors - force dynamic rendering\n\n- Remove datasource URL from Prisma schema \\(Prisma 7.x compatibility\\)\n- Add dynamic=''force-dynamic'' to root layout and all API routes\n- Prevent static generation at build time for database-dependent routes\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
