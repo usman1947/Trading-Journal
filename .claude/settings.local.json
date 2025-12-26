@@ -5,7 +5,8 @@
       "Bash(npx prisma db push:*)",
       "Bash(npx prisma:*)",
       "Bash(npm run build:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx next build)"
     ]
   }
 }
