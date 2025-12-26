@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: 'Track and analyze your trades',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: Readonly<{
