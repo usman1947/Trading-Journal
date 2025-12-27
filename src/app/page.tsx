@@ -5,7 +5,6 @@ import Grid from '@mui/material/Grid';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
-  ShowChart as ShowChartIcon,
   Assessment as AssessmentIcon,
   CheckCircle as PassIcon,
 } from '@mui/icons-material';
