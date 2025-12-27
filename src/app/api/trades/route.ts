@@ -42,11 +42,22 @@ export async function GET(request: NextRequest) {
     const trades = await prisma.trade.findMany({
       where,
       include: {
-        strategy: true,
+        strategy: {
+          include: {
+            rules: {
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
         screenshots: true,
         tags: {
           include: {
             tag: true,
+          },
+        },
+        ruleChecks: {
+          include: {
+            rule: true,
           },
         },
       },
@@ -88,11 +99,22 @@ export async function POST(request: NextRequest) {
         strategyId: strategyId || null,
       },
       include: {
-        strategy: true,
+        strategy: {
+          include: {
+            rules: {
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
         screenshots: true,
         tags: {
           include: {
             tag: true,
+          },
+        },
+        ruleChecks: {
+          include: {
+            rule: true,
           },
         },
       },

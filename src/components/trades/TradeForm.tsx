@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -21,12 +21,18 @@ import {
   ImageListItem,
   ImageListItemBar,
   Autocomplete,
+  FormControlLabel,
+  Checkbox,
+  Chip,
+  LinearProgress,
+  Divider,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
+  ChecklistRtl as ChecklistIcon,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -36,11 +42,12 @@ import {
   useGetStrategiesQuery,
   useGetSetupsQuery,
   useUploadScreenshotsMutation,
+  useUpdateTradeRuleChecksMutation,
 } from '@/store';
 import { useAppDispatch } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ScreenshotUpload from '@/components/common/ScreenshotUpload';
-import type { Trade, TradeFormData } from '@/types';
+import type { Trade, TradeFormData, Strategy } from '@/types';
 
 const validationSchema = yup.object({
   symbol: yup.string().required('Symbol is required'),
@@ -69,11 +76,37 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
   const [createTrade, { isLoading: creating }] = useCreateTradeMutation();
   const [updateTrade, { isLoading: updating }] = useUpdateTradeMutation();
   const [uploadScreenshots] = useUploadScreenshotsMutation();
+  const [updateRuleChecks] = useUpdateTradeRuleChecksMutation();
   const { data: strategies = [] } = useGetStrategiesQuery({});
   const { data: existingSetups = [] } = useGetSetupsQuery({});
 
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [ruleChecks, setRuleChecks] = useState<Record<string, boolean>>({});
+
+  // Get the currently selected strategy with its rules
+  const selectedStrategy = useMemo(() => {
+    return strategies.find((s: Strategy) => s.id === trade?.strategyId) as Strategy | undefined;
+  }, [strategies, trade?.strategyId]);
+
+  // Initialize rule checks from trade data
+  useEffect(() => {
+    if (trade?.ruleChecks) {
+      const checks: Record<string, boolean> = {};
+      trade.ruleChecks.forEach((rc) => {
+        checks[rc.ruleId] = rc.checked;
+      });
+      setRuleChecks(checks);
+    }
+  }, [trade?.ruleChecks]);
+
+  const handleRuleToggle = (ruleId: string) => {
+    setRuleChecks((prev) => ({
+      ...prev,
+      [ruleId]: !prev[ruleId],
+    }));
+  };
+
 
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -135,9 +168,37 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
             }
           }
 
+          // Save rule checks if a strategy with rules was selected
+          const newStrategy = strategies.find((s: Strategy) => s.id === values.strategyId) as Strategy | undefined;
+          if (newStrategy?.rules && newStrategy.rules.length > 0) {
+            const ruleChecksData = newStrategy.rules.map((rule) => ({
+              ruleId: rule.id,
+              checked: ruleChecks[rule.id] || false,
+            }));
+            try {
+              await updateRuleChecks({ tradeId: newTrade.id, ruleChecks: ruleChecksData }).unwrap();
+            } catch {
+              console.error('Failed to save rule checks');
+            }
+          }
+
           dispatch(showSnackbar({ message: 'Trade created successfully', severity: 'success' }));
         } else {
           await updateTrade({ id: trade!.id, ...values }).unwrap();
+
+          // Save rule checks for edit mode
+          if (selectedStrategy?.rules && selectedStrategy.rules.length > 0) {
+            const ruleChecksData = selectedStrategy.rules.map((rule) => ({
+              ruleId: rule.id,
+              checked: ruleChecks[rule.id] || false,
+            }));
+            try {
+              await updateRuleChecks({ tradeId: trade!.id, ruleChecks: ruleChecksData }).unwrap();
+            } catch {
+              console.error('Failed to save rule checks');
+            }
+          }
+
           dispatch(showSnackbar({ message: 'Trade updated successfully', severity: 'success' }));
         }
 
@@ -344,16 +405,93 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                   name="strategyId"
                   value={formik.values.strategyId || ''}
                   label="Strategy"
-                  onChange={formik.handleChange}
+                  onChange={(e) => {
+                    formik.handleChange(e);
+                    // Reset rule checks when strategy changes
+                    setRuleChecks({});
+                  }}
                 >
                   <MenuItem value="">None</MenuItem>
-                  {strategies.map((strategy: { id: string; name: string }) => (
+                  {strategies.map((strategy: Strategy) => (
                     <MenuItem key={strategy.id} value={strategy.id}>
                       {strategy.name}
+                      {strategy.rules && strategy.rules.length > 0 && (
+                        <Chip
+                          size="small"
+                          label={`${strategy.rules.length} rules`}
+                          sx={{ ml: 1 }}
+                        />
+                      )}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
+
+              {/* Strategy Rules Checklist */}
+              {(() => {
+                const currentStrategy = strategies.find((s: Strategy) => s.id === formik.values.strategyId) as Strategy | undefined;
+                if (!currentStrategy?.rules || currentStrategy.rules.length === 0) return null;
+
+                const checkedCount = currentStrategy.rules.filter((rule) => ruleChecks[rule.id]).length;
+                const score = Math.round((checkedCount / currentStrategy.rules.length) * 100);
+
+                return (
+                  <Box sx={{ mt: 2 }}>
+                    <Divider sx={{ mb: 2 }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <ChecklistIcon color="primary" fontSize="small" />
+                      <Typography variant="subtitle2">
+                        Strategy Checklist
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                      Check the rules this trade satisfied
+                    </Typography>
+
+                    {currentStrategy.rules.map((rule) => (
+                      <FormControlLabel
+                        key={rule.id}
+                        control={
+                          <Checkbox
+                            checked={ruleChecks[rule.id] || false}
+                            onChange={() => handleRuleToggle(rule.id)}
+                            size="small"
+                          />
+                        }
+                        label={
+                          <Typography variant="body2">
+                            {rule.text}
+                          </Typography>
+                        }
+                        sx={{ display: 'flex', mb: 0.5, ml: 0 }}
+                      />
+                    ))}
+
+                    {/* Satisfaction Score */}
+                    <Box sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="body2" fontWeight="medium">
+                          Strategy Satisfaction Score
+                        </Typography>
+                        <Chip
+                          label={`${score}%`}
+                          size="small"
+                          color={score >= 75 ? 'success' : score >= 50 ? 'warning' : 'error'}
+                        />
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={score}
+                        color={score >= 75 ? 'success' : score >= 50 ? 'warning' : 'error'}
+                        sx={{ height: 8, borderRadius: 1 }}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        {checkedCount} of {currentStrategy.rules.length} rules satisfied
+                      </Typography>
+                    </Box>
+                  </Box>
+                );
+              })()}
             </CardContent>
           </Card>
 

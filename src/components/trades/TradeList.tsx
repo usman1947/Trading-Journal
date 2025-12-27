@@ -12,6 +12,7 @@ import {
   Image as ImageIcon,
   CheckCircle as PassIcon,
   Cancel as FailIcon,
+  ChecklistRtl as ChecklistIcon,
 } from '@mui/icons-material';
 import { useGetTradesQuery, useDeleteTradeMutation } from '@/store';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
@@ -73,6 +74,56 @@ export default function TradeList() {
       headerName: 'Strategy',
       width: 130,
       valueGetter: (value: { name: string } | null) => value?.name || '-',
+    },
+    {
+      field: 'strategyScore',
+      headerName: 'Score',
+      width: 100,
+      sortable: true,
+      renderCell: (params: GridRenderCellParams<Trade>) => {
+        const strategy = params.row.strategy;
+        const ruleChecks = params.row.ruleChecks;
+
+        // No strategy or no rules
+        if (!strategy?.rules || strategy.rules.length === 0) {
+          return <Typography color="text.secondary">-</Typography>;
+        }
+
+        // Calculate score
+        const ruleChecksMap = new Map(
+          ruleChecks?.map((rc: { ruleId: string; checked: boolean }) => [rc.ruleId, rc.checked]) || []
+        );
+        const checkedCount = strategy.rules.filter(
+          (rule: { id: string }) => ruleChecksMap.get(rule.id) === true
+        ).length;
+        const score = Math.round((checkedCount / strategy.rules.length) * 100);
+
+        return (
+          <Tooltip title={`${checkedCount}/${strategy.rules.length} rules satisfied`}>
+            <Chip
+              icon={<ChecklistIcon fontSize="small" />}
+              label={`${score}%`}
+              size="small"
+              color={score >= 75 ? 'success' : score >= 50 ? 'warning' : 'error'}
+              variant="outlined"
+              sx={{ minWidth: 60 }}
+            />
+          </Tooltip>
+        );
+      },
+      valueGetter: (_, row) => {
+        const strategy = row.strategy;
+        const ruleChecks = row.ruleChecks;
+        if (!strategy?.rules || strategy.rules.length === 0) return null;
+
+        const ruleChecksMap = new Map(
+          ruleChecks?.map((rc: { ruleId: string; checked: boolean }) => [rc.ruleId, rc.checked]) || []
+        );
+        const checkedCount = strategy.rules.filter(
+          (rule: { id: string }) => ruleChecksMap.get(rule.id) === true
+        ).length;
+        return Math.round((checkedCount / strategy.rules.length) * 100);
+      },
     },
     {
       field: 'setup',
@@ -156,7 +207,7 @@ export default function TradeList() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 60,
+      width: 70,
       sortable: false,
       renderCell: (params: GridRenderCellParams<Trade>) => (
         <Box>

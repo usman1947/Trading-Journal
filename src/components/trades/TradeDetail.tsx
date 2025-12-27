@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -12,6 +12,9 @@ import {
   Dialog,
   IconButton,
   Divider,
+  LinearProgress,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -23,6 +26,7 @@ import {
   CheckCircle as PassIcon,
   Cancel as FailIcon,
   ArrowBack as BackIcon,
+  ChecklistRtl as ChecklistIcon,
 } from '@mui/icons-material';
 import { useDeleteTradeMutation } from '@/store';
 import { useAppDispatch } from '@/store/hooks';
@@ -56,6 +60,34 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
   const rMultiple = trade.result !== null && trade.result !== undefined && trade.risk
     ? trade.result / trade.risk
     : null;
+
+  // Calculate strategy satisfaction score
+  const satisfactionData = useMemo(() => {
+    if (!trade.strategy?.rules || trade.strategy.rules.length === 0) {
+      return null;
+    }
+
+    const ruleChecksMap = new Map(
+      trade.ruleChecks?.map((rc) => [rc.ruleId, rc.checked]) || []
+    );
+
+    const checkedCount = trade.strategy.rules.filter(
+      (rule) => ruleChecksMap.get(rule.id) === true
+    ).length;
+
+    const totalRules = trade.strategy.rules.length;
+    const score = Math.round((checkedCount / totalRules) * 100);
+
+    return {
+      checkedCount,
+      totalRules,
+      score,
+      rules: trade.strategy.rules.map((rule) => ({
+        ...rule,
+        checked: ruleChecksMap.get(rule.id) || false,
+      })),
+    };
+  }, [trade.strategy?.rules, trade.ruleChecks]);
 
   return (
     <Box>
@@ -252,6 +284,74 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                       <Typography variant="body1">
                         {trade.strategy.name}
                       </Typography>
+                    </Box>
+                  </>
+                )}
+
+                {/* Strategy Satisfaction Score */}
+                {satisfactionData && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <ChecklistIcon fontSize="small" color="primary" />
+                        <Typography variant="caption" color="text.secondary">
+                          Strategy Satisfaction
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="body2">
+                          {satisfactionData.checkedCount} of {satisfactionData.totalRules} rules
+                        </Typography>
+                        <Chip
+                          label={`${satisfactionData.score}%`}
+                          size="small"
+                          color={
+                            satisfactionData.score >= 75
+                              ? 'success'
+                              : satisfactionData.score >= 50
+                                ? 'warning'
+                                : 'error'
+                          }
+                        />
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={satisfactionData.score}
+                        color={
+                          satisfactionData.score >= 75
+                            ? 'success'
+                            : satisfactionData.score >= 50
+                              ? 'warning'
+                              : 'error'
+                        }
+                        sx={{ height: 6, borderRadius: 1, mb: 1.5 }}
+                      />
+                      {satisfactionData.rules.map((rule) => (
+                        <FormControlLabel
+                          key={rule.id}
+                          control={
+                            <Checkbox
+                              checked={rule.checked}
+                              size="small"
+                              disabled
+                              sx={{ py: 0.25 }}
+                            />
+                          }
+                          label={
+                            <Typography
+                              variant="body2"
+                              color={rule.checked ? 'text.primary' : 'text.secondary'}
+                              sx={{
+                                textDecoration: rule.checked ? 'none' : 'none',
+                              }}
+                            >
+                              {rule.text}
+                            </Typography>
+                          }
+                          sx={{ ml: 0, mr: 0, display: 'flex' }}
+                        />
+                      ))}
                     </Box>
                   </>
                 )}

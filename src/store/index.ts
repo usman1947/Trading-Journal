@@ -164,7 +164,7 @@ export const api = createApi({
       invalidatesTags: ['Settings'],
     }),
 
-    // Upload
+    // Upload (Trade Screenshots)
     uploadScreenshots: builder.mutation({
       query: ({ tradeId, formData }) => ({
         url: `/upload?tradeId=${tradeId}`,
@@ -179,6 +179,40 @@ export const api = createApi({
         method: 'DELETE',
       }),
       invalidatesTags: ['Trades'],
+    }),
+
+    // Strategy Screenshots
+    uploadStrategyScreenshots: builder.mutation({
+      query: ({ strategyId, formData }) => ({
+        url: `/strategies/${strategyId}/screenshots`,
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Strategies'],
+    }),
+    deleteStrategyScreenshot: builder.mutation({
+      query: ({ strategyId, screenshotId }) => ({
+        url: `/strategies/${strategyId}/screenshots?screenshotId=${screenshotId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Strategies'],
+    }),
+
+    // Trade Rule Checks
+    getTradeRuleChecks: builder.query({
+      query: (tradeId) => `/trades/${tradeId}/rule-checks`,
+      providesTags: (_result, _error, tradeId) => [{ type: 'Trade', id: tradeId }],
+    }),
+    updateTradeRuleChecks: builder.mutation({
+      query: ({ tradeId, ruleChecks }) => ({
+        url: `/trades/${tradeId}/rule-checks`,
+        method: 'PUT',
+        body: { ruleChecks },
+      }),
+      invalidatesTags: (_result, _error, { tradeId }) => [
+        { type: 'Trade', id: tradeId },
+        'Trades',
+      ],
     }),
 
   }),
@@ -222,4 +256,8 @@ export const {
   useUpdateSettingsMutation,
   useUploadScreenshotsMutation,
   useDeleteScreenshotMutation,
+  useUploadStrategyScreenshotsMutation,
+  useDeleteStrategyScreenshotMutation,
+  useGetTradeRuleChecksQuery,
+  useUpdateTradeRuleChecksMutation,
 } = api;

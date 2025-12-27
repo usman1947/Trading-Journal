@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -17,6 +17,8 @@ import {
   IconButton,
   Chip,
   InputAdornment,
+  Divider,
+  CircularProgress,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -24,32 +26,43 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  ChecklistRtl as ChecklistIcon,
+  Image as ImageIcon,
+  CloudUpload as UploadIcon,
 } from '@mui/icons-material';
 import {
   useGetStrategiesQuery,
   useCreateStrategyMutation,
   useUpdateStrategyMutation,
   useDeleteStrategyMutation,
+  useUploadStrategyScreenshotsMutation,
+  useDeleteStrategyScreenshotMutation,
 } from '@/store';
 import { useAppDispatch } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { StrategyRule, StrategyScreenshot } from '@/types';
 
 interface Strategy {
   id: string;
   name: string;
   description?: string | null;
   setups?: string[];
+  rules?: StrategyRule[];
+  screenshots?: StrategyScreenshot[];
   _count?: { trades: number };
 }
 
 export default function StrategiesPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: strategies = [], isLoading } = useGetStrategiesQuery({});
   const [createStrategy] = useCreateStrategyMutation();
   const [updateStrategy] = useUpdateStrategyMutation();
   const [deleteStrategy, { isLoading: deleting }] = useDeleteStrategyMutation();
+  const [uploadScreenshots, { isLoading: uploading }] = useUploadStrategyScreenshotsMutation();
+  const [deleteScreenshot] = useDeleteStrategyScreenshotMutation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
@@ -57,7 +70,11 @@ export default function StrategiesPage() {
   const [description, setDescription] = useState('');
   const [setups, setSetups] = useState<string[]>([]);
   const [newSetup, setNewSetup] = useState('');
+  const [rules, setRules] = useState<string[]>([]);
+  const [newRule, setNewRule] = useState('');
+  const [localScreenshots, setLocalScreenshots] = useState<StrategyScreenshot[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const handleOpenDialog = (strategy?: Strategy) => {
     if (strategy) {
@@ -65,13 +82,18 @@ export default function StrategiesPage() {
       setName(strategy.name);
       setDescription(strategy.description || '');
       setSetups(strategy.setups || []);
+      setRules(strategy.rules?.map((r) => r.text) || []);
+      setLocalScreenshots(strategy.screenshots || []);
     } else {
       setEditingStrategy(null);
       setName('');
       setDescription('');
       setSetups([]);
+      setRules([]);
+      setLocalScreenshots([]);
     }
     setNewSetup('');
+    setNewRule('');
     setDialogOpen(true);
   };
 
@@ -82,6 +104,9 @@ export default function StrategiesPage() {
     setDescription('');
     setSetups([]);
     setNewSetup('');
+    setRules([]);
+    setNewRule('');
+    setLocalScreenshots([]);
   };
 
   const handleAddSetup = () => {
@@ -96,20 +121,79 @@ export default function StrategiesPage() {
     setSetups(setups.filter((s) => s !== setupToRemove));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleSetupKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAddSetup();
     }
   };
 
+  const handleAddRule = () => {
+    const trimmed = newRule.trim();
+    if (trimmed && !rules.includes(trimmed)) {
+      setRules([...rules, trimmed]);
+      setNewRule('');
+    }
+  };
+
+  const handleRemoveRule = (ruleToRemove: string) => {
+    setRules(rules.filter((r) => r !== ruleToRemove));
+  };
+
+  const handleRuleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddRule();
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !editingStrategy) return;
+
+    const formData = new FormData();
+    Array.from(e.target.files).forEach((file) => {
+      formData.append('files', file);
+    });
+
+    try {
+      const result = await uploadScreenshots({
+        strategyId: editingStrategy.id,
+        formData,
+      }).unwrap();
+      setLocalScreenshots([...localScreenshots, ...result]);
+      dispatch(showSnackbar({ message: 'Screenshots uploaded', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to upload screenshots', severity: 'error' }));
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteScreenshot = async (screenshotId: string) => {
+    if (!editingStrategy) return;
+
+    try {
+      await deleteScreenshot({
+        strategyId: editingStrategy.id,
+        screenshotId,
+      }).unwrap();
+      setLocalScreenshots(localScreenshots.filter((s) => s.id !== screenshotId));
+      dispatch(showSnackbar({ message: 'Screenshot deleted', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to delete screenshot', severity: 'error' }));
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (editingStrategy) {
-        await updateStrategy({ id: editingStrategy.id, name, description, setups }).unwrap();
+        await updateStrategy({ id: editingStrategy.id, name, description, setups, rules }).unwrap();
         dispatch(showSnackbar({ message: 'Strategy updated', severity: 'success' }));
       } else {
-        await createStrategy({ name, description, setups }).unwrap();
+        await createStrategy({ name, description, setups, rules }).unwrap();
         dispatch(showSnackbar({ message: 'Strategy created', severity: 'success' }));
       }
       handleCloseDialog();
@@ -239,13 +323,22 @@ export default function StrategiesPage() {
                       )}
                     </Box>
 
-                    <Box sx={{ mt: 'auto' }}>
+                    <Box sx={{ mt: 'auto', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       <Chip
                         label={`${strategy._count?.trades || 0} trades`}
                         size="small"
                         variant="filled"
                         color="default"
                       />
+                      {strategy.rules && strategy.rules.length > 0 && (
+                        <Chip
+                          icon={<ChecklistIcon fontSize="small" />}
+                          label={`${strategy.rules.length} rules`}
+                          size="small"
+                          variant="outlined"
+                          color="secondary"
+                        />
+                      )}
                     </Box>
                   </CardContent>
                 </CardActionArea>
@@ -255,7 +348,7 @@ export default function StrategiesPage() {
         </Grid>
       )}
 
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           {editingStrategy ? 'Edit Strategy' : 'New Strategy'}
         </DialogTitle>
@@ -295,7 +388,7 @@ export default function StrategiesPage() {
               placeholder="e.g., Breakout, ORB, Pullback..."
               value={newSetup}
               onChange={(e) => setNewSetup(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onKeyDown={handleSetupKeyDown}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -326,6 +419,161 @@ export default function StrategiesPage() {
               </Box>
             )}
           </Box>
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Rules/Checklist Section */}
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <ChecklistIcon color="primary" fontSize="small" />
+              <Typography variant="subtitle2">
+                Checklist Rules
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+              Add rules that should be checked before taking a trade with this strategy
+            </Typography>
+
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="e.g., Price above VWAP, Volume above average..."
+              value={newRule}
+              onChange={(e) => setNewRule(e.target.value)}
+              onKeyDown={handleRuleKeyDown}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      size="small"
+                      onClick={handleAddRule}
+                      disabled={!newRule.trim()}
+                    >
+                      Add
+                    </Button>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {rules.length > 0 && (
+              <Box sx={{ mt: 2 }}>
+                {rules.map((rule, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      py: 0.5,
+                      px: 1,
+                      bgcolor: 'action.hover',
+                      borderRadius: 1,
+                      mb: 0.5,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ flex: 1 }}>
+                      {index + 1}. {rule}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveRule(rule)}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+
+          {/* Example Screenshots Section - Only show when editing */}
+          {editingStrategy && (
+            <>
+              <Divider sx={{ my: 3 }} />
+
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <ImageIcon color="primary" fontSize="small" />
+                  <Typography variant="subtitle2">
+                    Example Screenshots
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                  Upload example charts/screenshots for this strategy
+                </Typography>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  multiple
+                  style={{ display: 'none' }}
+                />
+
+                <Button
+                  variant="outlined"
+                  startIcon={uploading ? <CircularProgress size={16} /> : <UploadIcon />}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  sx={{ mb: 2 }}
+                >
+                  {uploading ? 'Uploading...' : 'Upload Screenshots'}
+                </Button>
+
+                {localScreenshots.length > 0 && (
+                  <Grid container spacing={1}>
+                    {localScreenshots.map((screenshot) => (
+                      <Grid size={{ xs: 4 }} key={screenshot.id}>
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            paddingTop: '75%',
+                            borderRadius: 1,
+                            overflow: 'hidden',
+                            bgcolor: 'action.hover',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => setPreviewImage(screenshot.path)}
+                        >
+                          <Box
+                            component="img"
+                            src={screenshot.path}
+                            alt={screenshot.filename}
+                            sx={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                          <IconButton
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              bgcolor: 'rgba(0,0,0,0.5)',
+                              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteScreenshot(screenshot.id);
+                            }}
+                          >
+                            <CloseIcon fontSize="small" sx={{ color: 'white' }} />
+                          </IconButton>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Box>
+            </>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
@@ -333,6 +581,25 @@ export default function StrategiesPage() {
             {editingStrategy ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog
+        open={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0, display: 'flex', justifyContent: 'center', bgcolor: 'black' }}>
+          {previewImage && (
+            <Box
+              component="img"
+              src={previewImage}
+              alt="Preview"
+              sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+            />
+          )}
+        </DialogContent>
       </Dialog>
 
       <ConfirmDialog

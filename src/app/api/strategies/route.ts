@@ -10,6 +10,12 @@ export async function GET() {
         _count: {
           select: { trades: true },
         },
+        rules: {
+          orderBy: { order: 'asc' },
+        },
+        screenshots: {
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: { name: 'asc' },
     });
@@ -30,7 +36,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, setups } = body;
+    const { name, description, setups, rules } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -41,6 +47,20 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         setups: setups && setups.length > 0 ? JSON.stringify(setups) : null,
+        rules: rules && rules.length > 0
+          ? {
+              create: rules.map((text: string, index: number) => ({
+                text,
+                order: index,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        rules: {
+          orderBy: { order: 'asc' },
+        },
+        screenshots: true,
       },
     });
 

@@ -3,6 +3,42 @@ import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const strategy = await prisma.strategy.findUnique({
+      where: { id },
+      include: {
+        rules: {
+          orderBy: { order: 'asc' },
+        },
+        screenshots: {
+          orderBy: { createdAt: 'asc' },
+        },
+        _count: {
+          select: { trades: true },
+        },
+      },
+    });
+
+    if (!strategy) {
+      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      ...strategy,
+      setups: strategy.setups ? JSON.parse(strategy.setups) : [],
+    });
+  } catch (error) {
+    console.error('Error fetching strategy:', error);
+    return NextResponse.json({ error: 'Failed to fetch strategy' }, { status: 500 });
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -10,15 +46,41 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description, setups } = body;
+    const { name, description, setups, rules } = body;
 
-    const strategy = await prisma.strategy.update({
-      where: { id },
-      data: {
-        name,
-        description: description || null,
-        setups: setups && setups.length > 0 ? JSON.stringify(setups) : null,
-      },
+    // Update strategy with rules in a transaction
+    const strategy = await prisma.$transaction(async (tx) => {
+      // Delete existing rules and create new ones
+      await tx.strategyRule.deleteMany({
+        where: { strategyId: id },
+      });
+
+      // Create new rules if provided
+      if (rules && rules.length > 0) {
+        await tx.strategyRule.createMany({
+          data: rules.map((text: string, index: number) => ({
+            strategyId: id,
+            text,
+            order: index,
+          })),
+        });
+      }
+
+      // Update strategy
+      return tx.strategy.update({
+        where: { id },
+        data: {
+          name,
+          description: description || null,
+          setups: setups && setups.length > 0 ? JSON.stringify(setups) : null,
+        },
+        include: {
+          rules: {
+            orderBy: { order: 'asc' },
+          },
+          screenshots: true,
+        },
+      });
     });
 
     return NextResponse.json({

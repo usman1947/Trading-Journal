@@ -291,9 +291,9 @@ export default function StrategyDetailPage({
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
           <StatCard
             title="Profit Factor"
-            value={stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2)}
+            value={stats.profitFactor === null || stats.profitFactor === undefined ? '-' : stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2)}
             icon={<ProfitFactorIcon />}
-            color={stats.profitFactor >= 1 ? 'success.main' : 'error.main'}
+            color={stats.profitFactor && stats.profitFactor >= 1 ? 'success.main' : 'error.main'}
           />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>

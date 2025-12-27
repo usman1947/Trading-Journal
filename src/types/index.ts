@@ -16,6 +16,7 @@ export interface Trade {
   strategy?: Strategy | null;
   screenshots?: Screenshot[];
   tags?: TagOnTrade[];
+  ruleChecks?: TradeRuleCheck[];
   createdAt: string;
   updatedAt: string;
 }
@@ -26,8 +27,37 @@ export interface Strategy {
   description?: string | null;
   setups?: string[] | null;
   trades?: Trade[];
+  rules?: StrategyRule[];
+  screenshots?: StrategyScreenshot[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface StrategyRule {
+  id: string;
+  strategyId: string;
+  text: string;
+  order: number;
+  createdAt: string;
+}
+
+export interface StrategyScreenshot {
+  id: string;
+  strategyId: string;
+  filename: string;
+  path: string;
+  publicId?: string | null;
+  caption?: string | null;
+  createdAt: string;
+}
+
+export interface TradeRuleCheck {
+  id: string;
+  tradeId: string;
+  ruleId: string;
+  rule?: StrategyRule;
+  checked: boolean;
+  createdAt: string;
 }
 
 export interface Tag {

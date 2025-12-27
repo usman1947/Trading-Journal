@@ -13,11 +13,22 @@ export async function GET(
     const trade = await prisma.trade.findUnique({
       where: { id },
       include: {
-        strategy: true,
+        strategy: {
+          include: {
+            rules: {
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
         screenshots: true,
         tags: {
           include: {
             tag: true,
+          },
+        },
+        ruleChecks: {
+          include: {
+            rule: true,
           },
         },
       },
@@ -67,11 +78,22 @@ export async function PUT(
         strategyId: strategyId || null,
       },
       include: {
-        strategy: true,
+        strategy: {
+          include: {
+            rules: {
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
         screenshots: true,
         tags: {
           include: {
             tag: true,
+          },
+        },
+        ruleChecks: {
+          include: {
+            rule: true,
           },
         },
       },

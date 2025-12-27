@@ -10,31 +10,67 @@ datasource db {
 }
 
 model Trade {
-  id          String       @id @default(cuid())
+  id          String           @id @default(cuid())
   symbol      String
-  side        String       // LONG, SHORT
-  tradeTime   DateTime     // When the trade was taken
-  setup       String?      // Trade setup description
-  risk        Float        // Risk amount in dollars
-  result      Float?       // P&L result in dollars
-  execution   String       @default("PASS") // PASS, FAIL
+  side        String           // LONG, SHORT
+  tradeTime   DateTime         // When the trade was taken
+  setup       String?          // Trade setup description
+  risk        Float            // Risk amount in dollars
+  result      Float?           // P&L result in dollars
+  execution   String           @default("PASS") // PASS, FAIL
   notes       String?
   screenshots Screenshot[]
-  strategy    Strategy?    @relation(fields: [strategyId], references: [id])
+  strategy    Strategy?        @relation(fields: [strategyId], references: [id])
   strategyId  String?
   tags        TagOnTrade[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  ruleChecks  TradeRuleCheck[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
 model Strategy {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String              @id @default(cuid())
+  name        String              @unique
   description String?
-  setups      String?  // JSON array of setup names
+  setups      String?             // JSON array of setup names
   trades      Trade[]
+  rules       StrategyRule[]
+  screenshots StrategyScreenshot[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model StrategyRule {
+  id          String           @id @default(cuid())
+  strategyId  String
+  strategy    Strategy         @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  text        String           // The rule/checklist item text
+  order       Int              @default(0) // For ordering rules
+  tradeChecks TradeRuleCheck[]
+  createdAt   DateTime         @default(now())
+}
+
+model StrategyScreenshot {
+  id          String   @id @default(cuid())
+  strategyId  String
+  strategy    Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  filename    String
+  path        String   // Cloudinary URL
+  publicId    String?  // Cloudinary public_id for deletion
+  caption     String?  // Optional caption for the example screenshot
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+}
+
+model TradeRuleCheck {
+  id         String       @id @default(cuid())
+  tradeId    String
+  trade      Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  ruleId     String
+  rule       StrategyRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  checked    Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+
+  @@unique([tradeId, ruleId])
 }
 
 model Tag {
