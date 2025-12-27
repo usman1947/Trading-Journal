@@ -129,16 +129,6 @@ export default function Dashboard() {
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
-            title="Profit Factor"
-            value={stats.profitFactor === Infinity ? '∞' : stats.profitFactor?.toFixed(2) || '0.00'}
-            subtitle="Gross Profit / Gross Loss"
-            icon={<ShowChartIcon fontSize="large" />}
-            color={stats.profitFactor >= 1 ? 'success' : 'error'}
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
             title="Execution Rate"
             value={formatPercent(stats.executionRate || 0).replace('+', '')}
             subtitle="% of PASS trades"
@@ -148,7 +138,7 @@ export default function Dashboard() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 8 }}>
-          <Card sx={{ height: 400 }}>
+          <Card sx={{ height: 450 }}>
             <CardContent sx={{ height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 P&L Over Time
@@ -161,7 +151,7 @@ export default function Dashboard() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: 400 }}>
+          <Card sx={{ height: 450 }}>
             <CardContent sx={{ height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Trade Calendar
@@ -210,14 +200,6 @@ export default function Dashboard() {
                   </Typography>
                   <Typography variant="h6" color="error.main">
                     {formatCurrency(stats.averageLoss || 0)}
-                  </Typography>
-                </Grid>
-                <Grid size={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Risk
-                  </Typography>
-                  <Typography variant="h6" color="warning.main">
-                    {formatCurrency(stats.totalRisk || 0)}
                   </Typography>
                 </Grid>
                 <Grid size={6}>

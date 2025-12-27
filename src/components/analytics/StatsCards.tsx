@@ -79,12 +79,6 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
       icon: <TrendingDownIcon />,
     },
     {
-      title: 'Total Risk',
-      value: formatCurrency(analytics.totalRisk ?? 0),
-      color: 'warning.main',
-      icon: <AssessmentIcon />,
-    },
-    {
       title: 'Execution Rate',
       value: formatPercent(executionRate).replace('+', ''),
       subtitle: '% of PASS trades',
