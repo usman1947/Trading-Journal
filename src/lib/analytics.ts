@@ -255,11 +255,13 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return trades.map((trade: any) => {
-    const date = new Date(trade.tradeTime);
+    const tradeDate = new Date(trade.tradeTime);
     return {
-      time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-      hour: date.getHours(),
-      minute: date.getMinutes(),
+      id: trade.id,
+      time: tradeDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      date: tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      hour: tradeDate.getHours(),
+      minute: tradeDate.getMinutes(),
       result: trade.result,
       symbol: trade.symbol,
     };

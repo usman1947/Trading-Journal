@@ -1,10 +1,13 @@
 'use client';
 
 import { Card, CardContent, Typography, Box } from '@mui/material';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
+import { useRouter } from 'next/navigation';
 
 interface TradeTimeData {
+  id: string;
   time: string;
+  date: string;
   hour: number;
   minute: number;
   result: number | null;
@@ -16,13 +19,24 @@ interface TradeTimeChartProps {
 }
 
 export default function TradeTimeChart({ data }: TradeTimeChartProps) {
+  const router = useRouter();
+
   const chartData = data.map((trade) => ({
+    id: trade.id,
     x: trade.hour + trade.minute / 60,
-    y: Math.random() * 0.8 + 0.1, // Random y for dot positioning
+    y: trade.result ?? 0,
     result: trade.result,
     symbol: trade.symbol,
     time: trade.time,
+    date: trade.date,
   }));
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleDotClick = (data: any) => {
+    if (data?.payload?.id) {
+      router.push(`/trades/${data.payload.id}`);
+    }
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload }: any) => {
@@ -40,6 +54,9 @@ export default function TradeTimeChart({ data }: TradeTimeChartProps) {
         >
           <Typography variant="body2" fontWeight="bold">
             {data.symbol}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Date: {data.date}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Time: {data.time}
@@ -68,7 +85,7 @@ export default function TradeTimeChart({ data }: TradeTimeChartProps) {
           Trade Time Distribution
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          When you take trades throughout the day
+          Trade timing vs P&L performance
         </Typography>
         {data.length === 0 ? (
           <Box sx={{ py: 8, textAlign: 'center' }}>
@@ -82,13 +99,19 @@ export default function TradeTimeChart({ data }: TradeTimeChartProps) {
                 type="number"
                 dataKey="x"
                 domain={[9, 16]}
-                ticks={[9, 10, 11, 12, 13, 14, 15, 16]}
+                ticks={[9, 10, 11, 12, 13, 14, 15]}
                 tickFormatter={formatHour}
                 label={{ value: 'Time of Day', position: 'insideBottom', offset: -10 }}
               />
-              <YAxis type="number" hide />
+              <YAxis
+                type="number"
+                hide
+                tickFormatter={(value) => `$${value}`}
+                label={{ value: 'P&L', angle: -90, position: 'insideLeft', offset: 10 }}
+              />
+              <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
               <Tooltip content={<CustomTooltip />} />
-              <Scatter data={chartData} fill="#1976d2">
+              <Scatter name="Trades" data={chartData} fill="#1976d2" dataKey="y" onClick={handleDotClick} style={{ cursor: 'pointer' }}>
                 {chartData.map((entry, index) => {
                   let color = '#1976d2';
                   if (entry.result !== null) {
