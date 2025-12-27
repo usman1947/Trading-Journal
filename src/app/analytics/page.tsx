@@ -111,6 +111,8 @@ export default function AnalyticsPage() {
       field: 'symbol',
       headerName: 'Symbol',
       width: 100,
+      headerAlign: 'center',
+      align: 'center',
       renderCell: (params: GridRenderCellParams<Trade>) => (
         <Typography fontWeight="medium">{params.value}</Typography>
       ),
@@ -119,6 +121,8 @@ export default function AnalyticsPage() {
       field: 'side',
       headerName: 'Side',
       width: 80,
+      headerAlign: 'center',
+      align: 'center',
       renderCell: (params: GridRenderCellParams<Trade>) => (
         <Chip
           label={params.value}
@@ -132,6 +136,8 @@ export default function AnalyticsPage() {
       field: 'tradeDate',
       headerName: 'Date',
       width: 110,
+      headerAlign: 'center',
+      align: 'center',
       valueGetter: (_, row) => row.tradeTime,
       valueFormatter: (value) => formatDateOnly(value),
     },
@@ -139,24 +145,32 @@ export default function AnalyticsPage() {
       field: 'tradeTime',
       headerName: 'Time',
       width: 70,
+      headerAlign: 'center',
+      align: 'center',
       valueFormatter: (value) => formatTimeOnly(value),
     },
     {
       field: 'strategy',
       headerName: 'Strategy',
       width: 130,
+      headerAlign: 'center',
+      align: 'center',
       valueGetter: (value: { name: string } | null) => value?.name || '-',
     },
     {
       field: 'setup',
       headerName: 'Setup',
       width: 130,
+      headerAlign: 'center',
+      align: 'center',
       valueFormatter: (value) => value || '-',
     },
     {
       field: 'risk',
       headerName: 'Risk',
       width: 90,
+      headerAlign: 'center',
+      align: 'center',
       renderCell: (params: GridRenderCellParams<Trade>) => (
         <Typography color="warning.main">
           {formatCurrency(params.value as number)}
@@ -167,6 +181,8 @@ export default function AnalyticsPage() {
       field: 'result',
       headerName: 'Result',
       width: 100,
+      headerAlign: 'center',
+      align: 'center',
       renderCell: (params: GridRenderCellParams<Trade>) => (
         <Typography
           color={params.value >= 0 ? 'success.main' : 'error.main'}
@@ -181,6 +197,8 @@ export default function AnalyticsPage() {
       field: 'rMultiple',
       headerName: 'R',
       width: 70,
+      headerAlign: 'center',
+      align: 'center',
       renderCell: (params: GridRenderCellParams<Trade>) => {
         const result = params.row.result;
         const risk = params.row.risk;
@@ -199,6 +217,8 @@ export default function AnalyticsPage() {
       field: 'execution',
       headerName: 'Execution',
       width: 100,
+      headerAlign: 'center',
+      align: 'center',
       renderCell: (params: GridRenderCellParams) => (
         <Chip
           label={params.value}
@@ -440,6 +460,11 @@ export default function AnalyticsPage() {
                   '& .MuiDataGrid-row:hover': {
                     cursor: 'pointer',
                     backgroundColor: 'action.hover',
+                  },
+                  '& .MuiDataGrid-cell': {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   },
                 }}
               />
