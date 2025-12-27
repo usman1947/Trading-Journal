@@ -151,6 +151,7 @@ export interface StrategyStats {
   winRate: number;
   totalPnl: number;
   averageRMultiple: number;
+  averageRuleSatisfaction: number;
 }
 
 export interface CSVColumnMapping {

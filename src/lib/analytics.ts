@@ -138,38 +138,62 @@ export async function getStrategyStats(): Promise<StrategyStats[]> {
         where: {
           result: { not: null },
         },
+        include: {
+          ruleChecks: true,
+        },
       },
+      rules: true,
     },
   });
 
-  return strategies.map((strategy: { id: string; name: string; trades: TradeRecord[] }) => {
+  type TradeWithRuleChecks = TradeRecord & {
+    ruleChecks: { checked: boolean }[];
+  };
+
+  return strategies.map((strategy: { id: string; name: string; trades: TradeWithRuleChecks[]; rules: { id: string }[] }) => {
     const trades = strategy.trades;
-    const winningTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
-    const losingTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
-    const tradesWithResult = trades.filter((t: TradeRecord) => t.result !== null && t.risk > 0);
-    const winnersWithRisk = winningTrades.filter((t: TradeRecord) => t.risk > 0);
-    const losersWithRisk = losingTrades.filter((t: TradeRecord) => t.risk > 0);
+    const winningTrades = trades.filter((t) => (t.result ?? 0) > 0);
+    const losingTrades = trades.filter((t) => (t.result ?? 0) < 0);
+    const tradesWithResult = trades.filter((t) => t.result !== null && t.risk > 0);
+    const winnersWithRisk = winningTrades.filter((t) => t.risk > 0);
+    const losersWithRisk = losingTrades.filter((t) => t.risk > 0);
 
     const averageWinR = winnersWithRisk.length > 0
-      ? winnersWithRisk.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / winnersWithRisk.length
+      ? winnersWithRisk.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / winnersWithRisk.length
       : 0;
 
     const averageLossR = losersWithRisk.length > 0
-      ? losersWithRisk.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
+      ? losersWithRisk.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
       : 0;
+
+    // Calculate average rule satisfaction
+    const totalRules = strategy.rules.length;
+    let averageRuleSatisfaction = 0;
+    if (totalRules > 0 && trades.length > 0) {
+      const tradesWithRules = trades.filter((t) => t.ruleChecks.length > 0);
+      if (tradesWithRules.length > 0) {
+        const totalSatisfaction = tradesWithRules.reduce((sum, t) => {
+          const checkedCount = t.ruleChecks.filter((rc) => rc.checked).length;
+          const tradeRuleCount = t.ruleChecks.length;
+          return sum + (tradeRuleCount > 0 ? (checkedCount / tradeRuleCount) * 100 : 0);
+        }, 0);
+        averageRuleSatisfaction = totalSatisfaction / tradesWithRules.length;
+      }
+    }
 
     return {
       strategyId: strategy.id,
       strategyName: strategy.name,
       totalTrades: trades.length,
       winRate: trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0,
-      totalPnl: trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0),
+      totalPnl: trades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
       averageRMultiple:
         tradesWithResult.length > 0
-          ? tradesWithResult.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
+          ? tradesWithResult.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
           : 0,
       averageWinR,
       averageLossR,
+      averageRuleSatisfaction,
     };
   });
 }
