@@ -39,6 +39,10 @@ export async function GET(
             screenshots: true,
           },
         },
+        rules: {
+          orderBy: { order: 'asc' },
+        },
+        screenshots: true,
       },
     });
 
@@ -72,6 +76,8 @@ export async function GET(
         name: strategy.name,
         description: strategy.description,
         setups,
+        rules: strategy.rules,
+        screenshots: strategy.screenshots,
         createdAt: strategy.createdAt,
         updatedAt: strategy.updatedAt,
       },

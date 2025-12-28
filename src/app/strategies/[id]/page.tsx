@@ -11,6 +11,11 @@ import {
   IconButton,
   Skeleton,
   Alert,
+  Dialog,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -21,6 +26,8 @@ import {
   Percent as WinRateIcon,
   AttachMoney as PnLIcon,
   Speed as ProfitFactorIcon,
+  CheckCircleOutline as RuleIcon,
+  Image as ImageIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useGetStrategyStatsQuery } from '@/store';
@@ -30,6 +37,19 @@ import TradeTimeChart from '@/components/analytics/TradeTimeChart';
 import PnLDistributionChart from '@/components/analytics/PnLDistributionChart';
 import TimeDayProfitability from '@/components/analytics/TimeDayProfitability';
 import type { Trade } from '@/types';
+
+interface StrategyRule {
+  id: string;
+  text: string;
+  order: number;
+}
+
+interface StrategyScreenshot {
+  id: string;
+  filename: string;
+  path: string;
+  caption?: string;
+}
 
 interface StatCardProps {
   title: string;
@@ -72,6 +92,7 @@ export default function StrategyDetailPage({
   const [pnlDistribution, setPnlDistribution] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [timeDayData, setTimeDayData] = useState<any>({ hourly: [], daily: [] });
+  const [selectedImage, setSelectedImage] = useState<StrategyScreenshot | null>(null);
 
   // Fetch analytics data for this strategy
   useEffect(() => {
@@ -265,6 +286,156 @@ export default function StrategyDetailPage({
           </Box>
         </Box>
       )}
+
+      {/* Rules & Example Screenshots */}
+      {((strategy.rules && strategy.rules.length > 0) || (strategy.screenshots && strategy.screenshots.length > 0)) && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Grid container spacing={3}>
+              {/* Rules Section */}
+              {strategy.rules && strategy.rules.length > 0 && (
+                <Grid size={{ xs: 12, md: strategy.screenshots?.length > 0 ? 6 : 12 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <RuleIcon color="primary" />
+                    <Typography variant="h6">Trading Rules</Typography>
+                  </Box>
+                  <List dense disablePadding>
+                    {strategy.rules.map((rule: StrategyRule, index: number) => (
+                      <ListItem key={rule.id} disableGutters sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <Typography variant="body2" color="text.secondary" fontWeight="medium">
+                            {index + 1}.
+                          </Typography>
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={rule.text}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Grid>
+              )}
+
+              {/* Example Screenshots Section */}
+              {strategy.screenshots && strategy.screenshots.length > 0 && (
+                <Grid size={{ xs: 12, md: strategy.rules?.length > 0 ? 6 : 12 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <ImageIcon color="primary" />
+                    <Typography variant="h6">Example Setups</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    {strategy.screenshots.map((screenshot: StrategyScreenshot) => (
+                      <Box
+                        key={screenshot.id}
+                        sx={{
+                          position: 'relative',
+                          cursor: 'pointer',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                            '& img': {
+                              transform: 'scale(1.02)',
+                            },
+                          },
+                        }}
+                        onClick={() => setSelectedImage(screenshot)}
+                      >
+                        <Box
+                          component="img"
+                          src={screenshot.path}
+                          alt={screenshot.caption || screenshot.filename}
+                          sx={{
+                            width: 200,
+                            height: 150,
+                            objectFit: 'cover',
+                            display: 'block',
+                            transition: 'transform 0.2s',
+                          }}
+                        />
+                        {screenshot.caption && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              bgcolor: 'rgba(0,0,0,0.7)',
+                              color: 'white',
+                              px: 1,
+                              py: 0.5,
+                              textAlign: 'center',
+                            }}
+                          >
+                            {screenshot.caption}
+                          </Typography>
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
+                </Grid>
+              )}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Image Lightbox Dialog */}
+      <Dialog
+        open={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        maxWidth="lg"
+        PaperProps={{
+          sx: {
+            bgcolor: 'transparent',
+            boxShadow: 'none',
+            maxHeight: '90vh',
+          },
+        }}
+      >
+        {selectedImage && (
+          <Box
+            sx={{
+              position: 'relative',
+              cursor: 'pointer',
+            }}
+            onClick={() => setSelectedImage(null)}
+          >
+            <Box
+              component="img"
+              src={selectedImage.path}
+              alt={selectedImage.caption || selectedImage.filename}
+              sx={{
+                maxWidth: '90vw',
+                maxHeight: '85vh',
+                objectFit: 'contain',
+                display: 'block',
+                borderRadius: 1,
+              }}
+            />
+            {selectedImage.caption && (
+              <Typography
+                variant="body2"
+                sx={{
+                  textAlign: 'center',
+                  mt: 1,
+                  color: 'white',
+                  bgcolor: 'rgba(0,0,0,0.7)',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1,
+                }}
+              >
+                {selectedImage.caption}
+              </Typography>
+            )}
+          </Box>
+        )}
+      </Dialog>
 
       {/* Stats */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
