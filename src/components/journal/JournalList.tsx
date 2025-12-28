@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Box,
   Card,
@@ -11,9 +12,18 @@ import {
   ListItemText,
   Chip,
   Skeleton,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
-import { useGetJournalEntriesQuery } from '@/store';
+import { useGetJournalEntriesQuery, useDeleteJournalEntryMutation } from '@/store';
+import { useAppDispatch } from '@/store/hooks';
+import { showSnackbar } from '@/store/slices/uiSlice';
 import type { DailyJournal, Mood } from '@/types';
 
 interface JournalListProps {
@@ -28,7 +38,29 @@ const moodColors: Record<Mood, 'success' | 'error' | 'default'> = {
 };
 
 export default function JournalList({ selectedDate, onSelectDate }: JournalListProps) {
+  const dispatch = useAppDispatch();
   const { data: entries = [], isLoading } = useGetJournalEntriesQuery({});
+  const [deleteEntry, { isLoading: deleting }] = useDeleteJournalEntryMutation();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<DailyJournal | null>(null);
+
+  const handleDeleteClick = (e: React.MouseEvent, entry: DailyJournal) => {
+    e.stopPropagation();
+    setEntryToDelete(entry);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!entryToDelete) return;
+    try {
+      await deleteEntry(entryToDelete.id).unwrap();
+      setDeleteDialogOpen(false);
+      setEntryToDelete(null);
+      dispatch(showSnackbar({ message: 'Journal entry deleted', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to delete entry', severity: 'error' }));
+    }
+  };
 
   if (isLoading) {
     return (
@@ -63,11 +95,27 @@ export default function JournalList({ selectedDate, onSelectDate }: JournalListP
               const isSelected = format(entryDate, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
               return (
-                <ListItem key={entry.id} disablePadding>
+                <ListItem
+                  key={entry.id}
+                  disablePadding
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={(e) => handleDeleteClick(e, entry)}
+                      sx={{
+                        opacity: 0.5,
+                        '&:hover': { opacity: 1, color: 'error.main' },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  }
+                >
                   <ListItemButton
                     selected={isSelected}
                     onClick={() => onSelectDate(entryDate)}
-                    sx={{ borderRadius: 1, mb: 0.5 }}
+                    sx={{ borderRadius: 1, mb: 0.5, pr: 6 }}
                   >
                     <ListItemText
                       primary={
@@ -106,6 +154,27 @@ export default function JournalList({ selectedDate, onSelectDate }: JournalListP
           </List>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Journal Entry?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the entry from{' '}
+            {entryToDelete && format(parseISO(entryToDelete.date), 'MMMM d, yyyy')}?
+            This action cannot be undone.
+            {entryToDelete?.screenshots && entryToDelete.screenshots.length > 0 && (
+              <> All {entryToDelete.screenshots.length} screenshot(s) will also be deleted.</>
+            )}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" disabled={deleting}>
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }

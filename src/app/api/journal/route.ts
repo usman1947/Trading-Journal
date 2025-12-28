@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { deleteFromCloudinary } from '@/lib/cloudinary';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
     const entries = await prisma.dailyJournal.findMany({
       where,
       orderBy: { date: 'desc' },
+      include: { screenshots: true },
     });
 
     return NextResponse.json(entries);
@@ -64,5 +66,43 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error saving journal entry:', error);
     return NextResponse.json({ error: 'Failed to save journal entry' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Journal entry ID is required' }, { status: 400 });
+    }
+
+    // Get the entry with screenshots to delete from Cloudinary
+    const entry = await prisma.dailyJournal.findUnique({
+      where: { id },
+      include: { screenshots: true },
+    });
+
+    if (!entry) {
+      return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
+    }
+
+    // Delete screenshots from Cloudinary
+    for (const screenshot of entry.screenshots) {
+      if (screenshot.publicId) {
+        await deleteFromCloudinary(screenshot.publicId);
+      }
+    }
+
+    // Delete the journal entry (screenshots will cascade delete)
+    await prisma.dailyJournal.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting journal entry:', error);
+    return NextResponse.json({ error: 'Failed to delete journal entry' }, { status: 500 });
   }
 }

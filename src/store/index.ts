@@ -125,6 +125,30 @@ export const api = createApi({
       }),
       invalidatesTags: ['Journal'],
     }),
+    deleteJournalEntry: builder.mutation({
+      query: (id) => ({
+        url: `/journal?id=${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Journal'],
+    }),
+
+    // Journal Screenshots
+    uploadJournalScreenshots: builder.mutation({
+      query: ({ journalId, formData }) => ({
+        url: `/journal/screenshots?journalId=${journalId}`,
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Journal'],
+    }),
+    deleteJournalScreenshot: builder.mutation({
+      query: (screenshotId) => ({
+        url: `/journal/screenshots?screenshotId=${screenshotId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Journal'],
+    }),
 
     // Analytics
     getAnalytics: builder.query({
@@ -248,6 +272,9 @@ export const {
   useGetJournalEntriesQuery,
   useGetJournalEntryQuery,
   useSaveJournalEntryMutation,
+  useDeleteJournalEntryMutation,
+  useUploadJournalScreenshotsMutation,
+  useDeleteJournalScreenshotMutation,
   useGetAnalyticsQuery,
   useGetDailyStatsQuery,
   useGetStrategyStatsQuery,

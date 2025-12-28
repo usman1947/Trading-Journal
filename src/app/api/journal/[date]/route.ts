@@ -14,6 +14,7 @@ export async function GET(
 
     const entry = await prisma.dailyJournal.findUnique({
       where: { date: dateObj },
+      include: { screenshots: true },
     });
 
     if (!entry) {

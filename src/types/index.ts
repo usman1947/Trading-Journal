@@ -80,12 +80,22 @@ export interface Screenshot {
   createdAt: string;
 }
 
+export interface JournalScreenshot {
+  id: string;
+  journalId: string;
+  filename: string;
+  path: string;
+  publicId?: string | null;
+  createdAt: string;
+}
+
 export interface DailyJournal {
   id: string;
   date: string;
   notes: string;
   mood?: Mood | null;
   lessons?: string | null;
+  screenshots?: JournalScreenshot[];
   createdAt: string;
   updatedAt: string;
 }
