@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Account {
@@ -132,9 +132,8 @@ model JournalScreenshot {
 }
 
 model Settings {
-  id               String  @id @default("default")
-  defaultRisk      Float   @default(100) // Default R value for R-multiple
-  currency         String  @default("USD")
-  theme            String  @default("light")
-  defaultAccountId String? // null means Paper Account is default
+  id          String @id @default("default")
+  defaultRisk Float  @default(100) // Default R value for R-multiple
+  currency    String @default("USD")
+  theme       String @default("light")
 }
