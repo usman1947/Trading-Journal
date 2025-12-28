@@ -12,6 +12,7 @@ import { useGetAnalyticsQuery, useGetDailyStatsQuery } from '@/store';
 import { formatCurrency, formatPercent } from '@/utils/formatters';
 import PnLChart from '@/components/analytics/PnLChart';
 import CalendarView from '@/components/analytics/CalendarView';
+import DailyPnLChart from '@/components/analytics/DailyPnLChart';
 
 interface StatCardProps {
   title: string;
@@ -163,7 +164,7 @@ export default function Dashboard() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
+          <Card sx={{ height: 350 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Key Metrics
@@ -201,15 +202,20 @@ export default function Dashboard() {
                     {formatCurrency(stats.averageLoss || 0)}
                   </Typography>
                 </Grid>
-                <Grid size={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Avg R-Multiple
-                  </Typography>
-                  <Typography variant="h6" color={stats.averageRMultiple >= 0 ? 'success.main' : 'error.main'}>
-                    {stats.averageRMultiple >= 0 ? '+' : ''}{(stats.averageRMultiple || 0).toFixed(2)}R
-                  </Typography>
-                </Grid>
               </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: 350 }}>
+            <CardContent sx={{ height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                Daily P/L
+              </Typography>
+              <Box sx={{ height: 'calc(100% - 40px)' }}>
+                <DailyPnLChart data={dailyStats || []} loading={dailyStatsLoading} />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
