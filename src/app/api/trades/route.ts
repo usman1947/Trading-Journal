@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const execution = searchParams.get('execution');
     const strategyId = searchParams.get('strategyId');
     const setup = searchParams.get('setup');
+    const accountId = searchParams.get('accountId');
 
     if (dateFrom) {
       where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(dateFrom) };
@@ -38,6 +39,14 @@ export async function GET(request: NextRequest) {
     if (setup) {
       where.setup = { contains: setup };
     }
+    // Handle accountId filter - 'paper' or null means Paper Account (accountId is null)
+    if (accountId !== undefined && accountId !== null) {
+      if (accountId === 'paper' || accountId === '') {
+        where.accountId = null;
+      } else {
+        where.accountId = accountId;
+      }
+    }
 
     const trades = await prisma.trade.findMany({
       where,
@@ -49,6 +58,7 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        account: true,
         screenshots: true,
         tags: {
           include: {
@@ -84,6 +94,7 @@ export async function POST(request: NextRequest) {
       execution,
       notes,
       strategyId,
+      accountId,
     } = body;
 
     const trade = await prisma.trade.create({
@@ -97,6 +108,7 @@ export async function POST(request: NextRequest) {
         execution,
         notes: notes || null,
         strategyId: strategyId || null,
+        accountId: accountId || null, // null means Paper Account
       },
       include: {
         strategy: {
@@ -106,6 +118,7 @@ export async function POST(request: NextRequest) {
             },
           },
         },
+        account: true,
         screenshots: true,
         tags: {
           include: {

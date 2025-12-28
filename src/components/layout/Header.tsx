@@ -14,10 +14,12 @@ import {
   DarkMode as DarkModeIcon,
   Add as AddIcon,
   ShowChart as LogoIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleSidebar, toggleThemeMode } from '@/store/slices/uiSlice';
+import AccountSelector from './AccountSelector';
 
 export default function Header() {
   const dispatch = useAppDispatch();
@@ -53,6 +55,10 @@ export default function Header() {
         </Box>
 
         <Box sx={{ flexGrow: 1 }} />
+        
+        <Box sx={{ mr: 2 }}>
+          <AccountSelector />
+        </Box>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Tooltip title="Add New Trade">
@@ -78,6 +84,16 @@ export default function Header() {
               onClick={() => dispatch(toggleThemeMode())}
             >
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Settings">
+            <IconButton
+              component={Link}
+              href="/settings"
+              color="inherit"
+            >
+              <SettingsIcon />
             </IconButton>
           </Tooltip>
         </Box>

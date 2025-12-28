@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     if (searchParams.get('strategyId')) {
       filters.strategyId = searchParams.get('strategyId')!;
     }
+    const accountIdParam = searchParams.get('accountId');
+    if (accountIdParam !== null) {
+      filters.accountId = accountIdParam || null;
+    }
 
     const data = await getTradeTimeDistribution(filters);
     return NextResponse.json(data);

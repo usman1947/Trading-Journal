@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
     if (searchParams.get('dateTo')) {
       filters.dateTo = searchParams.get('dateTo')!;
     }
+    const accountIdParam = searchParams.get('accountId');
+    if (accountIdParam !== null) {
+      filters.accountId = accountIdParam || null;
+    }
 
     const data = await getStrategyDistribution(filters);
     return NextResponse.json(data);

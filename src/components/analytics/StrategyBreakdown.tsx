@@ -14,6 +14,7 @@ import {
   Skeleton,
 } from '@mui/material';
 import { useGetStrategiesAnalyticsQuery } from '@/store';
+import { useAppSelector } from '@/store/hooks';
 import { formatCurrency, formatPercent, formatRMultiple } from '@/utils/formatters';
 
 interface StrategyStats {
@@ -30,7 +31,9 @@ interface StrategyStats {
 
 export default function StrategyBreakdown() {
   const router = useRouter();
-  const { data: stats, isLoading } = useGetStrategiesAnalyticsQuery({});
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+  const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
+  const { data: stats, isLoading } = useGetStrategiesAnalyticsQuery({ accountId: accountFilter });
 
   if (isLoading) {
     return <Skeleton variant="rounded" height={300} />;

@@ -31,6 +31,7 @@ import {
   useGetStrategiesQuery,
   useGetSetupsQuery,
 } from '@/store';
+import { useAppSelector } from '@/store/hooks';
 import StatsCards from '@/components/analytics/StatsCards';
 import StrategyBreakdown from '@/components/analytics/StrategyBreakdown';
 import StrategyDistributionChart from '@/components/analytics/StrategyDistributionChart';
@@ -53,19 +54,24 @@ export default function AnalyticsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [timeDayData, setTimeDayData] = useState<any>({ hourly: [], daily: [] });
 
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+  const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
+
   const { data: strategies = [] } = useGetStrategiesQuery({});
   const { data: existingSetups = [] } = useGetSetupsQuery({});
   const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery(
-    viewMode === 'trades' ? filters : {}
+    viewMode === 'trades' ? { ...filters, accountId: accountFilter } : { accountId: accountFilter }
   );
   const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(
-    viewMode === 'trades' ? filters : {}
+    viewMode === 'trades' ? { ...filters, accountId: accountFilter } : { accountId: accountFilter }
   );
 
   // Fetch analytics data
   useEffect(() => {
     const fetchAnalyticsData = async () => {
       const params = new URLSearchParams();
+      // Always add account filter
+      params.append('accountId', accountFilter);
       if (viewMode === 'trades') {
         if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
         if (filters.dateTo) params.append('dateTo', filters.dateTo);
@@ -90,7 +96,7 @@ export default function AnalyticsPage() {
     };
 
     fetchAnalyticsData();
-  }, [filters, viewMode]);
+  }, [filters, viewMode, accountFilter]);
 
   // Filter only closed trades for the table
   const closedTrades = useMemo(() => {

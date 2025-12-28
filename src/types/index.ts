@@ -2,6 +2,14 @@ export type TradeSide = 'LONG' | 'SHORT';
 export type Execution = 'PASS' | 'FAIL';
 export type Mood = 'BULLISH' | 'BEARISH' | 'NEUTRAL';
 
+export interface Account {
+  id: string;
+  name: string;
+  description?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Trade {
   id: string;
   symbol: string;
@@ -14,6 +22,8 @@ export interface Trade {
   notes?: string | null;
   strategyId?: string | null;
   strategy?: Strategy | null;
+  accountId?: string | null;
+  account?: Account | null;
   screenshots?: Screenshot[];
   tags?: TagOnTrade[];
   ruleChecks?: TradeRuleCheck[];
@@ -105,6 +115,7 @@ export interface Settings {
   defaultRisk: number;
   currency: string;
   theme: 'light' | 'dark';
+  defaultAccountId?: string | null;
 }
 
 export interface TradeFormData {
@@ -117,6 +128,7 @@ export interface TradeFormData {
   execution: Execution;
   notes?: string;
   strategyId?: string;
+  accountId?: string | null;
 }
 
 export interface TradeFilters {
@@ -129,6 +141,7 @@ export interface TradeFilters {
   setup?: string;
   resultMin?: number;
   resultMax?: number;
+  accountId?: string | null;
 }
 
 export interface AnalyticsData {

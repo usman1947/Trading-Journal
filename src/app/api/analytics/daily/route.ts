@@ -6,9 +6,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
+    const accountIdParam = searchParams.get('accountId');
     const filters = {
       dateFrom: searchParams.get('dateFrom') || undefined,
       dateTo: searchParams.get('dateTo') || undefined,
+      accountId: accountIdParam !== null ? accountIdParam : undefined,
     };
 
     const stats = await getDailyStats(filters);

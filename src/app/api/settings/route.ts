@@ -30,7 +30,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { defaultRisk, currency, theme } = body;
+    const { defaultRisk, currency, theme, defaultAccountId } = body;
 
     const settings = await prisma.settings.upsert({
       where: { id: 'default' },
@@ -38,12 +38,14 @@ export async function PUT(request: NextRequest) {
         defaultRisk: defaultRisk ?? undefined,
         currency: currency ?? undefined,
         theme: theme ?? undefined,
+        defaultAccountId: defaultAccountId !== undefined ? defaultAccountId : undefined,
       },
       create: {
         id: 'default',
         defaultRisk: defaultRisk ?? 100,
         currency: currency ?? 'USD',
         theme: theme ?? 'light',
+        defaultAccountId: defaultAccountId ?? null,
       },
     });
 

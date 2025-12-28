@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface UiState {
   sidebarOpen: boolean;
   themeMode: 'light' | 'dark';
+  selectedAccountId: string | null; // null means Paper Account
   snackbar: {
     open: boolean;
     message: string;
@@ -13,6 +14,7 @@ interface UiState {
 const initialState: UiState = {
   sidebarOpen: true,
   themeMode: 'dark',
+  selectedAccountId: null, // Default to Paper Account
   snackbar: {
     open: false,
     message: '',
@@ -36,6 +38,9 @@ const uiSlice = createSlice({
     toggleThemeMode: (state) => {
       state.themeMode = state.themeMode === 'light' ? 'dark' : 'light';
     },
+    setSelectedAccountId: (state, action: PayloadAction<string | null>) => {
+      state.selectedAccountId = action.payload;
+    },
     showSnackbar: (
       state,
       action: PayloadAction<{ message: string; severity?: 'success' | 'error' | 'warning' | 'info' }>
@@ -57,6 +62,7 @@ export const {
   setSidebarOpen,
   setThemeMode,
   toggleThemeMode,
+  setSelectedAccountId,
   showSnackbar,
   hideSnackbar,
 } = uiSlice.actions;

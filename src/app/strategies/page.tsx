@@ -38,7 +38,7 @@ import {
   useUploadStrategyScreenshotsMutation,
   useDeleteStrategyScreenshotMutation,
 } from '@/store';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { StrategyRule, StrategyScreenshot } from '@/types';
@@ -57,7 +57,9 @@ export default function StrategiesPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { data: strategies = [], isLoading } = useGetStrategiesQuery({});
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+  const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
+  const { data: strategies = [], isLoading } = useGetStrategiesQuery({ accountId: accountFilter });
   const [createStrategy] = useCreateStrategyMutation();
   const [updateStrategy] = useUpdateStrategyMutation();
   const [deleteStrategy, { isLoading: deleting }] = useDeleteStrategyMutation();

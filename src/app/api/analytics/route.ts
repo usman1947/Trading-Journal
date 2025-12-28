@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
+    const accountIdParam = searchParams.get('accountId');
     const filters = {
       dateFrom: searchParams.get('dateFrom') || undefined,
       dateTo: searchParams.get('dateTo') || undefined,
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
       side: searchParams.get('side') as 'LONG' | 'SHORT' | undefined,
       execution: searchParams.get('execution') as 'PASS' | 'FAIL' | undefined,
       setup: searchParams.get('setup') || undefined,
+      accountId: accountIdParam !== null ? accountIdParam : undefined,
     };
 
     const analytics = await getAnalytics(filters);

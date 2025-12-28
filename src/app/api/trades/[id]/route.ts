@@ -20,6 +20,7 @@ export async function GET(
             },
           },
         },
+        account: true,
         screenshots: true,
         tags: {
           include: {
@@ -62,6 +63,7 @@ export async function PUT(
       execution,
       notes,
       strategyId,
+      accountId,
     } = body;
 
     const trade = await prisma.trade.update({
@@ -76,6 +78,7 @@ export async function PUT(
         execution,
         notes: notes || null,
         strategyId: strategyId || null,
+        accountId: accountId !== undefined ? (accountId || null) : undefined,
       },
       include: {
         strategy: {
@@ -85,6 +88,7 @@ export async function PUT(
             },
           },
         },
+        account: true,
         screenshots: true,
         tags: {
           include: {

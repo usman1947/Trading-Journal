@@ -16,11 +16,24 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const searchParams = request.nextUrl.searchParams;
+    const accountIdParam = searchParams.get('accountId');
+
+    // Build the trade filter based on accountId
+    const tradeWhere: Record<string, unknown> = {};
+    if (accountIdParam !== null) {
+      if (accountIdParam === 'paper' || accountIdParam === '') {
+        tradeWhere.accountId = null;
+      } else {
+        tradeWhere.accountId = accountIdParam;
+      }
+    }
 
     const strategy = await prisma.strategy.findUnique({
       where: { id },
       include: {
         trades: {
+          where: tradeWhere,
           orderBy: { tradeTime: 'desc' },
           include: {
             screenshots: true,

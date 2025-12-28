@@ -9,6 +9,7 @@ import {
   CheckCircle as PassIcon,
 } from '@mui/icons-material';
 import { useGetAnalyticsQuery, useGetDailyStatsQuery } from '@/store';
+import { useAppSelector } from '@/store/hooks';
 import { formatCurrency, formatPercent } from '@/utils/formatters';
 import PnLChart from '@/components/analytics/PnLChart';
 import CalendarView from '@/components/analytics/CalendarView';
@@ -57,8 +58,11 @@ function StatCard({ title, value, subtitle, icon, color = 'primary' }: StatCardP
 }
 
 export default function Dashboard() {
-  const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery({});
-  const { data: dailyStats, isLoading: dailyStatsLoading } = useGetDailyStatsQuery({});
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+  const accountFilter = selectedAccountId === null ? { accountId: 'paper' } : { accountId: selectedAccountId };
+
+  const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery(accountFilter);
+  const { data: dailyStats, isLoading: dailyStatsLoading } = useGetDailyStatsQuery(accountFilter);
 
   if (analyticsLoading) {
     return (

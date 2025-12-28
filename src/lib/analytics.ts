@@ -8,6 +8,17 @@ type TradeRecord = {
   tradeTime: Date;
 };
 
+// Helper function to apply account filter
+function applyAccountFilter(where: Record<string, unknown>, accountId: string | null | undefined) {
+  if (accountId !== undefined && accountId !== null) {
+    if (accountId === 'paper' || accountId === '') {
+      where.accountId = null;
+    } else {
+      where.accountId = accountId;
+    }
+  }
+}
+
 export async function getAnalytics(filters: TradeFilters = {}): Promise<AnalyticsData> {
   const where: Record<string, unknown> = {
     result: { not: null },
@@ -34,6 +45,7 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
   if (filters.setup) {
     where.setup = { contains: filters.setup };
   }
+  applyAccountFilter(where, filters.accountId);
 
   const trades = await prisma.trade.findMany({ where });
 
@@ -106,6 +118,7 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
   if (filters.dateTo) {
     where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
   }
+  applyAccountFilter(where, filters.accountId);
 
   const trades = await prisma.trade.findMany({
     where,
@@ -131,13 +144,16 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
   }));
 }
 
-export async function getStrategyStats(): Promise<StrategyStats[]> {
+export async function getStrategyStats(filters: TradeFilters = {}): Promise<StrategyStats[]> {
+  const tradeWhere: Record<string, unknown> = {
+    result: { not: null },
+  };
+  applyAccountFilter(tradeWhere, filters.accountId);
+
   const strategies = await prisma.strategy.findMany({
     include: {
       trades: {
-        where: {
-          result: { not: null },
-        },
+        where: tradeWhere,
         include: {
           ruleChecks: true,
         },
@@ -209,6 +225,7 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
   if (filters.dateTo) {
     where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
   }
+  applyAccountFilter(where, filters.accountId);
 
   const trades = await prisma.trade.findMany({
     where,
@@ -247,6 +264,7 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
+  applyAccountFilter(where, filters.accountId);
 
   const trades = await prisma.trade.findMany({
     where,
@@ -282,6 +300,7 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
+  applyAccountFilter(where, filters.accountId);
 
   const trades = await prisma.trade.findMany({
     where,
@@ -315,6 +334,7 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
+  applyAccountFilter(where, filters.accountId);
 
   const trades = await prisma.trade.findMany({
     where,

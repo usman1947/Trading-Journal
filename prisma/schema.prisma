@@ -6,7 +6,16 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+}
+
+model Account {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  trades      Trade[]
 }
 
 model Trade {
@@ -22,6 +31,8 @@ model Trade {
   screenshots Screenshot[]
   strategy    Strategy?        @relation(fields: [strategyId], references: [id])
   strategyId  String?
+  account     Account?         @relation(fields: [accountId], references: [id])
+  accountId   String?          // null means Paper Account
   tags        TagOnTrade[]
   ruleChecks  TradeRuleCheck[]
   createdAt   DateTime         @default(now())
@@ -121,8 +132,9 @@ model JournalScreenshot {
 }
 
 model Settings {
-  id          String @id @default("default")
-  defaultRisk Float  @default(100) // Default R value for R-multiple
-  currency    String @default("USD")
-  theme       String @default("light")
+  id               String  @id @default("default")
+  defaultRisk      Float   @default(100) // Default R value for R-multiple
+  currency         String  @default("USD")
+  theme            String  @default("light")
+  defaultAccountId String? // null means Paper Account is default
 }

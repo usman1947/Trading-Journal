@@ -43,8 +43,9 @@ import {
   useGetSetupsQuery,
   useUploadScreenshotsMutation,
   useUpdateTradeRuleChecksMutation,
+  useGetSettingsQuery,
 } from '@/store';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ScreenshotUpload from '@/components/common/ScreenshotUpload';
 import type { Trade, TradeFormData, Strategy } from '@/types';
@@ -73,12 +74,14 @@ interface PendingFile {
 export default function TradeForm({ trade, mode }: TradeFormProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
   const [createTrade, { isLoading: creating }] = useCreateTradeMutation();
   const [updateTrade, { isLoading: updating }] = useUpdateTradeMutation();
   const [uploadScreenshots] = useUploadScreenshotsMutation();
   const [updateRuleChecks] = useUpdateTradeRuleChecksMutation();
   const { data: strategies = [] } = useGetStrategiesQuery({});
   const { data: existingSetups = [] } = useGetSetupsQuery({});
+  const { data: settings } = useGetSettingsQuery({});
 
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -137,18 +140,23 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
     });
   };
 
+  // Get the default risk from settings
+  const defaultRisk = settings?.defaultRisk || 100;
+
   const formik = useFormik<TradeFormData>({
     initialValues: {
       symbol: trade?.symbol || '',
       side: trade?.side || 'LONG',
       tradeTime: trade?.tradeTime || new Date().toISOString(),
       setup: trade?.setup || '',
-      risk: trade?.risk || Number(process.env.NEXT_PUBLIC_DEFAULT_RISK) || 25,
+      risk: trade?.risk || defaultRisk,
       result: trade?.result ?? undefined,
       execution: trade?.execution || 'PASS',
       notes: trade?.notes || '',
       strategyId: trade?.strategyId || '',
+      accountId: trade?.accountId ?? selectedAccountId,
     },
+    enableReinitialize: true,
     validationSchema,
     onSubmit: async (values) => {
       try {

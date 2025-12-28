@@ -7,8 +7,41 @@ import uiReducer from './slices/uiSlice';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings'],
+  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts'],
   endpoints: (builder) => ({
+    // Accounts
+    getAccounts: builder.query({
+      query: () => '/accounts',
+      providesTags: ['Accounts'],
+    }),
+    getAccount: builder.query({
+      query: (id) => `/accounts/${id}`,
+      providesTags: (_result, _error, id) => [{ type: 'Accounts', id }],
+    }),
+    createAccount: builder.mutation({
+      query: (account) => ({
+        url: '/accounts',
+        method: 'POST',
+        body: account,
+      }),
+      invalidatesTags: ['Accounts'],
+    }),
+    updateAccount: builder.mutation({
+      query: ({ id, ...account }) => ({
+        url: `/accounts/${id}`,
+        method: 'PUT',
+        body: account,
+      }),
+      invalidatesTags: (_result, _error, { id }) => ['Accounts', { type: 'Accounts', id }],
+    }),
+    deleteAccount: builder.mutation({
+      query: (id) => ({
+        url: `/accounts/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Accounts'],
+    }),
+
     // Trades
     getTrades: builder.query({
       query: (filters) => ({
@@ -51,7 +84,10 @@ export const api = createApi({
 
     // Strategies
     getStrategies: builder.query({
-      query: () => '/strategies',
+      query: (params) => ({
+        url: '/strategies',
+        params,
+      }),
       providesTags: ['Strategies'],
     }),
     createStrategy: builder.mutation({
@@ -166,11 +202,17 @@ export const api = createApi({
       providesTags: ['Analytics'],
     }),
     getStrategyStats: builder.query({
-      query: (id) => `/strategies/${id}/stats`,
-      providesTags: (_result, _error, id) => [{ type: 'Strategies', id }, 'Trades'],
+      query: ({ id, accountId }) => ({
+        url: `/strategies/${id}/stats`,
+        params: accountId ? { accountId } : {},
+      }),
+      providesTags: (_result, _error, { id }) => [{ type: 'Strategies', id }, 'Trades'],
     }),
     getStrategiesAnalytics: builder.query({
-      query: () => '/analytics/strategies',
+      query: (params) => ({
+        url: '/analytics/strategies',
+        params,
+      }),
       providesTags: ['Analytics', 'Strategies'],
     }),
 
@@ -256,6 +298,13 @@ export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
 export const {
+  // Accounts
+  useGetAccountsQuery,
+  useGetAccountQuery,
+  useCreateAccountMutation,
+  useUpdateAccountMutation,
+  useDeleteAccountMutation,
+  // Trades
   useGetTradesQuery,
   useGetTradeQuery,
   useCreateTradeMutation,

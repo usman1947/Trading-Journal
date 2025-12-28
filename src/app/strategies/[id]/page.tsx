@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useGetStrategyStatsQuery } from '@/store';
+import { useAppSelector } from '@/store/hooks';
 import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
 import TradeTimeChart from '@/components/analytics/TradeTimeChart';
 import PnLDistributionChart from '@/components/analytics/PnLDistributionChart';
@@ -62,7 +63,9 @@ export default function StrategyDetailPage({
 }) {
   const { id } = params;
   const router = useRouter();
-  const { data, isLoading, error } = useGetStrategyStatsQuery(id);
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+  const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
+  const { data, isLoading, error } = useGetStrategyStatsQuery({ id, accountId: accountFilter });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [tradeTimeData, setTradeTimeData] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,9 +80,9 @@ export default function StrategyDetailPage({
 
       try {
         const [tradeTime, pnlDist, timeDay] = await Promise.all([
-          fetch(`/api/analytics/trade-time?strategyId=${id}`).then(r => r.json()),
-          fetch(`/api/analytics/pnl-distribution?strategyId=${id}`).then(r => r.json()),
-          fetch(`/api/analytics/time-day?strategyId=${id}`).then(r => r.json()),
+          fetch(`/api/analytics/trade-time?strategyId=${id}&accountId=${accountFilter}`).then(r => r.json()),
+          fetch(`/api/analytics/pnl-distribution?strategyId=${id}&accountId=${accountFilter}`).then(r => r.json()),
+          fetch(`/api/analytics/time-day?strategyId=${id}&accountId=${accountFilter}`).then(r => r.json()),
         ]);
 
         setTradeTimeData(tradeTime);
@@ -91,7 +94,7 @@ export default function StrategyDetailPage({
     };
 
     fetchAnalyticsData();
-  }, [id]);
+  }, [id, accountFilter]);
 
   const columns: GridColDef[] = [
     {

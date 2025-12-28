@@ -25,7 +25,14 @@ export default function TradeList() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.filters.tradeFilters);
-  const { data: trades = [], isLoading } = useGetTradesQuery(filters);
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+
+  // Include account filter - null means Paper Account
+  const queryFilters = {
+    ...filters,
+    accountId: selectedAccountId === null ? 'paper' : selectedAccountId,
+  };
+  const { data: trades = [], isLoading } = useGetTradesQuery(queryFilters);
   const [deleteTrade, { isLoading: deleting }] = useDeleteTradeMutation();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 

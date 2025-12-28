@@ -3,12 +3,29 @@ import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const accountIdParam = searchParams.get('accountId');
+
+    // Build the trade count filter based on accountId
+    const tradeCountWhere: Record<string, unknown> = {};
+    if (accountIdParam !== null) {
+      if (accountIdParam === 'paper' || accountIdParam === '') {
+        tradeCountWhere.accountId = null;
+      } else {
+        tradeCountWhere.accountId = accountIdParam;
+      }
+    }
+
     const strategies = await prisma.strategy.findMany({
       include: {
         _count: {
-          select: { trades: true },
+          select: {
+            trades: {
+              where: tradeCountWhere,
+            },
+          },
         },
         rules: {
           orderBy: { order: 'asc' },
