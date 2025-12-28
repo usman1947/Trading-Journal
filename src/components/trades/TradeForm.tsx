@@ -141,22 +141,25 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
     });
   };
 
-  // Get the default risk from settings
-  const defaultRisk = settings?.defaultRisk || 100;
+  // Get the default risk from settings - memoize to prevent infinite re-renders
+  const defaultRisk = useMemo(() => settings?.defaultRisk || 100, [settings?.defaultRisk]);
+
+  // Memoize initial values to prevent unnecessary reinitializations
+  const initialValues = useMemo<TradeFormData>(() => ({
+    symbol: trade?.symbol || '',
+    side: trade?.side || 'LONG',
+    tradeTime: trade?.tradeTime || new Date().toISOString(),
+    setup: trade?.setup || '',
+    risk: trade?.risk ?? defaultRisk,
+    result: trade?.result ?? undefined,
+    execution: trade?.execution || 'PASS',
+    notes: trade?.notes || '',
+    strategyId: trade?.strategyId || '',
+    accountId: trade?.accountId ?? selectedAccountId,
+  }), [trade, defaultRisk, selectedAccountId]);
 
   const formik = useFormik<TradeFormData>({
-    initialValues: {
-      symbol: trade?.symbol || '',
-      side: trade?.side || 'LONG',
-      tradeTime: trade?.tradeTime || new Date().toISOString(),
-      setup: trade?.setup || '',
-      risk: trade?.risk || defaultRisk,
-      result: trade?.result ?? undefined,
-      execution: trade?.execution || 'PASS',
-      notes: trade?.notes || '',
-      strategyId: trade?.strategyId || '',
-      accountId: trade?.accountId ?? selectedAccountId,
-    },
+    initialValues,
     enableReinitialize: true,
     validationSchema,
     onSubmit: async (values) => {
