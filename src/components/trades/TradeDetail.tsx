@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Box,
   Card,
@@ -150,19 +151,20 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                         borderRadius: 2,
                         overflow: 'hidden',
                         cursor: 'pointer',
+                        position: 'relative',
+                        width: '100%',
+                        height: 500,
+                        backgroundColor: '#f5f5f5',
                         '&:hover': { opacity: 0.9 },
                       }}
                       onClick={() => setSelectedImage(screenshot.path)}
                     >
-                      <img
+                      <Image
                         src={screenshot.path}
                         alt={screenshot.filename}
-                        style={{
-                          width: '100%',
-                          maxHeight: 500,
-                          objectFit: 'contain',
-                          backgroundColor: '#f5f5f5',
-                        }}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 66vw"
+                        style={{ objectFit: 'contain' }}
                       />
                     </Box>
                   ))}
@@ -437,11 +439,15 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
           <CloseIcon />
         </IconButton>
         {selectedImage && (
-          <img
-            src={selectedImage}
-            alt="Screenshot preview"
-            style={{ width: '100%', maxHeight: '90vh', objectFit: 'contain' }}
-          />
+          <Box sx={{ position: 'relative', width: '100%', height: '90vh' }}>
+            <Image
+              src={selectedImage}
+              alt="Screenshot preview"
+              fill
+              style={{ objectFit: 'contain' }}
+              sizes="100vw"
+            />
+          </Box>
         )}
       </Dialog>
 

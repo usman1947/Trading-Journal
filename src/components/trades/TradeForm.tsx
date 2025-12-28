@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Box,
   TextField,
@@ -560,12 +561,16 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                           sx={{
                             borderRadius: 1,
                             overflow: 'hidden',
+                            height: 100,
+                            position: 'relative',
                           }}
                         >
-                          <img
+                          <Image
                             src={pf.preview}
                             alt={pf.file.name}
-                            style={{ height: 100, objectFit: 'cover' }}
+                            fill
+                            style={{ objectFit: 'cover' }}
+                            unoptimized
                           />
                           <ImageListItemBar
                             sx={{ background: 'rgba(0,0,0,0.5)' }}

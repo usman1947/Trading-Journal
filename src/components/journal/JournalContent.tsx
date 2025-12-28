@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Image from 'next/image';
 import {
   Box,
   Typography,
@@ -249,17 +250,20 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
                   borderRadius: 1,
                   overflow: 'hidden',
                   cursor: 'pointer',
+                  height: 150,
+                  position: 'relative',
                   '&:hover': {
                     opacity: 0.9,
                   },
                 }}
                 onClick={() => setSelectedImage(screenshot.path)}
               >
-                <img
+                <Image
                   src={screenshot.path}
                   alt={screenshot.filename}
-                  loading="lazy"
-                  style={{ height: 150, objectFit: 'cover' }}
+                  fill
+                  sizes="(max-width: 768px) 33vw, 200px"
+                  style={{ objectFit: 'cover' }}
                 />
                 <ImageListItemBar
                   sx={{ background: 'rgba(0,0,0,0.6)' }}
@@ -339,11 +343,15 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
           <CloseIcon />
         </IconButton>
         {selectedImage && (
-          <img
-            src={selectedImage}
-            alt="Screenshot preview"
-            style={{ maxWidth: '100%', maxHeight: '90vh' }}
-          />
+          <Box sx={{ position: 'relative', width: '100%', height: '90vh' }}>
+            <Image
+              src={selectedImage}
+              alt="Screenshot preview"
+              fill
+              style={{ objectFit: 'contain' }}
+              sizes="100vw"
+            />
+          </Box>
         )}
       </Dialog>
     </Box>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Image from 'next/image';
 import {
   Box,
   Typography,
@@ -130,14 +131,17 @@ export default function ScreenshotUpload({
                 borderRadius: 1,
                 overflow: 'hidden',
                 cursor: 'pointer',
+                height: 120,
+                position: 'relative',
               }}
               onClick={() => setSelectedImage(screenshot.path)}
             >
-              <img
+              <Image
                 src={screenshot.path}
                 alt={screenshot.filename}
-                loading="lazy"
-                style={{ height: 120, objectFit: 'cover' }}
+                fill
+                sizes="(max-width: 768px) 33vw, 150px"
+                style={{ objectFit: 'cover' }}
               />
               <ImageListItemBar
                 sx={{ background: 'rgba(0,0,0,0.5)' }}
@@ -181,11 +185,15 @@ export default function ScreenshotUpload({
           <CloseIcon />
         </IconButton>
         {selectedImage && (
-          <img
-            src={selectedImage}
-            alt="Screenshot preview"
-            style={{ maxWidth: '100%', maxHeight: '90vh' }}
-          />
+          <Box sx={{ position: 'relative', width: '100%', height: '90vh' }}>
+            <Image
+              src={selectedImage}
+              alt="Screenshot preview"
+              fill
+              style={{ objectFit: 'contain' }}
+              sizes="100vw"
+            />
+          </Box>
         )}
       </Dialog>
     </Box>

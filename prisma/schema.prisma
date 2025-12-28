@@ -10,12 +10,13 @@ datasource db {
 }
 
 model Account {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String     @id @default(cuid())
+  name        String     @unique
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   trades      Trade[]
+  settings    Settings[]
 }
 
 model Trade {
@@ -132,8 +133,10 @@ model JournalScreenshot {
 }
 
 model Settings {
-  id          String @id @default("default")
-  defaultRisk Float  @default(100) // Default R value for R-multiple
-  currency    String @default("USD")
-  theme       String @default("light")
+  id               String   @id @default("default")
+  defaultRisk      Float    @default(100) // Default R value for R-multiple
+  currency         String   @default("USD")
+  theme            String   @default("light")
+  defaultAccountId String?  // Default account for new trades
+  defaultAccount   Account? @relation(fields: [defaultAccountId], references: [id], onDelete: SetNull)
 }

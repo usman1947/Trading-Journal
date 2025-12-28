@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import {
   Box,
   Dialog,
@@ -305,10 +306,12 @@ export default function JournalEntryDialog({
                       overflow: 'hidden',
                     }}
                   >
-                    <img
+                    <Image
                       src={URL.createObjectURL(file)}
                       alt={file.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      fill
+                      style={{ objectFit: 'cover' }}
+                      unoptimized
                     />
                     <IconButton
                       size="small"
@@ -341,14 +344,17 @@ export default function JournalEntryDialog({
                     borderRadius: 1,
                     overflow: 'hidden',
                     cursor: 'pointer',
+                    height: 100,
+                    position: 'relative',
                   }}
                   onClick={() => setSelectedImage(screenshot.path)}
                 >
-                  <img
+                  <Image
                     src={screenshot.path}
                     alt={screenshot.filename}
-                    loading="lazy"
-                    style={{ height: 100, objectFit: 'cover' }}
+                    fill
+                    sizes="(max-width: 768px) 25vw, 150px"
+                    style={{ objectFit: 'cover' }}
                   />
                   <ImageListItemBar
                     sx={{ background: 'rgba(0,0,0,0.5)' }}
@@ -436,11 +442,15 @@ export default function JournalEntryDialog({
           <CloseIcon />
         </IconButton>
         {selectedImage && (
-          <img
-            src={selectedImage}
-            alt="Screenshot preview"
-            style={{ maxWidth: '100%', maxHeight: '90vh' }}
-          />
+          <Box sx={{ position: 'relative', width: '100%', height: '90vh' }}>
+            <Image
+              src={selectedImage}
+              alt="Screenshot preview"
+              fill
+              style={{ objectFit: 'contain' }}
+              sizes="100vw"
+            />
+          </Box>
         )}
       </Dialog>
     </>
