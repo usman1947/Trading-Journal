@@ -14,6 +14,7 @@ import { formatCurrency, formatPercent } from '@/utils/formatters';
 import PnLChart from '@/components/analytics/PnLChart';
 import CalendarView from '@/components/analytics/CalendarView';
 import DailyPnLChart from '@/components/analytics/DailyPnLChart';
+import WinLossChart from '@/components/analytics/WinLossChart';
 
 interface StatCardProps {
   title: string;
@@ -169,44 +170,17 @@ export default function Dashboard() {
 
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: 350 }}>
-            <CardContent>
+            <CardContent sx={{ height: '100%' }}>
               <Typography variant="h6" gutterBottom>
-                Key Metrics
+                Win vs Loss
               </Typography>
-              <Grid container spacing={2}>
-                <Grid size={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Largest Win
-                  </Typography>
-                  <Typography variant="h6" color="success.main">
-                    {formatCurrency(stats.largestWin || 0)}
-                  </Typography>
-                </Grid>
-                <Grid size={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Largest Loss
-                  </Typography>
-                  <Typography variant="h6" color="error.main">
-                    {formatCurrency(Math.abs(stats.largestLoss || 0))}
-                  </Typography>
-                </Grid>
-                <Grid size={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Avg Win
-                  </Typography>
-                  <Typography variant="h6" color="success.main">
-                    {formatCurrency(stats.averageWin || 0)}
-                  </Typography>
-                </Grid>
-                <Grid size={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Avg Loss
-                  </Typography>
-                  <Typography variant="h6" color="error.main">
-                    {formatCurrency(stats.averageLoss || 0)}
-                  </Typography>
-                </Grid>
-              </Grid>
+              <Box sx={{ height: 'calc(100% - 40px)' }}>
+                <WinLossChart
+                  winningTrades={stats.winningTrades || 0}
+                  losingTrades={stats.losingTrades || 0}
+                  loading={analyticsLoading}
+                />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
