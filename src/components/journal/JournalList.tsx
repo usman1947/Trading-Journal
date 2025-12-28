@@ -1,149 +1,118 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
-  Typography,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
-  Chip,
+  Typography,
   Skeleton,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
+  Divider,
 } from '@mui/material';
-import { Delete as DeleteIcon } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
-import { useGetJournalEntriesQuery, useDeleteJournalEntryMutation } from '@/store';
-import { useAppDispatch } from '@/store/hooks';
-import { showSnackbar } from '@/store/slices/uiSlice';
-import type { DailyJournal, Mood } from '@/types';
+import { useGetJournalEntriesQuery } from '@/store';
+import type { DailyJournal } from '@/types';
 
 interface JournalListProps {
-  selectedDate: Date;
-  onSelectDate: (date: Date) => void;
+  selectedId: string | null;
+  onSelectEntry: (entry: DailyJournal) => void;
 }
 
-const moodColors: Record<Mood, 'success' | 'error' | 'default'> = {
-  BULLISH: 'success',
-  BEARISH: 'error',
-  NEUTRAL: 'default',
-};
-
-export default function JournalList({ selectedDate, onSelectDate }: JournalListProps) {
-  const dispatch = useAppDispatch();
+export default function JournalList({ selectedId, onSelectEntry }: JournalListProps) {
   const { data: entries = [], isLoading } = useGetJournalEntriesQuery({});
-  const [deleteEntry, { isLoading: deleting }] = useDeleteJournalEntryMutation();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [entryToDelete, setEntryToDelete] = useState<DailyJournal | null>(null);
-
-  const handleDeleteClick = (e: React.MouseEvent, entry: DailyJournal) => {
-    e.stopPropagation();
-    setEntryToDelete(entry);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!entryToDelete) return;
-    try {
-      await deleteEntry(entryToDelete.id).unwrap();
-      setDeleteDialogOpen(false);
-      setEntryToDelete(null);
-      dispatch(showSnackbar({ message: 'Journal entry deleted', severity: 'success' }));
-    } catch {
-      dispatch(showSnackbar({ message: 'Failed to delete entry', severity: 'error' }));
-    }
-  };
+  
+  // Group entries by month/year
+  const groupedEntries = useMemo(() => {
+    const groups: Record<string, DailyJournal[]> = {};
+    entries.forEach((entry: DailyJournal) => {
+      const date = parseISO(entry.date);
+      const monthYear = format(date, 'MMMM yyyy');
+      if (!groups[monthYear]) {
+        groups[monthYear] = [];
+      }
+      groups[monthYear].push(entry);
+    });
+    return groups;
+  }, [entries]);
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Recent Entries
-          </Typography>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} variant="rounded" height={60} sx={{ mb: 1 }} />
-          ))}
-        </CardContent>
-      </Card>
+      <Box sx={{ p: 1 }}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} variant="rounded" height={50} sx={{ mb: 1 }} />
+        ))}
+      </Box>
+    );
+  }
+
+  if (entries.length === 0) {
+    return (
+      <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+        <Typography variant="body2">No entries yet</Typography>
+      </Box>
     );
   }
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Recent Entries
-        </Typography>
-
-        {entries.length === 0 ? (
-          <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-            No journal entries yet
+    <Box sx={{ overflow: 'auto', height: '100%' }}>
+      {Object.entries(groupedEntries).map(([monthYear, monthEntries]) => (
+        <Box key={monthYear}>
+          <Typography
+            variant="caption"
+            sx={{
+              px: 2,
+              py: 1,
+              display: 'block',
+              color: 'text.secondary',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              fontSize: '0.7rem',
+              letterSpacing: '0.5px',
+            }}
+          >
+            {monthYear}
           </Typography>
-        ) : (
-          <List disablePadding>
-            {entries.map((entry: DailyJournal) => {
+          <List disablePadding dense>
+            {monthEntries.map((entry: DailyJournal) => {
               const entryDate = parseISO(entry.date);
-              const isSelected = format(entryDate, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
+              const isSelected = selectedId === entry.id;
 
               return (
-                <ListItem
-                  key={entry.id}
-                  disablePadding
-                  secondaryAction={
-                    <IconButton
-                      edge="end"
-                      size="small"
-                      onClick={(e) => handleDeleteClick(e, entry)}
-                      sx={{
-                        opacity: 0.5,
-                        '&:hover': { opacity: 1, color: 'error.main' },
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  }
-                >
+                <ListItem key={entry.id} disablePadding>
                   <ListItemButton
                     selected={isSelected}
-                    onClick={() => onSelectDate(entryDate)}
-                    sx={{ borderRadius: 1, mb: 0.5, pr: 6 }}
+                    onClick={() => onSelectEntry(entry)}
+                    sx={{
+                      py: 1,
+                      px: 2,
+                      borderLeft: isSelected ? '3px solid' : '3px solid transparent',
+                      borderLeftColor: isSelected ? 'primary.main' : 'transparent',
+                      '&.Mui-selected': {
+                        backgroundColor: 'action.selected',
+                      },
+                    }}
                   >
                     <ListItemText
                       primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle2">
-                            {format(entryDate, 'MMM d, yyyy')}
-                          </Typography>
-                          {entry.mood && (
-                            <Chip
-                              label={entry.mood}
-                              size="small"
-                              color={moodColors[entry.mood as Mood]}
-                            />
-                          )}
-                        </Box>
+                        <Typography variant="body2" fontWeight={isSelected ? 600 : 400}>
+                          {format(entryDate, 'EEE, MMM d, yyyy')}
+                        </Typography>
                       }
                       secondary={
                         <Typography
-                          variant="body2"
+                          variant="caption"
                           color="text.secondary"
                           sx={{
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
+                            display: 'block',
                           }}
                         >
-                          {entry.notes.slice(0, 100)}
-                          {entry.notes.length > 100 && '...'}
+                          {entry.notes.slice(0, 50)}
+                          {entry.notes.length > 50 && '...'}
                         </Typography>
                       }
                     />
@@ -152,29 +121,9 @@ export default function JournalList({ selectedDate, onSelectDate }: JournalListP
               );
             })}
           </List>
-        )}
-      </CardContent>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Journal Entry?</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete the entry from{' '}
-            {entryToDelete && format(parseISO(entryToDelete.date), 'MMMM d, yyyy')}?
-            This action cannot be undone.
-            {entryToDelete?.screenshots && entryToDelete.screenshots.length > 0 && (
-              <> All {entryToDelete.screenshots.length} screenshot(s) will also be deleted.</>
-            )}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error" disabled={deleting}>
-            {deleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Card>
+          <Divider />
+        </Box>
+      ))}
+    </Box>
   );
 }

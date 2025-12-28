@@ -9,8 +9,9 @@ export async function GET(
 ) {
   try {
     const { date } = await params;
-    const dateObj = new Date(date);
-    dateObj.setHours(0, 0, 0, 0);
+    // Parse as UTC noon to avoid timezone issues
+    const [year, month, day] = date.split('-').map(Number);
+    const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
 
     const entry = await prisma.dailyJournal.findUnique({
       where: { date: dateObj },

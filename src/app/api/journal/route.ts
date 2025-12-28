@@ -43,8 +43,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Date and notes are required' }, { status: 400 });
     }
 
-    const dateObj = new Date(date);
-    dateObj.setHours(0, 0, 0, 0);
+    // Parse as UTC noon to avoid timezone issues
+    const [year, month, day] = date.split('-').map(Number);
+    const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
 
     // Upsert - create or update
     const entry = await prisma.dailyJournal.upsert({
