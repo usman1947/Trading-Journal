@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -23,6 +24,17 @@ interface TimeDayProfitabilityProps {
 }
 
 export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps) {
+  // Pre-compute cell colors to avoid recalculating in render
+  const hourlyColors = useMemo(
+    () => data.hourly.map((entry) => (entry.totalPnL >= 0 ? '#2e7d32' : '#d32f2f')),
+    [data.hourly]
+  );
+
+  const dailyColors = useMemo(
+    () => data.daily.map((entry) => (entry.totalPnL >= 0 ? '#2e7d32' : '#d32f2f')),
+    [data.daily]
+  );
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload, type }: { active?: boolean; payload?: readonly any[]; type?: string }) => {
     if (active && payload && payload.length) {
@@ -93,8 +105,8 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
                   <YAxis label={{ value: 'P&L ($)', angle: -90, position: 'insideLeft' }} />
                   <Tooltip content={(props) => <CustomTooltip {...props} type="hourly" />} />
                   <Bar dataKey="totalPnL" radius={[8, 8, 0, 0]}>
-                    {data.hourly.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.totalPnL >= 0 ? '#2e7d32' : '#d32f2f'} />
+                    {hourlyColors.map((color, index) => (
+                      <Cell key={`cell-${index}`} fill={color} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -126,8 +138,8 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
                   <YAxis label={{ value: 'P&L ($)', angle: -90, position: 'insideLeft' }} />
                   <Tooltip content={(props) => <CustomTooltip {...props} type="daily" />} />
                   <Bar dataKey="totalPnL" radius={[8, 8, 0, 0]}>
-                    {data.daily.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.totalPnL >= 0 ? '#2e7d32' : '#d32f2f'} />
+                    {dailyColors.map((color, index) => (
+                      <Cell key={`cell-${index}`} fill={color} />
                     ))}
                   </Bar>
                 </BarChart>

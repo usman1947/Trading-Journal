@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Autocomplete,
   TextField,
@@ -37,9 +37,12 @@ export default function TagInput({ value, onChange, disabled }: TagInputProps) {
   const [colorAnchor, setColorAnchor] = useState<HTMLElement | null>(null);
   const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0]);
 
-  const selectedTags = tags.filter((tag: Tag) => value.includes(tag.id));
+  const selectedTags = useMemo(
+    () => tags.filter((tag: Tag) => value.includes(tag.id)),
+    [tags, value]
+  );
 
-  const handleCreateTag = async () => {
+  const handleCreateTag = useCallback(async () => {
     if (!inputValue.trim()) return;
 
     try {
@@ -53,7 +56,14 @@ export default function TagInput({ value, onChange, disabled }: TagInputProps) {
     } catch (error) {
       console.error('Failed to create tag:', error);
     }
-  };
+  }, [inputValue, selectedColor, createTag, onChange, value]);
+
+  const handleChange = useCallback(
+    (_: unknown, newValue: Tag[]) => {
+      onChange(newValue.map((tag: Tag) => tag.id));
+    },
+    [onChange]
+  );
 
   return (
     <Box>
@@ -66,9 +76,7 @@ export default function TagInput({ value, onChange, disabled }: TagInputProps) {
         getOptionLabel={(option: Tag) => option.name}
         inputValue={inputValue}
         onInputChange={(_, newValue) => setInputValue(newValue)}
-        onChange={(_, newValue) => {
-          onChange(newValue.map((tag: Tag) => tag.id));
-        }}
+        onChange={handleChange}
         renderInput={(params) => (
           <TextField
             {...params}

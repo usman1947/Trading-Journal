@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useCallback } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { useRouter } from 'next/navigation';
@@ -21,7 +22,7 @@ interface TradeTimeChartProps {
 export default function TradeTimeChart({ data }: TradeTimeChartProps) {
   const router = useRouter();
 
-  const chartData = data.map((trade) => ({
+  const chartData = useMemo(() => data.map((trade) => ({
     id: trade.id,
     x: trade.hour + trade.minute / 60,
     y: trade.result ?? 0,
@@ -29,14 +30,14 @@ export default function TradeTimeChart({ data }: TradeTimeChartProps) {
     symbol: trade.symbol,
     time: trade.time,
     date: trade.date,
-  }));
+  })), [data]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDotClick = (data: any) => {
+  const handleDotClick = useCallback((data: any) => {
     if (data?.payload?.id) {
       router.push(`/trades/${data.payload.id}`);
     }
-  };
+  }, [router]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload }: any) => {

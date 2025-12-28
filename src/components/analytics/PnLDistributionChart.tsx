@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
 
@@ -16,18 +17,21 @@ interface PnLDistributionChartProps {
 }
 
 export default function PnLDistributionChart({ data }: PnLDistributionChartProps) {
-  const chartData = data.map((trade, index) => ({
-    x: index + 1,
-    y: trade.rMultiple,
-    result: trade.result,
-    symbol: trade.symbol,
-    date: trade.date,
-  }));
-
-  // Calculate Y-axis range for better tick spacing
-  const yValues = chartData.length > 0 ? chartData.map(d => d.y) : [0];
-  const minY = Math.floor(Math.min(...yValues, 0));
-  const maxY = Math.ceil(Math.max(...yValues, 0));
+  const { chartData, minY, maxY } = useMemo(() => {
+    const processed = data.map((trade, index) => ({
+      x: index + 1,
+      y: trade.rMultiple,
+      result: trade.result,
+      symbol: trade.symbol,
+      date: trade.date,
+    }));
+    const yValues = processed.length > 0 ? processed.map(d => d.y) : [0];
+    return {
+      chartData: processed,
+      minY: Math.floor(Math.min(...yValues, 0)),
+      maxY: Math.ceil(Math.max(...yValues, 0)),
+    };
+  }, [data]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload }: any) => {

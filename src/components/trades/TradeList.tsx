@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Chip, IconButton, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
@@ -40,7 +40,29 @@ export default function TradeList() {
     }
   };
 
-  const columns: GridColDef[] = [
+  const handleEdit = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    router.push(`/trades/${id}/edit`);
+  }, [router]);
+
+  const handleDeleteClick = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleteId(id);
+  }, []);
+
+  // Helper to calculate strategy score
+  const calculateScore = useCallback((strategy: Trade['strategy'], ruleChecks: Trade['ruleChecks']) => {
+    if (!strategy?.rules || strategy.rules.length === 0) return null;
+    const ruleChecksMap = new Map(
+      ruleChecks?.map((rc: { ruleId: string; checked: boolean }) => [rc.ruleId, rc.checked]) || []
+    );
+    const checkedCount = strategy.rules.filter(
+      (rule: { id: string }) => ruleChecksMap.get(rule.id) === true
+    ).length;
+    return { score: Math.round((checkedCount / strategy.rules.length) * 100), checkedCount, total: strategy.rules.length };
+  }, []);
+
+  const columns: GridColDef[] = useMemo(() => [
     {
       field: 'symbol',
       headerName: 'Symbol',
@@ -81,30 +103,17 @@ export default function TradeList() {
       width: 100,
       sortable: true,
       renderCell: (params: GridRenderCellParams<Trade>) => {
-        const strategy = params.row.strategy;
-        const ruleChecks = params.row.ruleChecks;
-
-        // No strategy or no rules
-        if (!strategy?.rules || strategy.rules.length === 0) {
+        const result = calculateScore(params.row.strategy, params.row.ruleChecks);
+        if (!result) {
           return <Typography color="text.secondary">-</Typography>;
         }
-
-        // Calculate score
-        const ruleChecksMap = new Map(
-          ruleChecks?.map((rc: { ruleId: string; checked: boolean }) => [rc.ruleId, rc.checked]) || []
-        );
-        const checkedCount = strategy.rules.filter(
-          (rule: { id: string }) => ruleChecksMap.get(rule.id) === true
-        ).length;
-        const score = Math.round((checkedCount / strategy.rules.length) * 100);
-
         return (
-          <Tooltip title={`${checkedCount}/${strategy.rules.length} rules satisfied`}>
+          <Tooltip title={`${result.checkedCount}/${result.total} rules satisfied`}>
             <Chip
               icon={<ChecklistIcon fontSize="small" />}
-              label={`${score}%`}
+              label={`${result.score}%`}
               size="small"
-              color={score >= 75 ? 'success' : score >= 50 ? 'warning' : 'error'}
+              color={result.score >= 75 ? 'success' : result.score >= 50 ? 'warning' : 'error'}
               variant="outlined"
               sx={{ minWidth: 60 }}
             />
@@ -112,17 +121,8 @@ export default function TradeList() {
         );
       },
       valueGetter: (_, row) => {
-        const strategy = row.strategy;
-        const ruleChecks = row.ruleChecks;
-        if (!strategy?.rules || strategy.rules.length === 0) return null;
-
-        const ruleChecksMap = new Map(
-          ruleChecks?.map((rc: { ruleId: string; checked: boolean }) => [rc.ruleId, rc.checked]) || []
-        );
-        const checkedCount = strategy.rules.filter(
-          (rule: { id: string }) => ruleChecksMap.get(rule.id) === true
-        ).length;
-        return Math.round((checkedCount / strategy.rules.length) * 100);
+        const result = calculateScore(row.strategy, row.ruleChecks);
+        return result?.score ?? null;
       },
     },
     {
@@ -213,27 +213,21 @@ export default function TradeList() {
         <Box>
           <IconButton
             size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/trades/${params.row.id}/edit`);
-            }}
+            onClick={(e) => handleEdit(e, params.row.id)}
           >
             <EditIcon fontSize="small" />
           </IconButton>
           <IconButton
             size="small"
             color="error"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteId(params.row.id);
-            }}
+            onClick={(e) => handleDeleteClick(e, params.row.id)}
           >
             <DeleteIcon fontSize="small" />
           </IconButton>
         </Box>
       ),
     },
-  ];
+  ], [calculateScore, handleEdit, handleDeleteClick]);
 
   return (
     <>

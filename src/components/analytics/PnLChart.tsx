@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Box, Typography, Skeleton } from '@mui/material';
 import {
   ResponsiveContainer,
@@ -21,6 +22,24 @@ interface PnLChartProps {
 }
 
 export default function PnLChart({ data, loading }: PnLChartProps) {
+  // Calculate cumulative P&L - hooks must be called before any early returns
+  const { chartData, minPnl, maxPnl } = useMemo(() => {
+    if (data.length === 0) return { chartData: [], minPnl: 0, maxPnl: 0 };
+
+    let cumulative = 0;
+    const processed = data.map((item) => {
+      cumulative += item.pnl;
+      return {
+        ...item,
+        cumulativePnl: cumulative,
+        displayDate: format(parseISO(item.date), 'MMM dd'),
+      };
+    });
+    const min = Math.min(...processed.map((d) => d.cumulativePnl));
+    const max = Math.max(...processed.map((d) => d.cumulativePnl));
+    return { chartData: processed, minPnl: min, maxPnl: max };
+  }, [data]);
+
   if (loading) {
     return <Skeleton variant="rounded" height="100%" />;
   }
@@ -39,20 +58,6 @@ export default function PnLChart({ data, loading }: PnLChartProps) {
       </Box>
     );
   }
-
-  // Calculate cumulative P&L
-  let cumulative = 0;
-  const chartData = data.map((item) => {
-    cumulative += item.pnl;
-    return {
-      ...item,
-      cumulativePnl: cumulative,
-      displayDate: format(parseISO(item.date), 'MMM dd'),
-    };
-  });
-
-  const minPnl = Math.min(...chartData.map((d) => d.cumulativePnl));
-  const maxPnl = Math.max(...chartData.map((d) => d.cumulativePnl));
 
   return (
     <ResponsiveContainer width="100%" height="100%">

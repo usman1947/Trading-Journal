@@ -404,6 +404,10 @@ export default function StrategyDetailPage({
                 cursor: 'pointer',
                 backgroundColor: 'action.hover',
               },
+              '& .MuiDataGrid-cell': {
+                display: 'flex',
+                alignItems: 'center',
+              },
             }}
           />
         </CardContent>

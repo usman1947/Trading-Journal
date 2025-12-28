@@ -11,7 +11,7 @@ import {
   addMonths,
   subMonths,
 } from 'date-fns';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { DailyStats } from '@/types';
 
 interface CalendarViewProps {
@@ -32,26 +32,27 @@ function formatCompactCurrency(value: number): string {
 export default function CalendarView({ data, loading }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  if (loading) {
-    return <Skeleton variant="rounded" height="100%" />;
-  }
+  // All hooks must be called before any early returns
+  const statsMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
 
-  // Create a map of date to stats
-  const statsMap = new Map(data.map((d) => [d.date, d]));
-
-  // Get current month's days
   const today = new Date();
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const { days, startDay } = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    return {
+      days: eachDayOfInterval({ start: monthStart, end: monthEnd }),
+      startDay: getDay(monthStart),
+    };
+  }, [currentMonth]);
 
-  // Get day of week for the first day (0 = Sunday)
-  const startDay = getDay(monthStart);
+  const handlePrevMonth = useCallback(() => setCurrentMonth(subMonths(currentMonth, 1)), [currentMonth]);
+  const handleNextMonth = useCallback(() => setCurrentMonth(addMonths(currentMonth, 1)), [currentMonth]);
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+  if (loading) {
+    return <Skeleton variant="rounded" height="100%" />;
+  }
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
