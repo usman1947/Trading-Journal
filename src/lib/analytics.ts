@@ -274,12 +274,22 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return trades.map((trade: any) => {
     const tradeDate = new Date(trade.tradeTime);
+    // Use America/New_York timezone to display trades in EST
+    const timeStr = tradeDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/New_York'
+    });
+    const [hourStr, minuteStr] = timeStr.split(':');
+    const hour = parseInt(hourStr, 10);
+    const minute = parseInt(minuteStr, 10);
     return {
       id: trade.id,
-      time: tradeDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-      date: tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      hour: tradeDate.getHours(),
-      minute: tradeDate.getMinutes(),
+      time: timeStr,
+      date: tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' }),
+      hour,
+      minute,
       result: trade.result,
       symbol: trade.symbol,
     };
