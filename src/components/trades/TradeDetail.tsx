@@ -29,7 +29,7 @@ import {
   ArrowBack as BackIcon,
   ChecklistRtl as ChecklistIcon,
 } from '@mui/icons-material';
-import { useDeleteTradeMutation } from '@/store';
+import { useDeleteTradeMutation, useDeleteScreenshotMutation } from '@/store';
 import { useAppDispatch } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import { formatCurrency, formatDateTime } from '@/utils/formatters';
@@ -45,7 +45,9 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [deleteTrade, { isLoading: deleting }] = useDeleteTradeMutation();
+  const [deleteScreenshot, { isLoading: deletingScreenshot }] = useDeleteScreenshotMutation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [screenshotToDelete, setScreenshotToDelete] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const handleDelete = async () => {
@@ -55,6 +57,17 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
       router.push('/trades');
     } catch {
       dispatch(showSnackbar({ message: 'Failed to delete trade', severity: 'error' }));
+    }
+  };
+
+  const handleDeleteScreenshot = async () => {
+    if (!screenshotToDelete) return;
+    try {
+      await deleteScreenshot(screenshotToDelete).unwrap();
+      dispatch(showSnackbar({ message: 'Screenshot deleted', severity: 'success' }));
+      setScreenshotToDelete(null);
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to delete screenshot', severity: 'error' }));
     }
   };
 
@@ -150,22 +163,49 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                       sx={{
                         borderRadius: 2,
                         overflow: 'hidden',
-                        cursor: 'pointer',
                         position: 'relative',
                         width: '100%',
                         height: 500,
                         backgroundColor: '#f5f5f5',
-                        '&:hover': { opacity: 0.9 },
                       }}
-                      onClick={() => setSelectedImage(screenshot.path)}
                     >
-                      <Image
-                        src={screenshot.path}
-                        alt={screenshot.filename}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 66vw"
-                        style={{ objectFit: 'contain' }}
-                      />
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          width: '100%',
+                          height: '100%',
+                          cursor: 'pointer',
+                          '&:hover': { opacity: 0.9 },
+                        }}
+                        onClick={() => setSelectedImage(screenshot.path)}
+                      >
+                        <Image
+                          src={screenshot.path}
+                          alt={screenshot.filename}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 66vw"
+                          style={{ objectFit: 'contain' }}
+                        />
+                      </Box>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setScreenshotToDelete(screenshot.id);
+                        }}
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: 'error.main',
+                          },
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
                     </Box>
                   ))}
                 </Box>
@@ -451,7 +491,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
         )}
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Delete Trade Confirmation */}
       <ConfirmDialog
         open={showDeleteConfirm}
         title="Delete Trade"
@@ -460,6 +500,17 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         loading={deleting}
+      />
+
+      {/* Delete Screenshot Confirmation */}
+      <ConfirmDialog
+        open={!!screenshotToDelete}
+        title="Delete Screenshot"
+        message="Are you sure you want to delete this screenshot?"
+        confirmText="Delete"
+        onConfirm={handleDeleteScreenshot}
+        onCancel={() => setScreenshotToDelete(null)}
+        loading={deletingScreenshot}
       />
     </Box>
   );

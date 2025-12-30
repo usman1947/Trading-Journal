@@ -18,9 +18,6 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   IconButton,
-  ImageList,
-  ImageListItem,
-  ImageListItemBar,
   Autocomplete,
   FormControlLabel,
   Checkbox,
@@ -557,15 +554,18 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
 
                   {/* Pending Files Preview */}
                   {pendingFiles.length > 0 && (
-                    <ImageList cols={2} gap={8}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {pendingFiles.map((pf, index) => (
-                        <ImageListItem
+                        <Box
                           key={index}
                           sx={{
+                            position: 'relative',
+                            width: 100,
+                            height: 100,
                             borderRadius: 1,
                             overflow: 'hidden',
-                            height: 100,
-                            position: 'relative',
+                            border: '1px solid',
+                            borderColor: 'divider',
                           }}
                         >
                           <Image
@@ -575,20 +575,26 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                             style={{ objectFit: 'cover' }}
                             unoptimized
                           />
-                          <ImageListItemBar
-                            sx={{ background: 'rgba(0,0,0,0.5)' }}
-                            actionIcon={
-                              <IconButton
-                                sx={{ color: 'white' }}
-                                onClick={() => removePendingFile(index)}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            }
-                          />
-                        </ImageListItem>
+                          <IconButton
+                            size="small"
+                            onClick={() => removePendingFile(index)}
+                            sx={{
+                              position: 'absolute',
+                              top: 2,
+                              right: 2,
+                              backgroundColor: 'rgba(0,0,0,0.6)',
+                              color: 'white',
+                              padding: '4px',
+                              '&:hover': {
+                                backgroundColor: 'error.main',
+                              },
+                            }}
+                          >
+                            <DeleteIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Box>
                       ))}
-                    </ImageList>
+                    </Box>
                   )}
                 </Box>
               )}
