@@ -24,6 +24,7 @@ import {
   Chip,
   LinearProgress,
   Divider,
+  Switch,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
@@ -150,6 +151,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
     risk: trade?.risk ?? defaultRisk,
     result: trade?.result ?? undefined,
     execution: trade?.execution || 'PASS',
+    isBreakEven: trade?.isBreakEven || false,
     notes: trade?.notes || '',
     strategyId: trade?.strategyId || '',
     accountId: trade?.accountId ?? selectedAccountId,
@@ -356,6 +358,27 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                       startAdornment: <InputAdornment position="start">$</InputAdornment>,
                     }}
                     helperText="Leave empty for open trades"
+                  />
+                </Grid>
+
+                {/* Break Even Toggle */}
+                <Grid size={{ xs: 12 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formik.values.isBreakEven || false}
+                        onChange={(e) => formik.setFieldValue('isBreakEven', e.target.checked)}
+                        color="warning"
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body2">Break Even Trade</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          BE trades are excluded from P&L analytics
+                        </Typography>
+                      </Box>
+                    }
                   />
                 </Grid>
 

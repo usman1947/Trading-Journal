@@ -7,6 +7,7 @@ type TradeWithScreenshots = {
   result: number | null;
   risk: number;
   execution: string | null;
+  isBreakEven: boolean;
   screenshots: unknown[];
 };
 
@@ -50,18 +51,20 @@ export async function GET(
       return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
     }
 
-    // Calculate stats
+    // Calculate stats - exclude BE trades from P&L analytics
     const closedTrades = strategy.trades.filter((t: TradeWithScreenshots) => t.result !== null);
-    const winningTrades = closedTrades.filter((t: TradeWithScreenshots) => (t.result ?? 0) > 0);
-    const losingTrades = closedTrades.filter((t: TradeWithScreenshots) => (t.result ?? 0) < 0);
-    const passingTrades = closedTrades.filter((t: TradeWithScreenshots) => t.execution === 'PASS');
+    const beTrades = closedTrades.filter((t: TradeWithScreenshots) => t.isBreakEven);
+    const nonBETrades = closedTrades.filter((t: TradeWithScreenshots) => !t.isBreakEven);
+    const winningTrades = nonBETrades.filter((t: TradeWithScreenshots) => (t.result ?? 0) > 0);
+    const losingTrades = nonBETrades.filter((t: TradeWithScreenshots) => (t.result ?? 0) < 0);
+    const passingTrades = nonBETrades.filter((t: TradeWithScreenshots) => t.execution === 'PASS');
 
-    const totalPnl = closedTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0);
-    const totalRisk = closedTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + t.risk, 0);
+    const totalPnl = nonBETrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0);
+    const totalRisk = nonBETrades.reduce((sum: number, t: TradeWithScreenshots) => sum + t.risk, 0);
     const totalWins = winningTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0);
     const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0));
 
-    const tradesWithResult = closedTrades.filter((t: TradeWithScreenshots) => t.result !== null && t.risk > 0);
+    const tradesWithResult = nonBETrades.filter((t: TradeWithScreenshots) => t.result !== null && t.risk > 0);
     const averageRMultiple =
       tradesWithResult.length > 0
         ? tradesWithResult.reduce((sum: number, t: TradeWithScreenshots) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
@@ -83,11 +86,12 @@ export async function GET(
       },
       trades: strategy.trades,
       stats: {
-        totalTrades: closedTrades.length,
+        totalTrades: nonBETrades.length,
         openTrades: strategy.trades.length - closedTrades.length,
+        breakEvenTrades: beTrades.length,
         winningTrades: winningTrades.length,
         losingTrades: losingTrades.length,
-        winRate: closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0,
+        winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
         totalPnl,
         totalRisk,
         averageWin: winningTrades.length > 0 ? totalWins / winningTrades.length : 0,
@@ -96,7 +100,7 @@ export async function GET(
         averageRMultiple,
         largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t: TradeWithScreenshots) => t.result ?? 0)) : 0,
         largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t: TradeWithScreenshots) => t.result ?? 0)) : 0,
-        executionRate: closedTrades.length > 0 ? (passingTrades.length / closedTrades.length) * 100 : 0,
+        executionRate: nonBETrades.length > 0 ? (passingTrades.length / nonBETrades.length) * 100 : 0,
       },
     });
   } catch (error) {

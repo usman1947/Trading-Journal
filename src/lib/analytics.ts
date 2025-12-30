@@ -6,6 +6,7 @@ type TradeRecord = {
   risk: number;
   execution: string | null;
   tradeTime: Date;
+  isBreakEven: boolean;
 };
 
 // Helper function to apply account filter
@@ -49,7 +50,10 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
 
   const trades = await prisma.trade.findMany({ where });
 
-  if (trades.length === 0) {
+  // Filter out BE trades for P&L analytics
+  const nonBETrades = trades.filter((t: TradeRecord) => !t.isBreakEven);
+
+  if (nonBETrades.length === 0) {
     return {
       totalResult: 0,
       winRate: 0,
@@ -67,12 +71,12 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     };
   }
 
-  const winningTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
-  const losingTrades = trades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
-  const passingTrades = trades.filter((t: TradeRecord) => t.execution === 'PASS');
+  const winningTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
+  const losingTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
+  const passingTrades = nonBETrades.filter((t: TradeRecord) => t.execution === 'PASS');
 
-  const totalResult = trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
-  const totalRisk = trades.reduce((sum: number, t: TradeRecord) => sum + t.risk, 0);
+  const totalResult = nonBETrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
+  const totalRisk = nonBETrades.reduce((sum: number, t: TradeRecord) => sum + t.risk, 0);
   const totalWins = winningTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
   const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0));
 
@@ -92,8 +96,8 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
 
   return {
     totalResult,
-    winRate: (winningTrades.length / trades.length) * 100,
-    totalTrades: trades.length,
+    winRate: (winningTrades.length / nonBETrades.length) * 100,
+    totalTrades: nonBETrades.length,
     winningTrades: winningTrades.length,
     losingTrades: losingTrades.length,
     averageWin: winningTrades.length > 0 ? totalWins / winningTrades.length : 0,
@@ -103,7 +107,7 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
     largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
     totalRisk,
-    executionRate: (passingTrades.length / trades.length) * 100,
+    executionRate: (passingTrades.length / nonBETrades.length) * 100,
   };
 }
 
@@ -125,9 +129,12 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
     orderBy: { tradeTime: 'asc' },
   });
 
+  // Filter out BE trades for P&L analytics
+  const nonBETrades = trades.filter((t: TradeRecord) => !t.isBreakEven);
+
   const dailyMap = new Map<string, { pnl: number; wins: number; total: number }>();
 
-  trades.forEach((trade: TradeRecord) => {
+  nonBETrades.forEach((trade: TradeRecord) => {
     const date = trade.tradeTime.toISOString().split('T')[0];
     const existing = dailyMap.get(date) || { pnl: 0, wins: 0, total: 0 };
     existing.pnl += trade.result ?? 0;
@@ -167,10 +174,11 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
   };
 
   return strategies.map((strategy: { id: string; name: string; trades: TradeWithRuleChecks[]; rules: { id: string }[] }) => {
-    const trades = strategy.trades;
-    const winningTrades = trades.filter((t) => (t.result ?? 0) > 0);
-    const losingTrades = trades.filter((t) => (t.result ?? 0) < 0);
-    const tradesWithResult = trades.filter((t) => t.result !== null && t.risk > 0);
+    // Filter out BE trades for P&L analytics
+    const nonBETrades = strategy.trades.filter((t) => !t.isBreakEven);
+    const winningTrades = nonBETrades.filter((t) => (t.result ?? 0) > 0);
+    const losingTrades = nonBETrades.filter((t) => (t.result ?? 0) < 0);
+    const tradesWithResult = nonBETrades.filter((t) => t.result !== null && t.risk > 0);
     const winnersWithRisk = winningTrades.filter((t) => t.risk > 0);
     const losersWithRisk = losingTrades.filter((t) => t.risk > 0);
 
@@ -182,11 +190,11 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
       ? losersWithRisk.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
       : 0;
 
-    // Calculate average rule satisfaction
+    // Calculate average rule satisfaction (use all trades for this)
     const totalRules = strategy.rules.length;
     let averageRuleSatisfaction = 0;
-    if (totalRules > 0 && trades.length > 0) {
-      const tradesWithRules = trades.filter((t) => t.ruleChecks.length > 0);
+    if (totalRules > 0 && strategy.trades.length > 0) {
+      const tradesWithRules = strategy.trades.filter((t) => t.ruleChecks.length > 0);
       if (tradesWithRules.length > 0) {
         const totalSatisfaction = tradesWithRules.reduce((sum, t) => {
           const checkedCount = t.ruleChecks.filter((rc) => rc.checked).length;
@@ -200,9 +208,9 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
     return {
       strategyId: strategy.id,
       strategyName: strategy.name,
-      totalTrades: trades.length,
-      winRate: trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0,
-      totalPnl: trades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
+      totalTrades: nonBETrades.length,
+      winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
+      totalPnl: nonBETrades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
       averageRMultiple:
         tradesWithResult.length > 0
           ? tradesWithResult.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
@@ -234,11 +242,15 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
     },
   });
 
+  // Filter out BE trades for P&L analytics
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nonBETrades = trades.filter((t: any) => !t.isBreakEven);
+
   const strategyMap = new Map<string, number>();
-  const totalTrades = trades.length;
+  const totalTrades = nonBETrades.length;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  trades.forEach((trade: any) => {
+  nonBETrades.forEach((trade: any) => {
     const strategyName = trade.strategy?.name || 'No Strategy';
     strategyMap.set(strategyName, (strategyMap.get(strategyName) || 0) + 1);
   });
@@ -317,8 +329,12 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
     orderBy: { tradeTime: 'asc' },
   });
 
+  // Filter out BE trades for P&L analytics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return trades.map((trade: any) => {
+  const nonBETrades = trades.filter((t: any) => !t.isBreakEven);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return nonBETrades.map((trade: any) => {
     const date = new Date(trade.tradeTime);
     return {
       id: trade.id,
@@ -351,6 +367,10 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
     orderBy: { tradeTime: 'asc' },
   });
 
+  // Filter out BE trades for P&L analytics
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nonBETrades = trades.filter((t: any) => !t.isBreakEven);
+
   // 30-minute interval stats
   const intervalMap = new Map<string, { totalPnL: number; trades: number; wins: number }>();
 
@@ -359,7 +379,7 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  trades.forEach((trade: any) => {
+  nonBETrades.forEach((trade: any) => {
     const date = new Date(trade.tradeTime);
     const hour = date.getHours();
     const minute = date.getMinutes();

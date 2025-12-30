@@ -28,6 +28,7 @@ model Trade {
   risk        Float            // Risk amount in dollars
   result      Float?           // P&L result in dollars
   execution   String           @default("PASS") // PASS, FAIL
+  isBreakEven Boolean          @default(false) // Break even trade - excluded from P&L analytics
   notes       String?
   screenshots Screenshot[]
   strategy    Strategy?        @relation(fields: [strategyId], references: [id])

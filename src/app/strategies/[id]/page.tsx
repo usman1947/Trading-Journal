@@ -490,7 +490,7 @@ export default function StrategyDetailPage({
 
       {/* Additional Stats Row */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        <Grid size={{ xs: 6, sm: 2.4 }}>
           <Card>
             <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Typography variant="body2" color="text.secondary">
@@ -502,7 +502,7 @@ export default function StrategyDetailPage({
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        <Grid size={{ xs: 6, sm: 2.4 }}>
           <Card>
             <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Typography variant="body2" color="text.secondary">
@@ -514,7 +514,19 @@ export default function StrategyDetailPage({
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        <Grid size={{ xs: 6, sm: 2.4 }}>
+          <Card>
+            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Typography variant="body2" color="text.secondary">
+                Break Even
+              </Typography>
+              <Typography variant="h6" color="warning.main">
+                {stats.breakEvenTrades || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid size={{ xs: 6, sm: 2.4 }}>
           <Card>
             <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Typography variant="body2" color="text.secondary">
@@ -526,7 +538,7 @@ export default function StrategyDetailPage({
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        <Grid size={{ xs: 6, sm: 2.4 }}>
           <Card>
             <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Typography variant="body2" color="text.secondary">

@@ -19,6 +19,7 @@ export interface Trade {
   risk: number;
   result?: number | null;
   execution: Execution;
+  isBreakEven: boolean;
   notes?: string | null;
   strategyId?: string | null;
   strategy?: Strategy | null;
@@ -126,6 +127,7 @@ export interface TradeFormData {
   risk: number;
   result?: number;
   execution: Execution;
+  isBreakEven?: boolean;
   notes?: string;
   strategyId?: string;
   accountId?: string | null;
