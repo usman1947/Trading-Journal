@@ -12,7 +12,27 @@ export async function POST(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const tradeId = searchParams.get('tradeId');
+    const folder = searchParams.get('folder');
 
+    const formData = await request.formData();
+
+    // Handle avatar upload (single file, returns URL)
+    if (folder === 'avatars') {
+      const file = formData.get('file') as File;
+      if (!file) {
+        return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      }
+
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const filename = `avatar-${user.id}-${Date.now()}`;
+
+      const result = await uploadToCloudinary(buffer, filename, 'avatars');
+
+      return NextResponse.json({ url: result.secure_url, publicId: result.public_id });
+    }
+
+    // Handle trade screenshot upload (requires tradeId)
     if (!tradeId) {
       return NextResponse.json({ error: 'Trade ID is required' }, { status: 400 });
     }
@@ -26,7 +46,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
     }
 
-    const formData = await request.formData();
     const files = formData.getAll('files') as File[];
 
     if (files.length === 0) {

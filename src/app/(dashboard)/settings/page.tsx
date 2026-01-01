@@ -173,9 +173,8 @@ export default function SettingsPage() {
       // Upload to Cloudinary via our upload endpoint
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('folder', 'avatars');
 
-      const uploadResponse = await fetch('/api/upload', {
+      const uploadResponse = await fetch('/api/upload?folder=avatars', {
         method: 'POST',
         body: formData,
       });
