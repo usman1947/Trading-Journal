@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaLibSql } from '@prisma/adapter-libsql';
 import { Pool } from 'pg';
 
 const globalForPrisma = globalThis as unknown as {
@@ -12,18 +11,6 @@ function createPrismaClient() {
 
   if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is not set');
-  }
-
-  // Use SQLite for local development (file:./dev.db)
-  // Use PostgreSQL with adapter for production
-  if (connectionString.startsWith('file:')) {
-    const adapter = new PrismaLibSql({
-      url: connectionString,
-    });
-    return new PrismaClient({
-      adapter,
-      log: ['query', 'error', 'warn'],
-    });
   }
 
   const pool = new Pool({ connectionString });
