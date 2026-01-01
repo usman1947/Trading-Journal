@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
     const accountIdParam = searchParams.get('accountId');
 
     // Build the trade count filter based on accountId
-    const tradeCountWhere: Record<string, unknown> = {};
+    const tradeCountWhere: Record<string, unknown> = { userId: user.id };
     if (accountIdParam !== null) {
       if (accountIdParam === 'paper' || accountIdParam === '') {
         tradeCountWhere.accountId = null;
@@ -19,6 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     const strategies = await prisma.strategy.findMany({
+      where: { userId: user.id },
       include: {
         _count: {
           select: {
@@ -52,6 +57,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const body = await request.json();
     const { name, description, setups, rules } = body;
 
@@ -64,6 +72,7 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         setups: setups && setups.length > 0 ? JSON.stringify(setups) : null,
+        userId: user.id,
         rules: rules && rules.length > 0
           ? {
               create: rules.map((text: string, index: number) => ({

@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTradeTimeDistribution } from '@/lib/analytics';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import type { TradeFilters } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
-    const filters: TradeFilters = {};
+    const filters: TradeFilters = { userId: user.id };
 
     if (searchParams.get('dateFrom')) {
       filters.dateFrom = searchParams.get('dateFrom')!;

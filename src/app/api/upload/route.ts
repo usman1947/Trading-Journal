@@ -1,16 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
     const tradeId = searchParams.get('tradeId');
 
     if (!tradeId) {
       return NextResponse.json({ error: 'Trade ID is required' }, { status: 400 });
+    }
+
+    // Verify trade belongs to user
+    const trade = await prisma.trade.findFirst({
+      where: { id: tradeId, userId: user.id },
+    });
+
+    if (!trade) {
+      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
     }
 
     const formData = await request.formData();

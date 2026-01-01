@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { deleteFromCloudinary } from '@/lib/cloudinary';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,13 +10,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id } = await params;
 
+    // Find screenshot and verify ownership through trade
     const screenshot = await prisma.screenshot.findUnique({
       where: { id },
+      include: { trade: true },
     });
 
-    if (!screenshot) {
+    if (!screenshot || screenshot.trade.userId !== user.id) {
       return NextResponse.json({ error: 'Screenshot not found' }, { status: 404 });
     }
 

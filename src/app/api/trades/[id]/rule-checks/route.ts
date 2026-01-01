@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,19 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id: tradeId } = await params;
+
+    // Verify trade ownership
+    const trade = await prisma.trade.findFirst({
+      where: { id: tradeId, userId: user.id },
+    });
+
+    if (!trade) {
+      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+    }
 
     const ruleChecks = await prisma.tradeRuleCheck.findMany({
       where: { tradeId },
@@ -36,7 +49,20 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id: tradeId } = await params;
+
+    // Verify trade ownership
+    const trade = await prisma.trade.findFirst({
+      where: { id: tradeId, userId: user.id },
+    });
+
+    if (!trade) {
+      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+    }
+
     const body = await request.json();
     const { ruleChecks } = body; // Array of { ruleId: string, checked: boolean }
 

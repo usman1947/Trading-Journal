@@ -21,11 +21,19 @@ function applyAccountFilter(where: Record<string, unknown>, accountId: string | 
   }
 }
 
+// Helper function to apply user filter
+function applyUserFilter(where: Record<string, unknown>, userId: string | undefined) {
+  if (userId) {
+    where.userId = userId;
+  }
+}
+
 export async function getAnalytics(filters: TradeFilters = {}): Promise<AnalyticsData> {
   const where: Record<string, unknown> = {
     result: { not: null },
   };
 
+  applyUserFilter(where, filters.userId);
   if (filters.dateFrom) {
     where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
   }
@@ -117,6 +125,7 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
     result: { not: null },
   };
 
+  applyUserFilter(where, filters.userId);
   if (filters.dateFrom) {
     where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
   }
@@ -156,9 +165,14 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
   const tradeWhere: Record<string, unknown> = {
     result: { not: null },
   };
+  applyUserFilter(tradeWhere, filters.userId);
   applyAccountFilter(tradeWhere, filters.accountId);
 
+  const strategyWhere: Record<string, unknown> = {};
+  applyUserFilter(strategyWhere, filters.userId);
+
   const strategies = await prisma.strategy.findMany({
+    where: strategyWhere,
     include: {
       trades: {
         where: tradeWhere,
@@ -228,6 +242,7 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
     result: { not: null },
   };
 
+  applyUserFilter(where, filters.userId);
   if (filters.dateFrom) {
     where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
   }
@@ -268,6 +283,7 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
     result: { not: null },
   };
 
+  applyUserFilter(where, filters.userId);
   if (filters.dateFrom) {
     where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
   }
@@ -314,6 +330,7 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
     result: { not: null },
   };
 
+  applyUserFilter(where, filters.userId);
   if (filters.dateFrom) {
     where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
   }
@@ -352,6 +369,7 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
     result: { not: null },
   };
 
+  applyUserFilter(where, filters.userId);
   if (filters.dateFrom) {
     where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
   }
@@ -451,6 +469,7 @@ export async function getTradeTimeStats(filters: TradeFilters = {}): Promise<Tra
     exitTime: { not: null }, // Only trades with exit time
   };
 
+  applyUserFilter(where, filters.userId);
   if (filters.dateFrom) {
     where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
   }

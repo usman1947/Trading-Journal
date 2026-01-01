@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,10 +9,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id } = await params;
 
-    const account = await prisma.account.findUnique({
-      where: { id },
+    const account = await prisma.account.findFirst({
+      where: { id, userId: user.id },
       include: {
         _count: {
           select: { trades: true },
@@ -35,12 +39,24 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id } = await params;
     const body = await request.json();
     const { name, description } = body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
       return NextResponse.json({ error: 'Account name is required' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const existing = await prisma.account.findFirst({
+      where: { id, userId: user.id },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
 
     const account = await prisma.account.update({
@@ -57,9 +73,6 @@ export async function PUT(
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
       return NextResponse.json({ error: 'An account with this name already exists' }, { status: 400 });
     }
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
-    }
     return NextResponse.json({ error: 'Failed to update account' }, { status: 500 });
   }
 }
@@ -69,11 +82,23 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id } = await params;
+
+    // Verify ownership
+    const existing = await prisma.account.findFirst({
+      where: { id, userId: user.id },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+    }
 
     // Check if account has trades
     const tradeCount = await prisma.trade.count({
-      where: { accountId: id },
+      where: { accountId: id, userId: user.id },
     });
 
     if (tradeCount > 0) {
@@ -90,9 +115,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('Error deleting account:', error);
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
-    }
     return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 });
   }
 }

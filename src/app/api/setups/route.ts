@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     // Get all unique setups from trades
     const trades = await prisma.trade.findMany({
       where: {
+        userId: user.id,
         setup: {
           not: null,
         },
@@ -21,6 +26,7 @@ export async function GET() {
     // Get all setups from strategies
     const strategies = await prisma.strategy.findMany({
       where: {
+        userId: user.id,
         setups: {
           not: null,
         },

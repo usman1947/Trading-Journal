@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { userId: user.id };
 
     // Apply filters
     const dateFrom = searchParams.get('dateFrom');
@@ -83,6 +87,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const body = await request.json();
     const {
       symbol,
@@ -112,7 +119,8 @@ export async function POST(request: NextRequest) {
         isBreakEven: isBreakEven || false,
         notes: notes || null,
         strategyId: strategyId || null,
-        accountId: accountId || null, // null means Paper Account
+        accountId: accountId || null,
+        userId: user.id,
       },
       include: {
         strategy: {

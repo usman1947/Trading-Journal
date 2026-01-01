@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { deleteFromCloudinary } from '@/lib/cloudinary';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
     const month = searchParams.get('month');
     const year = searchParams.get('year');
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { userId: user.id };
 
     if (month && year) {
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -36,6 +40,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const body = await request.json();
     const { date, notes, mood, lessons } = body;
 
@@ -47,21 +54,32 @@ export async function POST(request: NextRequest) {
     const [year, month, day] = date.split('-').map(Number);
     const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
 
-    // Upsert - create or update
-    const entry = await prisma.dailyJournal.upsert({
-      where: { date: dateObj },
-      update: {
-        notes,
-        mood: mood || null,
-        lessons: lessons || null,
-      },
-      create: {
-        date: dateObj,
-        notes,
-        mood: mood || null,
-        lessons: lessons || null,
-      },
+    // Upsert - create or update (with userId constraint)
+    const existing = await prisma.dailyJournal.findFirst({
+      where: { userId: user.id, date: dateObj },
     });
+
+    let entry;
+    if (existing) {
+      entry = await prisma.dailyJournal.update({
+        where: { id: existing.id },
+        data: {
+          notes,
+          mood: mood || null,
+          lessons: lessons || null,
+        },
+      });
+    } else {
+      entry = await prisma.dailyJournal.create({
+        data: {
+          date: dateObj,
+          notes,
+          mood: mood || null,
+          lessons: lessons || null,
+          userId: user.id,
+        },
+      });
+    }
 
     return NextResponse.json(entry);
   } catch (error) {
@@ -72,6 +90,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -80,8 +101,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get the entry with screenshots to delete from Cloudinary
-    const entry = await prisma.dailyJournal.findUnique({
-      where: { id },
+    const entry = await prisma.dailyJournal.findFirst({
+      where: { id, userId: user.id },
       include: { screenshots: true },
     });
 

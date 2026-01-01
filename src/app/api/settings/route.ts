@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     let settings = await prisma.settings.findUnique({
-      where: { id: 'default' },
+      where: { userId: user.id },
     });
 
     if (!settings) {
       settings = await prisma.settings.create({
         data: {
-          id: 'default',
+          userId: user.id,
           defaultRisk: 100,
           currency: 'USD',
           theme: 'light',
@@ -29,11 +33,14 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const body = await request.json();
     const { defaultRisk, currency, theme, defaultAccountId } = body;
 
     const settings = await prisma.settings.upsert({
-      where: { id: 'default' },
+      where: { userId: user.id },
       update: {
         defaultRisk: defaultRisk ?? undefined,
         currency: currency ?? undefined,
@@ -41,7 +48,7 @@ export async function PUT(request: NextRequest) {
         defaultAccountId: defaultAccountId !== undefined ? defaultAccountId : undefined,
       },
       create: {
-        id: 'default',
+        userId: user.id,
         defaultRisk: defaultRisk ?? 100,
         currency: currency ?? 'USD',
         theme: theme ?? 'light',

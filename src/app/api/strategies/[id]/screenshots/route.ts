@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { uploadToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,11 +10,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id: strategyId } = await params;
 
-    // Verify strategy exists
-    const strategy = await prisma.strategy.findUnique({
-      where: { id: strategyId },
+    // Verify strategy exists and belongs to user
+    const strategy = await prisma.strategy.findFirst({
+      where: { id: strategyId, userId: user.id },
     });
 
     if (!strategy) {
@@ -64,12 +68,24 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id: strategyId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const screenshotId = searchParams.get('screenshotId');
 
     if (!screenshotId) {
       return NextResponse.json({ error: 'Screenshot ID is required' }, { status: 400 });
+    }
+
+    // Verify strategy belongs to user
+    const strategy = await prisma.strategy.findFirst({
+      where: { id: strategyId, userId: user.id },
+    });
+
+    if (!strategy) {
+      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
     }
 
     // Find the screenshot

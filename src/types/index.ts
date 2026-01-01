@@ -146,6 +146,7 @@ export interface TradeFilters {
   resultMin?: number;
   resultMax?: number;
   accountId?: string | null;
+  userId?: string;
 }
 
 export interface AnalyticsData {

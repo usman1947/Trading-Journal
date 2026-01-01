@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,10 +9,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id } = await params;
 
-    const strategy = await prisma.strategy.findUnique({
-      where: { id },
+    const strategy = await prisma.strategy.findFirst({
+      where: { id, userId: user.id },
       include: {
         rules: {
           orderBy: { order: 'asc' },
@@ -44,7 +48,20 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id } = await params;
+
+    // Verify ownership
+    const existing = await prisma.strategy.findFirst({
+      where: { id, userId: user.id },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+    }
+
     const body = await request.json();
     const { name, description, setups, rules } = body;
 
@@ -98,7 +115,19 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id } = await params;
+
+    // Verify ownership
+    const existing = await prisma.strategy.findFirst({
+      where: { id, userId: user.id },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+    }
 
     await prisma.strategy.delete({
       where: { id },

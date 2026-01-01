@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import Providers from '@/components/layout/Providers';
-import AppLayout from '@/components/layout/AppLayout';
 
 export const metadata: Metadata = {
   title: 'Trading Journal',
@@ -20,7 +19,7 @@ export default function RootLayout({
       <body>
         <AppRouterCacheProvider>
           <Providers>
-            <AppLayout>{children}</AppLayout>
+            {children}
           </Providers>
         </AppRouterCacheProvider>
       </body>

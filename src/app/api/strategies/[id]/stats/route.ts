@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +17,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const accountIdParam = searchParams.get('accountId');
 
     // Build the trade filter based on accountId
-    const tradeWhere: Record<string, unknown> = {};
+    const tradeWhere: Record<string, unknown> = { userId: user.id };
     if (accountIdParam !== null) {
       if (accountIdParam === 'paper' || accountIdParam === '') {
         tradeWhere.accountId = null;
@@ -30,8 +34,8 @@ export async function GET(
       }
     }
 
-    const strategy = await prisma.strategy.findUnique({
-      where: { id },
+    const strategy = await prisma.strategy.findFirst({
+      where: { id, userId: user.id },
       include: {
         trades: {
           where: tradeWhere,

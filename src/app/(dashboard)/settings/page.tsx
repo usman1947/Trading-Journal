@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -28,6 +28,7 @@ import {
   CircularProgress,
   Paper,
   Grid,
+  Avatar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -37,9 +38,12 @@ import {
   LightMode as LightModeIcon,
   AccountBalance as AccountIcon,
   AttachMoney as MoneyIcon,
+  Person as PersonIcon,
+  CameraAlt as CameraIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setThemeMode, setSelectedAccountId, showSnackbar } from '@/store/slices/uiSlice';
+import { setUser } from '@/store/slices/authSlice';
 import {
   useGetSettingsQuery,
   useUpdateSettingsMutation,
@@ -47,6 +51,7 @@ import {
   useCreateAccountMutation,
   useUpdateAccountMutation,
   useDeleteAccountMutation,
+  useUpdateProfileMutation,
 } from '@/store';
 import { Account } from '@/types';
 
@@ -59,6 +64,7 @@ interface AccountDialogData {
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector((state) => state.ui.themeMode);
+  const user = useAppSelector((state) => state.auth.user);
 
   const { data: settings, isLoading: settingsLoading } = useGetSettingsQuery({});
   const { data: accounts = [], isLoading: accountsLoading } = useGetAccountsQuery({});
@@ -66,6 +72,17 @@ export default function SettingsPage() {
   const [createAccount] = useCreateAccountMutation();
   const [updateAccount] = useUpdateAccountMutation();
   const [deleteAccount] = useDeleteAccountMutation();
+  const [updateProfile] = useUpdateProfileMutation();
+
+  // Profile state
+  const [profileName, setProfileName] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [defaultRisk, setDefaultRisk] = useState<number>(100);
   const [defaultAccountId, setDefaultAccountId] = useState<string | null>(null);
@@ -79,11 +96,119 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (user) {
+      setProfileName(user.name);
+    }
+  }, [user]);
+
+  useEffect(() => {
     if (settings) {
       setDefaultRisk(settings.defaultRisk);
       setDefaultAccountId(settings.defaultAccountId ?? null);
     }
   }, [settings]);
+
+  const handleSaveProfileName = async () => {
+    if (!profileName.trim()) return;
+    setSavingProfile(true);
+    try {
+      const updatedUser = await updateProfile({ name: profileName.trim() }).unwrap();
+      dispatch(setUser(updatedUser));
+      dispatch(showSnackbar({ message: 'Profile updated successfully', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to update profile', severity: 'error' }));
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      dispatch(showSnackbar({ message: 'New passwords do not match', severity: 'error' }));
+      return;
+    }
+    if (newPassword.length < 8) {
+      dispatch(showSnackbar({ message: 'Password must be at least 8 characters', severity: 'error' }));
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await updateProfile({ currentPassword, newPassword }).unwrap();
+      dispatch(showSnackbar({ message: 'Password changed successfully', severity: 'success' }));
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'data' in error
+        ? (error.data as { error?: string })?.error || 'Failed to change password'
+        : 'Failed to change password';
+      dispatch(showSnackbar({ message, severity: 'error' }));
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      dispatch(showSnackbar({ message: 'Please select an image file', severity: 'error' }));
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      dispatch(showSnackbar({ message: 'Image must be less than 5MB', severity: 'error' }));
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      // Upload to Cloudinary via our upload endpoint
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'avatars');
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const { url } = await uploadResponse.json();
+
+      // Update user profile with new avatar URL
+      const updatedUser = await updateProfile({ avatarUrl: url }).unwrap();
+      dispatch(setUser(updatedUser));
+      dispatch(showSnackbar({ message: 'Avatar updated successfully', severity: 'success' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Failed to upload avatar', severity: 'error' }));
+    } finally {
+      setUploadingAvatar(false);
+      // Clear the input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const handleThemeChange = async (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
@@ -199,6 +324,138 @@ export default function SettingsPage() {
       </Typography>
 
       <Grid container spacing={3}>
+        {/* Profile Section */}
+        <Grid size={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PersonIcon />
+                Profile
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+                {/* Avatar */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ position: 'relative' }}>
+                    <Avatar
+                      src={user?.avatarUrl || undefined}
+                      sx={{
+                        width: 80,
+                        height: 80,
+                        bgcolor: 'primary.main',
+                        fontSize: '1.5rem',
+                        cursor: 'pointer',
+                      }}
+                      onClick={handleAvatarClick}
+                    >
+                      {user?.name ? getInitials(user.name) : '?'}
+                    </Avatar>
+                    <IconButton
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        backgroundColor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        '&:hover': { backgroundColor: 'action.hover' },
+                      }}
+                      onClick={handleAvatarClick}
+                      disabled={uploadingAvatar}
+                    >
+                      {uploadingAvatar ? <CircularProgress size={16} /> : <CameraIcon fontSize="small" />}
+                    </IconButton>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleAvatarChange}
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Click to upload a new avatar
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      JPG, PNG or GIF. Max 5MB.
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Divider />
+
+                {/* Name */}
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                  <TextField
+                    label="Name"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    fullWidth
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleSaveProfileName}
+                    disabled={savingProfile || profileName === user?.name || !profileName.trim()}
+                    sx={{ whiteSpace: 'nowrap', minWidth: 100 }}
+                  >
+                    {savingProfile ? <CircularProgress size={24} /> : 'Save'}
+                  </Button>
+                </Box>
+
+                {/* Email (read-only) */}
+                <TextField
+                  label="Email"
+                  value={user?.email || ''}
+                  disabled
+                  fullWidth
+                  helperText="Email cannot be changed"
+                />
+
+                <Divider />
+
+                {/* Change Password */}
+                <Typography variant="subtitle1" fontWeight="medium">
+                  Change Password
+                </Typography>
+                <TextField
+                  label="Current Password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="New Password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  fullWidth
+                  helperText="Must be at least 8 characters"
+                />
+                <TextField
+                  label="Confirm New Password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  fullWidth
+                  error={confirmPassword !== '' && newPassword !== confirmPassword}
+                  helperText={confirmPassword !== '' && newPassword !== confirmPassword ? 'Passwords do not match' : ''}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={handleChangePassword}
+                  disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  {savingPassword ? <CircularProgress size={24} /> : 'Change Password'}
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Appearance Section */}
         <Grid size={12}>
           <Card>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -7,6 +8,11 @@ import {
   Typography,
   Box,
   Tooltip,
+  Avatar,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  Divider,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -15,15 +21,53 @@ import {
   Add as AddIcon,
   ShowChart as LogoIcon,
   Settings as SettingsIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleSidebar, toggleThemeMode } from '@/store/slices/uiSlice';
+import { clearUser, useLogoutMutation, api } from '@/store';
 import AccountSelector from './AccountSelector';
 
 export default function Header() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const themeMode = useAppSelector((state) => state.ui.themeMode);
+  const user = useAppSelector((state) => state.auth.user);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [logout] = useLogoutMutation();
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    handleMenuClose();
+    await logout();
+    dispatch(clearUser());
+    // Reset entire RTK Query cache to clear previous user's data
+    dispatch(api.util.resetApiState());
+    router.push('/login');
+  };
+
+  const handleSettings = () => {
+    handleMenuClose();
+    router.push('/settings');
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <AppBar
@@ -55,12 +99,12 @@ export default function Header() {
         </Box>
 
         <Box sx={{ flexGrow: 1 }} />
-        
+
         <Box sx={{ mr: 2 }}>
           <AccountSelector />
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <Tooltip title="Add New Trade">
             <IconButton
               component={Link}
@@ -87,15 +131,62 @@ export default function Header() {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Settings">
+          <Tooltip title="Account">
             <IconButton
-              component={Link}
-              href="/settings"
-              color="inherit"
+              onClick={handleMenuOpen}
+              size="small"
+              sx={{ ml: 1 }}
             >
-              <SettingsIcon />
+              <Avatar
+                src={user?.avatarUrl || undefined}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: 'primary.main',
+                  fontSize: '0.875rem',
+                }}
+              >
+                {user?.name ? getInitials(user.name) : '?'}
+              </Avatar>
             </IconButton>
           </Tooltip>
+
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            onClick={handleMenuClose}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            PaperProps={{
+              sx: {
+                mt: 1,
+                minWidth: 200,
+              },
+            }}
+          >
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <Typography variant="subtitle1" fontWeight="medium">
+                {user?.name || 'User'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {user?.email || ''}
+              </Typography>
+            </Box>
+            <Divider />
+            <MenuItem onClick={handleSettings}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              Settings
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              Logout
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>

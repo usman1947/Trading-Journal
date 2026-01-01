@@ -2,12 +2,14 @@ import { configureStore } from '@reduxjs/toolkit';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import filtersReducer from './slices/filtersSlice';
 import uiReducer from './slices/uiSlice';
+import authReducer from './slices/authSlice';
+import type { User } from './slices/authSlice';
 
 // RTK Query API
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts'],
+  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts', 'User'],
   endpoints: (builder) => ({
     // Accounts
     getAccounts: builder.query({
@@ -288,6 +290,43 @@ export const api = createApi({
       ],
     }),
 
+    // Auth
+    login: builder.mutation<User, { email: string; password: string }>({
+      query: (credentials) => ({
+        url: '/auth/login',
+        method: 'POST',
+        body: credentials,
+      }),
+      invalidatesTags: ['User'],
+    }),
+    signup: builder.mutation<User, { email: string; password: string; name: string }>({
+      query: (userData) => ({
+        url: '/auth/signup',
+        method: 'POST',
+        body: userData,
+      }),
+      invalidatesTags: ['User'],
+    }),
+    logout: builder.mutation<void, void>({
+      query: () => ({
+        url: '/auth/logout',
+        method: 'POST',
+      }),
+      invalidatesTags: ['User', 'Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts'],
+    }),
+    getMe: builder.query<User, void>({
+      query: () => '/auth/me',
+      providesTags: ['User'],
+    }),
+    updateProfile: builder.mutation<User, { name?: string; avatarUrl?: string; currentPassword?: string; newPassword?: string }>({
+      query: (updates) => ({
+        url: '/auth/update-profile',
+        method: 'PUT',
+        body: updates,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
   }),
 });
 
@@ -296,6 +335,7 @@ export const store = configureStore({
     [api.reducerPath]: api.reducer,
     filters: filtersReducer,
     ui: uiReducer,
+    auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(api.middleware),
@@ -344,4 +384,14 @@ export const {
   useDeleteStrategyScreenshotMutation,
   useGetTradeRuleChecksQuery,
   useUpdateTradeRuleChecksMutation,
+  // Auth
+  useLoginMutation,
+  useSignupMutation,
+  useLogoutMutation,
+  useGetMeQuery,
+  useUpdateProfileMutation,
 } = api;
+
+// Re-export auth slice actions and types
+export { setUser, clearUser, setLoading } from './slices/authSlice';
+export type { User } from './slices/authSlice';

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { uploadToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
     const journalId = searchParams.get('journalId');
 
@@ -13,9 +17,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Journal ID is required' }, { status: 400 });
     }
 
-    // Verify journal exists
-    const journal = await prisma.dailyJournal.findUnique({
-      where: { id: journalId },
+    // Verify journal exists and belongs to user
+    const journal = await prisma.dailyJournal.findFirst({
+      where: { id: journalId, userId: user.id },
     });
 
     if (!journal) {
@@ -60,6 +64,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
     const screenshotId = searchParams.get('screenshotId');
 
@@ -67,11 +74,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Screenshot ID is required' }, { status: 400 });
     }
 
+    // Find screenshot and verify ownership through journal
     const screenshot = await prisma.journalScreenshot.findUnique({
       where: { id: screenshotId },
+      include: { journal: true },
     });
 
-    if (!screenshot) {
+    if (!screenshot || screenshot.journal.userId !== user.id) {
       return NextResponse.json({ error: 'Screenshot not found' }, { status: 404 });
     }
 

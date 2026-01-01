@@ -9,14 +9,36 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relations
+  accounts     Account[]
+  trades       Trade[]
+  strategies   Strategy[]
+  tags         Tag[]
+  journals     DailyJournal[]
+  settings     Settings?
+}
+
 model Account {
   id          String     @id @default(cuid())
-  name        String     @unique
+  name        String
   description String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   trades      Trade[]
   settings    Settings[]
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  @@unique([userId, name])
 }
 
 model Trade {
@@ -38,20 +60,26 @@ model Trade {
   accountId   String?          // null means Paper Account
   tags        TagOnTrade[]
   ruleChecks  TradeRuleCheck[]
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 }
 
 model Strategy {
   id          String              @id @default(cuid())
-  name        String              @unique
+  name        String
   description String?
   setups      String?             // JSON array of setup names
   trades      Trade[]
   rules       StrategyRule[]
   screenshots StrategyScreenshot[]
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+
+  @@unique([userId, name])
 }
 
 model StrategyRule {
@@ -89,9 +117,13 @@ model TradeRuleCheck {
 
 model Tag {
   id     String       @id @default(cuid())
-  name   String       @unique
+  name   String
   color  String       @default("#1976d2")
   trades TagOnTrade[]
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([userId, name])
 }
 
 model TagOnTrade {
@@ -115,13 +147,17 @@ model Screenshot {
 
 model DailyJournal {
   id          String             @id @default(cuid())
-  date        DateTime           @unique
+  date        DateTime
   notes       String
   mood        String?            // BULLISH, BEARISH, NEUTRAL
   lessons     String?
   screenshots JournalScreenshot[]
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+
+  @@unique([userId, date])
 }
 
 model JournalScreenshot {
@@ -135,10 +171,12 @@ model JournalScreenshot {
 }
 
 model Settings {
-  id               String   @id @default("default")
+  id               String   @id @default(cuid())
   defaultRisk      Float    @default(100) // Default R value for R-multiple
   currency         String   @default("USD")
   theme            String   @default("light")
   defaultAccountId String?  // Default account for new trades
   defaultAccount   Account? @relation(fields: [defaultAccountId], references: [id], onDelete: SetNull)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String   @unique
 }

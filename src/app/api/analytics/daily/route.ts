@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDailyStats } from '@/lib/analytics';
+import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorizedResponse();
+
     const searchParams = request.nextUrl.searchParams;
     const accountIdParam = searchParams.get('accountId');
     const filters = {
       dateFrom: searchParams.get('dateFrom') || undefined,
       dateTo: searchParams.get('dateTo') || undefined,
       accountId: accountIdParam !== null ? accountIdParam : undefined,
+      userId: user.id,
     };
 
     const stats = await getDailyStats(filters);
