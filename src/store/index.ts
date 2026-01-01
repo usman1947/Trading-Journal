@@ -215,6 +215,13 @@ export const api = createApi({
       }),
       providesTags: ['Analytics', 'Strategies'],
     }),
+    getTradeTimeStats: builder.query({
+      query: (filters) => ({
+        url: '/analytics/trade-time-stats',
+        params: filters,
+      }),
+      providesTags: ['Analytics'],
+    }),
 
     // Settings
     getSettings: builder.query({
@@ -328,6 +335,7 @@ export const {
   useGetDailyStatsQuery,
   useGetStrategyStatsQuery,
   useGetStrategiesAnalyticsQuery,
+  useGetTradeTimeStatsQuery,
   useGetSettingsQuery,
   useUpdateSettingsMutation,
   useUploadScreenshotsMutation,

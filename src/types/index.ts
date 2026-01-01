@@ -15,6 +15,7 @@ export interface Trade {
   symbol: string;
   side: TradeSide;
   tradeTime: string;
+  exitTime?: string | null;
   setup?: string | null;
   risk: number;
   result?: number | null;
@@ -123,6 +124,7 @@ export interface TradeFormData {
   symbol: string;
   side: TradeSide;
   tradeTime: string;
+  exitTime?: string | null;
   setup?: string;
   risk: number;
   result?: number;
@@ -160,6 +162,17 @@ export interface AnalyticsData {
   largestLoss: number;
   totalRisk: number;
   executionRate: number; // % of PASS executions
+  avgWinnerTime?: number; // Average time in winning trades (minutes)
+  avgLoserTime?: number; // Average time in losing trades (minutes)
+}
+
+export interface TradeTimeStats {
+  avgWinnerTime: number; // minutes
+  avgLoserTime: number; // minutes
+  avgBreakevenTime: number; // minutes
+  winnerCount: number;
+  loserCount: number;
+  breakevenCount: number;
 }
 
 export interface DailyStats {

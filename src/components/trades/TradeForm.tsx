@@ -147,6 +147,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
     symbol: trade?.symbol || '',
     side: trade?.side || 'LONG',
     tradeTime: trade?.tradeTime || new Date().toISOString(),
+    exitTime: trade?.exitTime || null,
     setup: trade?.setup || '',
     risk: trade?.risk ?? defaultRisk,
     result: trade?.result ?? undefined,
@@ -248,7 +249,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                 </Grid>
 
                 {/* Date */}
-                <Grid size={{ xs: 12, sm: 3 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <DatePicker
                     label="Date"
                     value={new Date(formik.values.tradeTime)}
@@ -268,10 +269,10 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                   />
                 </Grid>
 
-                {/* Time */}
-                <Grid size={{ xs: 12, sm: 3 }}>
+                {/* Entry Time */}
+                <Grid size={{ xs: 6, sm: 6 }}>
                   <TimePicker
-                    label="Time"
+                    label="Entry Time"
                     value={new Date(formik.values.tradeTime)}
                     onChange={(time) => {
                       if (time) {
@@ -283,6 +284,33 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                     slotProps={{
                       textField: {
                         fullWidth: true,
+                      },
+                    }}
+                  />
+                </Grid>
+
+                {/* Exit Time */}
+                <Grid size={{ xs: 6, sm: 6 }}>
+                  <TimePicker
+                    label="Exit Time"
+                    value={formik.values.exitTime ? new Date(formik.values.exitTime) : new Date(formik.values.tradeTime)}
+                    onChange={(time) => {
+                      if (time) {
+                        // Use the trade date for the exit time
+                        const tradeDate = new Date(formik.values.tradeTime);
+                        const exitDateTime = new Date(tradeDate);
+                        exitDateTime.setHours(time.getHours(), time.getMinutes(), time.getSeconds());
+                        formik.setFieldValue('exitTime', exitDateTime.toISOString());
+                      } else {
+                        formik.setFieldValue('exitTime', null);
+                      }
+                    }}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                      },
+                      field: {
+                        clearable: true,
                       },
                     }}
                   />

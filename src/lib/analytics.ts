@@ -1,11 +1,12 @@
 import prisma from './prisma';
-import type { AnalyticsData, DailyStats, StrategyStats, TradeFilters } from '@/types';
+import type { AnalyticsData, DailyStats, StrategyStats, TradeFilters, TradeTimeStats } from '@/types';
 
 type TradeRecord = {
   result: number | null;
   risk: number;
   execution: string | null;
   tradeTime: Date;
+  exitTime: Date | null;
   isBreakEven: boolean;
 };
 
@@ -381,9 +382,17 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   nonBETrades.forEach((trade: any) => {
     const date = new Date(trade.tradeTime);
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const dayOfWeek = daysOfWeek[date.getDay()];
+    // Use America/New_York timezone to display trades in EST
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/New_York'
+    });
+    const [hourStr, minuteStr] = timeStr.split(':');
+    const hour = parseInt(hourStr, 10);
+    const minute = parseInt(minuteStr, 10);
+    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' });
     const result = trade.result ?? 0;
     const isWin = result > 0;
 
@@ -434,4 +443,82 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
     .filter((d) => d.trades > 0);
 
   return { hourly, daily };
+}
+
+export async function getTradeTimeStats(filters: TradeFilters = {}): Promise<TradeTimeStats> {
+  const where: Record<string, unknown> = {
+    result: { not: null },
+    exitTime: { not: null }, // Only trades with exit time
+  };
+
+  if (filters.dateFrom) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
+  }
+  if (filters.dateTo) {
+    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
+  }
+  if (filters.strategyId) {
+    where.strategyId = filters.strategyId;
+  }
+  if (filters.side) {
+    where.side = filters.side;
+  }
+  if (filters.execution) {
+    where.execution = filters.execution;
+  }
+  applyAccountFilter(where, filters.accountId);
+
+  const trades = await prisma.trade.findMany({ where });
+
+  // Separate BE trades and non-BE trades
+  const breakevenTrades = trades.filter((t: TradeRecord) => t.isBreakEven);
+  const nonBETrades = trades.filter((t: TradeRecord) => !t.isBreakEven);
+
+  const winningTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
+  const losingTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
+
+  // Calculate average time in minutes for winners
+  let avgWinnerTime = 0;
+  if (winningTrades.length > 0) {
+    const totalWinnerMinutes = winningTrades.reduce((sum: number, t: TradeRecord) => {
+      const entryTime = new Date(t.tradeTime).getTime();
+      const exitTime = new Date(t.exitTime!).getTime();
+      const durationMinutes = (exitTime - entryTime) / (1000 * 60);
+      return sum + Math.max(0, durationMinutes); // Ensure non-negative
+    }, 0);
+    avgWinnerTime = totalWinnerMinutes / winningTrades.length;
+  }
+
+  // Calculate average time in minutes for losers
+  let avgLoserTime = 0;
+  if (losingTrades.length > 0) {
+    const totalLoserMinutes = losingTrades.reduce((sum: number, t: TradeRecord) => {
+      const entryTime = new Date(t.tradeTime).getTime();
+      const exitTime = new Date(t.exitTime!).getTime();
+      const durationMinutes = (exitTime - entryTime) / (1000 * 60);
+      return sum + Math.max(0, durationMinutes); // Ensure non-negative
+    }, 0);
+    avgLoserTime = totalLoserMinutes / losingTrades.length;
+  }
+
+  // Calculate average time in minutes for breakeven trades
+  let avgBreakevenTime = 0;
+  if (breakevenTrades.length > 0) {
+    const totalBreakevenMinutes = breakevenTrades.reduce((sum: number, t: TradeRecord) => {
+      const entryTime = new Date(t.tradeTime).getTime();
+      const exitTime = new Date(t.exitTime!).getTime();
+      const durationMinutes = (exitTime - entryTime) / (1000 * 60);
+      return sum + Math.max(0, durationMinutes); // Ensure non-negative
+    }, 0);
+    avgBreakevenTime = totalBreakevenMinutes / breakevenTrades.length;
+  }
+
+  return {
+    avgWinnerTime,
+    avgLoserTime,
+    avgBreakevenTime,
+    winnerCount: winningTrades.length,
+    loserCount: losingTrades.length,
+    breakevenCount: breakevenTrades.length,
+  };
 }

@@ -7,14 +7,28 @@ import {
   TrendingDown as TrendingDownIcon,
   Assessment as AssessmentIcon,
   CheckCircle as PassIcon,
+  AccessTime as TimeIcon,
 } from '@mui/icons-material';
-import { useGetAnalyticsQuery, useGetDailyStatsQuery } from '@/store';
+import { useGetAnalyticsQuery, useGetDailyStatsQuery, useGetTradeTimeStatsQuery } from '@/store';
 import { useAppSelector } from '@/store/hooks';
 import { formatCurrency, formatPercent } from '@/utils/formatters';
 import PnLChart from '@/components/analytics/PnLChart';
 import CalendarView from '@/components/analytics/CalendarView';
 import DailyPnLChart from '@/components/analytics/DailyPnLChart';
 import WinLossChart from '@/components/analytics/WinLossChart';
+import AvgTradeTimeChart from '@/components/analytics/AvgTradeTimeChart';
+
+function formatTime(minutes: number): string {
+  if (minutes < 1) {
+    return `${Math.round(minutes * 60)}s`;
+  }
+  if (minutes < 60) {
+    return `${Math.round(minutes)}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+}
 
 interface StatCardProps {
   title: string;
@@ -64,6 +78,7 @@ export default function Dashboard() {
 
   const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery(accountFilter);
   const { data: dailyStats, isLoading: dailyStatsLoading } = useGetDailyStatsQuery(accountFilter);
+  const { data: tradeTimeStats, isLoading: tradeTimeLoading } = useGetTradeTimeStatsQuery(accountFilter);
 
   if (analyticsLoading) {
     return (
@@ -142,6 +157,20 @@ export default function Dashboard() {
           />
         </Grid>
 
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard
+            title="Avg Time in Trade"
+            value={tradeTimeStats?.winnerCount || tradeTimeStats?.loserCount
+              ? `W: ${formatTime(tradeTimeStats?.avgWinnerTime || 0)}`
+              : 'N/A'}
+            subtitle={tradeTimeStats?.winnerCount || tradeTimeStats?.loserCount
+              ? `L: ${formatTime(tradeTimeStats?.avgLoserTime || 0)}`
+              : 'Add exit times to trades'}
+            icon={<TimeIcon fontSize="large" />}
+            color="primary"
+          />
+        </Grid>
+
         <Grid size={{ xs: 12, md: 8 }}>
           <Card sx={{ height: 450 }}>
             <CardContent sx={{ height: '100%' }}>
@@ -168,7 +197,7 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ height: 350 }}>
             <CardContent sx={{ height: '100%' }}>
               <Typography variant="h6" gutterBottom>
@@ -185,7 +214,20 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: 350 }}>
+            <CardContent sx={{ height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                Avg Time in Trade
+              </Typography>
+              <Box sx={{ height: 'calc(100% - 40px)' }}>
+                <AvgTradeTimeChart data={tradeTimeStats} loading={tradeTimeLoading} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ height: 350 }}>
             <CardContent sx={{ height: '100%' }}>
               <Typography variant="h6" gutterBottom>

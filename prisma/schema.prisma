@@ -23,7 +23,8 @@ model Trade {
   id          String           @id @default(cuid())
   symbol      String
   side        String           // LONG, SHORT
-  tradeTime   DateTime         // When the trade was taken
+  tradeTime   DateTime         // When the trade was taken (entry time)
+  exitTime    DateTime?        // When the trade was closed (exit time)
   setup       String?          // Trade setup description
   risk        Float            // Risk amount in dollars
   result      Float?           // P&L result in dollars

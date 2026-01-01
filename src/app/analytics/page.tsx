@@ -30,6 +30,7 @@ import {
   useGetTradesQuery,
   useGetStrategiesQuery,
   useGetSetupsQuery,
+  useGetTradeTimeStatsQuery,
 } from '@/store';
 import { useAppSelector } from '@/store/hooks';
 import StatsCards from '@/components/analytics/StatsCards';
@@ -38,6 +39,7 @@ import StrategyDistributionChart from '@/components/analytics/StrategyDistributi
 import TradeTimeChart from '@/components/analytics/TradeTimeChart';
 import PnLDistributionChart from '@/components/analytics/PnLDistributionChart';
 import TimeDayProfitability from '@/components/analytics/TimeDayProfitability';
+import AvgTradeTimeChart from '@/components/analytics/AvgTradeTimeChart';
 import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
 import type { Trade, TradeFilters } from '@/types';
 
@@ -63,6 +65,9 @@ export default function AnalyticsPage() {
     viewMode === 'trades' ? { ...filters, accountId: accountFilter } : { accountId: accountFilter }
   );
   const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(
+    viewMode === 'trades' ? { ...filters, accountId: accountFilter } : { accountId: accountFilter }
+  );
+  const { data: tradeTimeStats, isLoading: tradeTimeLoading } = useGetTradeTimeStatsQuery(
     viewMode === 'trades' ? { ...filters, accountId: accountFilter } : { accountId: accountFilter }
   );
 
@@ -406,8 +411,20 @@ export default function AnalyticsPage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <TradeTimeChart data={tradeTimeData} />
               </Grid>
-              <Grid size={{ xs: 12 }}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <PnLDistributionChart data={pnlDistribution} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Card sx={{ height: 403 }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Avg Time in Trade
+                    </Typography>
+                    <Box sx={{ height: 'calc(100% - 40px)' }}>
+                      <AvgTradeTimeChart data={tradeTimeStats} loading={tradeTimeLoading} />
+                    </Box>
+                  </CardContent>
+                </Card>
               </Grid>
             </Grid>
           </Box>
@@ -435,8 +452,20 @@ export default function AnalyticsPage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <TradeTimeChart data={tradeTimeData} />
               </Grid>
-              <Grid size={{ xs: 12 }}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <PnLDistributionChart data={pnlDistribution} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Card sx={{ height: 350 }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Avg Time in Trade
+                    </Typography>
+                    <Box sx={{ height: 'calc(100% - 40px)' }}>
+                      <AvgTradeTimeChart data={tradeTimeStats} loading={tradeTimeLoading} />
+                    </Box>
+                  </CardContent>
+                </Card>
               </Grid>
             </Grid>
           </Box>
