@@ -83,8 +83,11 @@ export default function PnLChart({ data, loading }: PnLChartProps) {
           tick={{ fontSize: 12 }}
           tickLine={false}
           axisLine={{ stroke: '#e0e0e0' }}
-          tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}`}
-          domain={[Math.min(minPnl * 1, 0).toFixed(2), Math.max(maxPnl * 1, 0).toFixed(2)]}
+          tickFormatter={(value) => {
+            if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+            return `$${Number(value).toFixed(1)}`;
+          }}
+          domain={[Math.min(minPnl, 0), Math.max(maxPnl, 0)]}
         />
         <Tooltip
           contentStyle={{
