@@ -83,15 +83,29 @@ export async function PUT(
       notes,
       strategyId,
       accountId,
+      // AI-ready fields
+      preTradeMood,
+      postTradeMood,
+      confidenceLevel,
+      mistake,
     } = body;
+
+    const tradeDateTime = new Date(tradeTime);
+    const exitDateTime = exitTime ? new Date(exitTime) : null;
+
+    // Recalculate holdDurationMins if both entry and exit times exist
+    let holdDurationMins: number | null = null;
+    if (exitDateTime) {
+      holdDurationMins = Math.round((exitDateTime.getTime() - tradeDateTime.getTime()) / 60000);
+    }
 
     const trade = await prisma.trade.update({
       where: { id },
       data: {
         symbol: symbol.toUpperCase(),
         side,
-        tradeTime: new Date(tradeTime),
-        exitTime: exitTime ? new Date(exitTime) : null,
+        tradeTime: tradeDateTime,
+        exitTime: exitDateTime,
         setup: setup || null,
         risk,
         result: result ?? null,
@@ -100,6 +114,12 @@ export async function PUT(
         notes: notes || null,
         strategyId: strategyId || null,
         accountId: accountId !== undefined ? (accountId || null) : undefined,
+        // AI-ready fields
+        preTradeMood: preTradeMood || null,
+        postTradeMood: postTradeMood || null,
+        confidenceLevel: confidenceLevel ?? null,
+        mistake: mistake || null,
+        holdDurationMins,
       },
       include: {
         strategy: {

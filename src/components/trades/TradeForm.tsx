@@ -25,6 +25,7 @@ import {
   LinearProgress,
   Divider,
   Switch,
+  Slider,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
@@ -47,7 +48,38 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ScreenshotUpload from '@/components/common/ScreenshotUpload';
-import type { Trade, TradeFormData, Strategy } from '@/types';
+import type { Trade, TradeFormData, Strategy, PreTradeMood, PostTradeMood, TradeMistake } from '@/types';
+
+// Options for psychology dropdowns
+const PRE_TRADE_MOODS: { value: PreTradeMood; label: string }[] = [
+  { value: 'CONFIDENT', label: 'Confident' },
+  { value: 'CALM', label: 'Calm' },
+  { value: 'NEUTRAL', label: 'Neutral' },
+  { value: 'ANXIOUS', label: 'Anxious' },
+  { value: 'FOMO', label: 'FOMO' },
+  { value: 'REVENGE', label: 'Revenge' },
+];
+
+const POST_TRADE_MOODS: { value: PostTradeMood; label: string }[] = [
+  { value: 'SATISFIED', label: 'Satisfied' },
+  { value: 'RELIEVED', label: 'Relieved' },
+  { value: 'NEUTRAL', label: 'Neutral' },
+  { value: 'FRUSTRATED', label: 'Frustrated' },
+  { value: 'REGRETFUL', label: 'Regretful' },
+];
+
+const TRADE_MISTAKES: { value: TradeMistake; label: string }[] = [
+  { value: 'FOMO', label: 'FOMO' },
+  { value: 'CHASING', label: 'Chasing' },
+  { value: 'EARLY_EXIT', label: 'Early Exit' },
+  { value: 'OVERSIZE', label: 'Oversized' },
+  { value: 'REVENGE', label: 'Revenge Trading' },
+  { value: 'NO_PLAN', label: 'No Plan' },
+  { value: 'IGNORED_STOP', label: 'Ignored Stop' },
+  { value: 'MOVED_STOP', label: 'Moved Stop' },
+  { value: 'NO_STOP', label: 'No Stop' },
+  { value: 'OVERTRADING', label: 'Overtrading' },
+];
 
 const validationSchema = yup.object({
   symbol: yup.string().required('Symbol is required'),
@@ -156,6 +188,11 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
     notes: trade?.notes || '',
     strategyId: trade?.strategyId || '',
     accountId: trade?.accountId ?? selectedAccountId,
+    // AI-ready fields
+    preTradeMood: trade?.preTradeMood || null,
+    postTradeMood: trade?.postTradeMood || null,
+    confidenceLevel: trade?.confidenceLevel ?? null,
+    mistake: trade?.mistake || null,
   }), [trade, defaultRisk, selectedAccountId]);
 
   const formik = useFormik<TradeFormData>({
@@ -446,6 +483,102 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                     onChange={formik.handleChange}
                     placeholder="Additional observations..."
                   />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          {/* Trade Psychology Section */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Trade Psychology
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                Optional - helps AI analyze emotional patterns
+              </Typography>
+
+              <Grid container spacing={2}>
+                {/* Pre-Trade Mood */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Pre-Trade Mood</InputLabel>
+                    <Select
+                      name="preTradeMood"
+                      value={formik.values.preTradeMood || ''}
+                      label="Pre-Trade Mood"
+                      onChange={formik.handleChange}
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {PRE_TRADE_MOODS.map((mood) => (
+                        <MenuItem key={mood.value} value={mood.value}>
+                          {mood.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Post-Trade Mood */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Post-Trade Mood</InputLabel>
+                    <Select
+                      name="postTradeMood"
+                      value={formik.values.postTradeMood || ''}
+                      label="Post-Trade Mood"
+                      onChange={formik.handleChange}
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {POST_TRADE_MOODS.map((mood) => (
+                        <MenuItem key={mood.value} value={mood.value}>
+                          {mood.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Confidence Level */}
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Confidence Level
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Slider
+                      value={formik.values.confidenceLevel ?? 5}
+                      onChange={(_, value) => formik.setFieldValue('confidenceLevel', value)}
+                      min={1}
+                      max={10}
+                      step={1}
+                      valueLabelDisplay="auto"
+                      size="small"
+                      sx={{ flex: 1 }}
+                    />
+                    <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}>
+                      {formik.values.confidenceLevel ?? '-'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                {/* Mistake */}
+                <Grid size={{ xs: 12 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Mistake (if any)</InputLabel>
+                    <Select
+                      name="mistake"
+                      value={formik.values.mistake || ''}
+                      label="Mistake (if any)"
+                      onChange={formik.handleChange}
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {TRADE_MISTAKES.map((mistake) => (
+                        <MenuItem key={mistake.value} value={mistake.value}>
+                          {mistake.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
               </Grid>
             </CardContent>

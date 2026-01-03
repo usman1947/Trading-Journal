@@ -44,7 +44,17 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
-    const { date, notes, mood, lessons } = body;
+    const {
+      date,
+      notes,
+      mood,
+      lessons,
+      // AI-ready fields
+      energyLevel,
+      sleepQuality,
+      focusLevel,
+      premarketPlan,
+    } = body;
 
     if (!date || !notes) {
       return NextResponse.json({ error: 'Date and notes are required' }, { status: 400 });
@@ -67,6 +77,11 @@ export async function POST(request: NextRequest) {
           notes,
           mood: mood || null,
           lessons: lessons || null,
+          // AI-ready fields
+          energyLevel: energyLevel ?? null,
+          sleepQuality: sleepQuality ?? null,
+          focusLevel: focusLevel ?? null,
+          premarketPlan: premarketPlan ?? false,
         },
       });
     } else {
@@ -77,6 +92,11 @@ export async function POST(request: NextRequest) {
           mood: mood || null,
           lessons: lessons || null,
           userId: user.id,
+          // AI-ready fields
+          energyLevel: energyLevel ?? null,
+          sleepQuality: sleepQuality ?? null,
+          focusLevel: focusLevel ?? null,
+          premarketPlan: premarketPlan ?? false,
         },
       });
     }

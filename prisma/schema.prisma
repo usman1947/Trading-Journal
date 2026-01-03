@@ -42,28 +42,37 @@ model Account {
 }
 
 model Trade {
-  id          String           @id @default(cuid())
-  symbol      String
-  side        String           // LONG, SHORT
-  tradeTime   DateTime         // When the trade was taken (entry time)
-  exitTime    DateTime?        // When the trade was closed (exit time)
-  setup       String?          // Trade setup description
-  risk        Float            // Risk amount in dollars
-  result      Float?           // P&L result in dollars
-  execution   String           @default("PASS") // PASS, FAIL
-  isBreakEven Boolean          @default(false) // Break even trade - excluded from P&L analytics
-  notes       String?
-  screenshots Screenshot[]
-  strategy    Strategy?        @relation(fields: [strategyId], references: [id])
-  strategyId  String?
-  account     Account?         @relation(fields: [accountId], references: [id])
-  accountId   String?          // null means Paper Account
-  tags        TagOnTrade[]
-  ruleChecks  TradeRuleCheck[]
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id                 String           @id @default(cuid())
+  symbol             String
+  side               String           // LONG, SHORT
+  tradeTime          DateTime         // When the trade was taken (entry time)
+  exitTime           DateTime?        // When the trade was closed (exit time)
+  setup              String?          // Trade setup description
+  risk               Float            // Risk amount in dollars
+  result             Float?           // P&L result in dollars
+  execution          String           @default("PASS") // PASS, FAIL
+  isBreakEven        Boolean          @default(false) // Break even trade - excluded from P&L analytics
+  notes              String?
+  // AI-ready fields
+  preTradeMood       String?          // CONFIDENT, ANXIOUS, FOMO, REVENGE, CALM, NEUTRAL
+  postTradeMood      String?          // SATISFIED, FRUSTRATED, RELIEVED, REGRETFUL, NEUTRAL
+  confidenceLevel    Int?             // 1-10 pre-trade conviction
+  mistake            String?          // FOMO, CHASING, EARLY_EXIT, OVERSIZE, REVENGE, NO_PLAN, IGNORED_STOP, etc.
+  sentimentScore     Float?           // AI-computed from notes (-1 to 1)
+  sequenceInSession  Int?             // Calculated: trade # that day (1st, 2nd, 3rd...)
+  holdDurationMins   Int?             // Calculated: exitTime - tradeTime in minutes
+  screenshots        Screenshot[]
+  embedding          TradeEmbedding?
+  strategy           Strategy?        @relation(fields: [strategyId], references: [id])
+  strategyId         String?
+  account            Account?         @relation(fields: [accountId], references: [id])
+  accountId          String?          // null means Paper Account
+  tags               TagOnTrade[]
+  ruleChecks         TradeRuleCheck[]
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 }
 
 model Strategy {
@@ -146,16 +155,23 @@ model Screenshot {
 }
 
 model DailyJournal {
-  id          String             @id @default(cuid())
-  date        DateTime
-  notes       String
-  mood        String?            // BULLISH, BEARISH, NEUTRAL
-  lessons     String?
-  screenshots JournalScreenshot[]
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  id             String             @id @default(cuid())
+  date           DateTime
+  notes          String
+  mood           String?            // BULLISH, BEARISH, NEUTRAL
+  lessons        String?
+  // AI-ready fields
+  energyLevel    Int?               // 1-10 physical state
+  sleepQuality   Int?               // 1-10 rest quality
+  focusLevel     Int?               // 1-10 mental clarity
+  premarketPlan  Boolean            @default(false) // Did user have a premarket plan?
+  sentimentScore Float?             // AI-computed from notes (-1 to 1)
+  screenshots    JournalScreenshot[]
+  embedding      JournalEmbedding?
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   @@unique([userId, date])
 }
@@ -179,4 +195,25 @@ model Settings {
   defaultAccount   Account? @relation(fields: [defaultAccountId], references: [id], onDelete: SetNull)
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId           String   @unique
+}
+
+// AI Embedding models for RAG (Ask Your Journal feature)
+model TradeEmbedding {
+  id        String   @id @default(cuid())
+  tradeId   String   @unique
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  chunkText String   // Text chunk that was embedded (notes + setup + tags)
+  embedding String   // JSON serialized vector (for SQLite compatibility)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model JournalEmbedding {
+  id        String       @id @default(cuid())
+  journalId String       @unique
+  journal   DailyJournal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  chunkText String       // Text chunk that was embedded (notes + lessons)
+  embedding String       // JSON serialized vector (for SQLite compatibility)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }

@@ -21,6 +21,9 @@ import {
   ImageListItemBar,
   CircularProgress,
   Divider,
+  Slider,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -62,6 +65,12 @@ export default function JournalEntryDialog({
   const [notes, setNotes] = useState('');
   const [mood, setMood] = useState<Mood | ''>('');
   const [lessons, setLessons] = useState('');
+  // AI-ready fields
+  const [energyLevel, setEnergyLevel] = useState<number | null>(null);
+  const [sleepQuality, setSleepQuality] = useState<number | null>(null);
+  const [focusLevel, setFocusLevel] = useState<number | null>(null);
+  const [premarketPlan, setPremarketPlan] = useState(false);
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -78,12 +87,20 @@ export default function JournalEntryDialog({
         setNotes(entry.notes || '');
         setMood(entry.mood || '');
         setLessons(entry.lessons || '');
+        setEnergyLevel(entry.energyLevel ?? null);
+        setSleepQuality(entry.sleepQuality ?? null);
+        setFocusLevel(entry.focusLevel ?? null);
+        setPremarketPlan(entry.premarketPlan ?? false);
       } else {
         // New entry
         setSelectedDate(initialDate || new Date());
         setNotes('');
         setMood('');
         setLessons('');
+        setEnergyLevel(null);
+        setSleepQuality(null);
+        setFocusLevel(null);
+        setPremarketPlan(false);
       }
       setPendingFiles([]);
     }
@@ -97,6 +114,10 @@ export default function JournalEntryDialog({
         notes,
         mood: mood || null,
         lessons: lessons || null,
+        energyLevel,
+        sleepQuality,
+        focusLevel,
+        premarketPlan,
       }).unwrap();
 
       // Upload pending files if any
@@ -215,8 +236,115 @@ export default function JournalEntryDialog({
                 <MenuItem value="BULLISH">Bullish</MenuItem>
                 <MenuItem value="BEARISH">Bearish</MenuItem>
                 <MenuItem value="NEUTRAL">Neutral</MenuItem>
+                <MenuItem value="TRENDING">Trending</MenuItem>
+                <MenuItem value="CHOPPY">Choppy</MenuItem>
+                <MenuItem value="RANGING">Ranging</MenuItem>
               </Select>
             </FormControl>
+          </Box>
+
+          {/* Pre-Session State - AI Ready Fields */}
+          <Box
+            sx={{
+              mb: 3,
+              p: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              backgroundColor: 'background.paper',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box>
+                <Typography variant="subtitle2">
+                  Pre-Session State
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Optional - helps AI analyze performance patterns
+                </Typography>
+              </Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={premarketPlan}
+                    onChange={(e) => setPremarketPlan(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label={
+                  <Typography variant="caption" color="text.secondary">
+                    Had premarket plan
+                  </Typography>
+                }
+                labelPlacement="start"
+                sx={{ mr: 0 }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {/* Energy Level */}
+              <Box sx={{ minWidth: 140, flex: 1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Energy
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Slider
+                    value={energyLevel ?? 5}
+                    onChange={(_, value) => setEnergyLevel(value as number)}
+                    min={1}
+                    max={10}
+                    step={1}
+                    size="small"
+                    sx={{ flex: 1 }}
+                  />
+                  <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}>
+                    {energyLevel ?? '-'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Sleep Quality */}
+              <Box sx={{ minWidth: 140, flex: 1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Sleep
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Slider
+                    value={sleepQuality ?? 5}
+                    onChange={(_, value) => setSleepQuality(value as number)}
+                    min={1}
+                    max={10}
+                    step={1}
+                    size="small"
+                    sx={{ flex: 1 }}
+                  />
+                  <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}>
+                    {sleepQuality ?? '-'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Focus Level */}
+              <Box sx={{ minWidth: 140, flex: 1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Focus
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Slider
+                    value={focusLevel ?? 5}
+                    onChange={(_, value) => setFocusLevel(value as number)}
+                    min={1}
+                    max={10}
+                    step={1}
+                    size="small"
+                    sx={{ flex: 1 }}
+                  />
+                  <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}>
+                    {focusLevel ?? '-'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
           </Box>
 
           <TextField

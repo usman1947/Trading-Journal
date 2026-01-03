@@ -41,16 +41,22 @@ interface JournalContentProps {
   onDeleted: () => void;
 }
 
-const moodColors: Record<Mood, 'success' | 'error' | 'default'> = {
+const moodColors: Record<Mood, 'success' | 'error' | 'default' | 'warning' | 'info'> = {
   BULLISH: 'success',
   BEARISH: 'error',
   NEUTRAL: 'default',
+  TRENDING: 'info',
+  CHOPPY: 'warning',
+  RANGING: 'default',
 };
 
 const moodEmoji: Record<Mood, string> = {
   BULLISH: '📈',
   BEARISH: '📉',
   NEUTRAL: '➡️',
+  TRENDING: '📊',
+  CHOPPY: '🌊',
+  RANGING: '↔️',
 };
 
 export default function JournalContent({ entry, onEdit, onDeleted }: JournalContentProps) {

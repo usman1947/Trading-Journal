@@ -104,14 +104,45 @@ export async function POST(request: NextRequest) {
       notes,
       strategyId,
       accountId,
+      // AI-ready fields
+      preTradeMood,
+      postTradeMood,
+      confidenceLevel,
+      mistake,
     } = body;
+
+    const tradeDateTime = new Date(tradeTime);
+    const exitDateTime = exitTime ? new Date(exitTime) : null;
+
+    // Calculate holdDurationMins if both entry and exit times exist
+    let holdDurationMins: number | null = null;
+    if (exitDateTime) {
+      holdDurationMins = Math.round((exitDateTime.getTime() - tradeDateTime.getTime()) / 60000);
+    }
+
+    // Calculate sequenceInSession (count trades for same user on same date)
+    const startOfDay = new Date(tradeDateTime);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(tradeDateTime);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const tradesOnSameDay = await prisma.trade.count({
+      where: {
+        userId: user.id,
+        tradeTime: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    });
+    const sequenceInSession = tradesOnSameDay + 1;
 
     const trade = await prisma.trade.create({
       data: {
         symbol: symbol.toUpperCase(),
         side,
-        tradeTime: new Date(tradeTime),
-        exitTime: exitTime ? new Date(exitTime) : null,
+        tradeTime: tradeDateTime,
+        exitTime: exitDateTime,
         setup: setup || null,
         risk,
         result: result ?? null,
@@ -121,6 +152,13 @@ export async function POST(request: NextRequest) {
         strategyId: strategyId || null,
         accountId: accountId || null,
         userId: user.id,
+        // AI-ready fields
+        preTradeMood: preTradeMood || null,
+        postTradeMood: postTradeMood || null,
+        confidenceLevel: confidenceLevel ?? null,
+        mistake: mistake || null,
+        sequenceInSession,
+        holdDurationMins,
       },
       include: {
         strategy: {
