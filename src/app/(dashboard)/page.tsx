@@ -131,7 +131,7 @@ export default function Dashboard() {
           <StatCard
             title="Total Result"
             value={formatCurrency(stats.totalResult)}
-            subtitle={`In ${stats.totalTrades || '0.00'} Trades`}
+            subtitle={`In ${stats.totalTrades || '0.00'} Trade(s)`}
             icon={stats.totalResult >= 0 ? <TrendingUpIcon fontSize="large" /> : <TrendingDownIcon fontSize="large" />}
             color={stats.totalResult >= 0 ? 'success' : 'error'}
           />
