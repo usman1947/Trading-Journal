@@ -81,49 +81,53 @@ export default function TradeTimeChart({ data }: TradeTimeChartProps) {
 
   return (
     <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Trade Time Distribution
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Trade timing vs P&L performance
-        </Typography>
-        {data.length === 0 ? (
-          <Box sx={{ py: 8, textAlign: 'center' }}>
-            <Typography color="text.secondary">No trade data available</Typography>
-          </Box>
-        ) : (
-          <ResponsiveContainer width="100%" height={275}>
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                type="number"
-                dataKey="x"
-                domain={[9, 16]}
-                ticks={[9, 10, 11, 12, 13, 14, 15]}
-                tickFormatter={formatHour}
-                label={{ value: 'Time of Day', position: 'insideBottom', offset: -10 }}
-              />
-              <YAxis
-                type="number"
-                hide
-                tickFormatter={(value) => `$${value}`}
-                label={{ value: 'P&L', angle: -90, position: 'insideLeft', offset: 10 }}
-              />
-              <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
-              <Tooltip content={<CustomTooltip />} />
-              <Scatter name="Trades" data={chartData} fill="#1976d2" dataKey="y" onClick={handleDotClick} style={{ cursor: 'pointer' }}>
-                {chartData.map((entry, index) => {
-                  let color = '#1976d2';
-                  if (entry.result !== null) {
-                    color = entry.result >= 0 ? '#2e7d32' : '#d32f2f';
-                  }
-                  return <Cell key={`cell-${index}`} fill={color} />;
-                })}
-              </Scatter>
-            </ScatterChart>
-          </ResponsiveContainer>
-        )}
+      <CardContent sx={{ p: 0 }}>
+        <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="h6" fontWeight={600}>
+            Trade Time Distribution
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Trade timing vs P&L performance
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          {data.length === 0 ? (
+            <Box sx={{ py: 8, textAlign: 'center' }}>
+              <Typography color="text.secondary">No trade data available</Typography>
+            </Box>
+          ) : (
+            <ResponsiveContainer width="100%" height={275}>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  dataKey="x"
+                  domain={[9, 16]}
+                  ticks={[9, 10, 11, 12, 13, 14, 15]}
+                  tickFormatter={formatHour}
+                  label={{ value: 'Time of Day', position: 'insideBottom', offset: -10 }}
+                />
+                <YAxis
+                  type="number"
+                  hide
+                  tickFormatter={(value) => `$${value}`}
+                  label={{ value: 'P&L', angle: -90, position: 'insideLeft', offset: 10 }}
+                />
+                <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
+                <Tooltip content={<CustomTooltip />} />
+                <Scatter name="Trades" data={chartData} fill="#1976d2" dataKey="y" onClick={handleDotClick} style={{ cursor: 'pointer' }}>
+                  {chartData.map((entry, index) => {
+                    let color = '#1976d2';
+                    if (entry.result !== null) {
+                      color = entry.result >= 0 ? '#2e7d32' : '#d32f2f';
+                    }
+                    return <Cell key={`cell-${index}`} fill={color} />;
+                  })}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          )}
+        </Box>
       </CardContent>
     </Card>
   );

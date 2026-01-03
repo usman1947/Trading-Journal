@@ -57,40 +57,44 @@ export default function StrategyDistributionChart({ data }: StrategyDistribution
 
   return (
     <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Strategy Distribution
-        </Typography>
-        {data.length === 0 ? (
-          <Box sx={{ py: 8, textAlign: 'center' }}>
-            <Typography color="text.secondary">No trade data available</Typography>
-          </Box>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                data={data as any}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                label={(props: any) => `${props.percentage.toFixed(1)}%`}
-                outerRadius={100}
-                innerRadius={60}
-                fill="#8884d8"
-                dataKey="trades"
-                nameKey="name"
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        )}
+      <CardContent sx={{ p: 0 }}>
+        <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="h6" fontWeight={600}>
+            Strategy Distribution
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          {data.length === 0 ? (
+            <Box sx={{ py: 8, textAlign: 'center' }}>
+              <Typography color="text.secondary">No trade data available</Typography>
+            </Box>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  data={data as any}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  label={(props: any) => `${props.percentage.toFixed(1)}%`}
+                  outerRadius={100}
+                  innerRadius={60}
+                  fill="#8884d8"
+                  dataKey="trades"
+                  nameKey="name"
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </Box>
       </CardContent>
     </Card>
   );

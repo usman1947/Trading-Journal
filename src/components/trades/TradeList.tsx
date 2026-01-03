@@ -188,7 +188,7 @@ export default function TradeList() {
     {
       field: 'execution',
       headerName: 'Execution',
-      width: 100,
+      width: 110,
       renderCell: (params: GridRenderCellParams) => (
         <Chip
           icon={params.value === 'PASS' ? <PassIcon /> : <FailIcon />}
@@ -200,21 +200,9 @@ export default function TradeList() {
       ),
     },
     {
-      field: 'screenshots',
-      headerName: 'Screenshots',
-      width: 50,
-      sortable: false,
-      renderCell: (params: GridRenderCellParams<Trade>) =>
-        params.row.screenshots && params.row.screenshots.length > 0 ? (
-          <Tooltip title={`${params.row.screenshots.length} screenshot(s)`}>
-            <ImageIcon fontSize="small" color="action" />
-          </Tooltip>
-        ) : null,
-    },
-    {
       field: 'actions',
       headerName: 'Actions',
-      width: 70,
+      width: 100,
       sortable: false,
       renderCell: (params: GridRenderCellParams<Trade>) => (
         <Box>
@@ -238,35 +226,28 @@ export default function TradeList() {
 
   return (
     <>
-      <Box sx={{ width: '100%', overflowX: 'auto' }}>
-        <DataGrid
-          rows={trades}
-          columns={columns}
-          loading={isLoading}
-          autoHeight
-          pageSizeOptions={[10, 25, 50, 100]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 25 } },
-            sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
-          }}
-          disableRowSelectionOnClick
-          sx={{
-            minWidth: 1200,
-            '& .MuiDataGrid-cell': {
-              display: 'flex',
-              alignItems: 'center',
-            },
-            '& .MuiDataGrid-row:hover': {
-              cursor: 'pointer',
-              backgroundColor: 'action.hover',
-            },
-            '& .MuiDataGrid-cell:focus': {
-              outline: 'none',
-            },
-          }}
-          onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
-        />
-      </Box>
+      <DataGrid
+        rows={trades}
+        columns={columns}
+        loading={isLoading}
+        autoHeight
+        pageSizeOptions={[10, 25, 50, 100]}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 25 } },
+          sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
+        }}
+        disableRowSelectionOnClick
+        sx={{
+          '& .MuiDataGrid-cell': {
+            display: 'flex',
+            alignItems: 'center',
+          },
+          '& .MuiDataGrid-row:hover': {
+            cursor: 'pointer',
+          },
+        }}
+        onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
+      />
 
       <ConfirmDialog
         open={!!deleteId}

@@ -67,43 +67,47 @@ export default function PnLDistributionChart({ data }: PnLDistributionChartProps
 
   return (
     <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Trade Results Distribution
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Each dot represents a trade result in R-multiples
-        </Typography>
-        {data.length === 0 ? (
-          <Box sx={{ py: 8, textAlign: 'center' }}>
-            <Typography color="text.secondary">No trade data available</Typography>
-          </Box>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 50 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                type="number"
-                dataKey="x"
-                label={{ value: 'Trade Number', position: 'insideBottom', offset: -10 }}
-              />
-              <YAxis
-                type="number"
-                dataKey="y"
-                label={{ value: 'R-Multiple', angle: -90, position: 'insideLeft' }}
-                allowDecimals={false}
-                domain={[minY, maxY]}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
-              <Scatter data={chartData} fill="#1976d2">
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.y >= 0 ? '#2e7d32' : '#d32f2f'} />
-                ))}
-              </Scatter>
-            </ScatterChart>
-          </ResponsiveContainer>
-        )}
+      <CardContent sx={{ p: 0 }}>
+        <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="h6" fontWeight={600}>
+            Trade Results Distribution
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Each dot represents a trade result in R-multiples
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          {data.length === 0 ? (
+            <Box sx={{ py: 8, textAlign: 'center' }}>
+              <Typography color="text.secondary">No trade data available</Typography>
+            </Box>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 50 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  dataKey="x"
+                  label={{ value: 'Trade Number', position: 'insideBottom', offset: -10 }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="y"
+                  label={{ value: 'R-Multiple', angle: -90, position: 'insideLeft' }}
+                  allowDecimals={false}
+                  domain={[minY, maxY]}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
+                <Scatter data={chartData} fill="#1976d2">
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.y >= 0 ? '#2e7d32' : '#d32f2f'} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          )}
+        </Box>
       </CardContent>
     </Card>
   );

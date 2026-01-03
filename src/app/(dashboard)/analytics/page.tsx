@@ -415,12 +415,14 @@ export default function AnalyticsPage() {
                 <PnLDistributionChart data={pnlDistribution} />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ height: 403 }}>
-                  <CardContent sx={{ height: '100%' }}>
-                    <Typography variant="h6" gutterBottom>
-                      Avg Time in Trade
-                    </Typography>
-                    <Box sx={{ height: 'calc(100% - 40px)' }}>
+                <Card sx={{ height: 453 }}>
+                  <CardContent sx={{ height: '100%', p: 0 }}>
+                    <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="h6" fontWeight={600}>
+                        Avg Time in Trade
+                      </Typography>
+                    </Box>
+                    <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
                       <AvgTradeTimeChart data={tradeTimeStats} loading={tradeTimeLoading} />
                     </Box>
                   </CardContent>
@@ -434,11 +436,15 @@ export default function AnalyticsPage() {
           </Box>
 
           <Card sx={{ mt: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Performance by Strategy
-              </Typography>
-              <StrategyBreakdown />
+            <CardContent sx={{ p: 0 }}>
+              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={600}>
+                  Performance by Strategy
+                </Typography>
+              </Box>
+              <Box sx={{ p: 3 }}>
+                <StrategyBreakdown />
+              </Box>
             </CardContent>
           </Card>
         </>
@@ -457,11 +463,13 @@ export default function AnalyticsPage() {
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <Card sx={{ height: 350 }}>
-                  <CardContent sx={{ height: '100%' }}>
-                    <Typography variant="h6" gutterBottom>
-                      Avg Time in Trade
-                    </Typography>
-                    <Box sx={{ height: 'calc(100% - 40px)' }}>
+                  <CardContent sx={{ height: '100%', p: 0 }}>
+                    <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="h6" fontWeight={600}>
+                        Avg Time in Trade
+                      </Typography>
+                    </Box>
+                    <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
                       <AvgTradeTimeChart data={tradeTimeStats} loading={tradeTimeLoading} />
                     </Box>
                   </CardContent>
@@ -475,34 +483,37 @@ export default function AnalyticsPage() {
           </Box>
 
           <Card sx={{ mt: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Trades ({closedTrades.length})
-              </Typography>
-              <DataGrid
-                rows={closedTrades}
-                columns={columns}
-                loading={tradesLoading}
-                autoHeight
-                pageSizeOptions={[10, 25, 50, 100]}
-                initialState={{
-                  pagination: { paginationModel: { pageSize: 25 } },
-                  sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
-                }}
-                disableRowSelectionOnClick
-                onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
-                sx={{
-                  '& .MuiDataGrid-row:hover': {
-                    cursor: 'pointer',
-                    backgroundColor: 'action.hover',
-                  },
-                  '& .MuiDataGrid-cell': {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  },
-                }}
-              />
+            <CardContent sx={{ p: 0 }}>
+              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={600}>
+                  Trades ({closedTrades.length})
+                </Typography>
+              </Box>
+              <Box sx={{ p: 3 }}>
+                <DataGrid
+                  rows={closedTrades}
+                  columns={columns}
+                  loading={tradesLoading}
+                  autoHeight
+                  pageSizeOptions={[10, 25, 50, 100]}
+                  initialState={{
+                    pagination: { paginationModel: { pageSize: 25 } },
+                    sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
+                  }}
+                  disableRowSelectionOnClick
+                  onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
+                  sx={{
+                    '& .MuiDataGrid-row:hover': {
+                      cursor: 'pointer',
+                    },
+                    '& .MuiDataGrid-cell': {
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    },
+                  }}
+                />
+              </Box>
             </CardContent>
           </Card>
         </>

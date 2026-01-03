@@ -40,32 +40,82 @@ interface StatCardProps {
 
 function StatCard({ title, value, subtitle, icon, color = 'primary' }: StatCardProps) {
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
+    <Card
+      sx={{
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '4px',
+          height: '100%',
+          backgroundColor: `${color}.main`,
+          borderRadius: '12px 0 0 12px',
+        },
+      }}
+    >
+      <CardContent sx={{ position: 'relative' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography color="text.secondary" variant="body2" gutterBottom>
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              color="text.secondary"
+              variant="body2"
+              gutterBottom
+              sx={{
+                textTransform: 'uppercase',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                letterSpacing: '0.05em',
+              }}
+            >
               {title}
             </Typography>
-            <Typography variant="h4" component="div" color={`${color}.main`} fontWeight="bold">
+            <Typography
+              variant="h4"
+              component="div"
+              color={`${color}.main`}
+              fontWeight="bold"
+              sx={{ my: 1.5 }}
+            >
               {value}
             </Typography>
             {subtitle && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: '0.875rem' }}
+              >
                 {subtitle}
               </Typography>
             )}
           </Box>
           <Box
             sx={{
-              backgroundColor: `${color}.light`,
-              borderRadius: 2,
-              p: 1,
-              opacity: 0.2,
+              backgroundColor: `${color}.main`,
+              borderRadius: 3,
+              p: 1.5,
+              opacity: 0.1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             {icon}
           </Box>
+        </Box>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            color: `${color}.main`,
+            opacity: 0.8,
+          }}
+        >
+          {icon}
         </Box>
       </CardContent>
     </Card>
@@ -173,11 +223,13 @@ export default function Dashboard() {
 
         <Grid size={{ xs: 12, md: 8 }}>
           <Card sx={{ height: 450 }}>
-            <CardContent sx={{ height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                P&L Over Time
-              </Typography>
-              <Box sx={{ height: 'calc(100% - 40px)' }}>
+            <CardContent sx={{ height: '100%', p: 0 }}>
+              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={600}>
+                  P&L Over Time
+                </Typography>
+              </Box>
+              <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
                 <PnLChart data={dailyStats || []} loading={dailyStatsLoading} />
               </Box>
             </CardContent>
@@ -186,11 +238,13 @@ export default function Dashboard() {
 
         <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ height: 450 }}>
-            <CardContent sx={{ height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Trade Calendar
-              </Typography>
-              <Box sx={{ height: 'calc(100% - 40px)', overflow: 'auto' }}>
+            <CardContent sx={{ height: '100%', p: 0 }}>
+              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={600}>
+                  Trade Calendar
+                </Typography>
+              </Box>
+              <Box sx={{ height: 'calc(100% - 64px)', overflow: 'auto', p: 2 }}>
                 <CalendarView data={dailyStats || []} loading={dailyStatsLoading} />
               </Box>
             </CardContent>
@@ -198,12 +252,14 @@ export default function Dashboard() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: 350 }}>
-            <CardContent sx={{ height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Win vs Loss
-              </Typography>
-              <Box sx={{ height: 'calc(100% - 40px)' }}>
+          <Card sx={{ height: 370 }}>
+            <CardContent sx={{ height: '100%', p: 0 }}>
+              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={600}>
+                  Win vs Loss
+                </Typography>
+              </Box>
+              <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
                 <WinLossChart
                   winningTrades={stats.winningTrades || 0}
                   losingTrades={stats.losingTrades || 0}
@@ -215,12 +271,14 @@ export default function Dashboard() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: 350 }}>
-            <CardContent sx={{ height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Avg Time in Trade
-              </Typography>
-              <Box sx={{ height: 'calc(100% - 40px)' }}>
+          <Card sx={{ height: 370 }}>
+            <CardContent sx={{ height: '100%', p: 0 }}>
+              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={600}>
+                  Avg Time in Trade
+                </Typography>
+              </Box>
+              <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
                 <AvgTradeTimeChart data={tradeTimeStats} loading={tradeTimeLoading} />
               </Box>
             </CardContent>
@@ -228,12 +286,14 @@ export default function Dashboard() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: 350 }}>
-            <CardContent sx={{ height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Daily P/L
-              </Typography>
-              <Box sx={{ height: 'calc(100% - 40px)' }}>
+          <Card sx={{ height: 370 }}>
+            <CardContent sx={{ height: '100%', p: 0 }}>
+              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={600}>
+                  Daily P/L
+                </Typography>
+              </Box>
+              <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
                 <DailyPnLChart data={dailyStats || []} loading={dailyStatsLoading} />
               </Box>
             </CardContent>

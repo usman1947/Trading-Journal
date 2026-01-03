@@ -95,19 +95,40 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
                     {stat.title}
                   </Typography>
-                  <Typography variant="h6" sx={{ color: stat.color, fontWeight: 'bold' }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      color: stat.color,
+                      fontWeight: 'bold',
+                      mt: 0.5,
+                      mb: stat.subtitle ? 0.5 : 0,
+                    }}
+                  >
                     {stat.value}
                   </Typography>
                   {stat.subtitle && (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontSize: '0.75rem' }}
+                    >
                       {stat.subtitle}
                     </Typography>
                   )}
                 </Box>
-                <Box sx={{ color: stat.color, opacity: 0.3 }}>{stat.icon}</Box>
+                <Box sx={{ color: stat.color, opacity: 0.6 }}>{stat.icon}</Box>
               </Box>
             </CardContent>
           </Card>
