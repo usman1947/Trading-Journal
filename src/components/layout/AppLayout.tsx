@@ -6,7 +6,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import { useAppDispatch } from '@/store/hooks';
 import { useAppSelector } from '@/store/hooks';
-import { hideSnackbar, setSelectedAccountId, setThemeMode } from '@/store/slices/uiSlice';
+import { hideSnackbar, setSelectedAccountId, setThemeMode, setSidebarOpen } from '@/store/slices/uiSlice';
 import { setUser, setLoading } from '@/store/slices/authSlice';
 import { useGetSettingsQuery, useGetMeQuery } from '@/store';
 
@@ -17,6 +17,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const dispatch = useAppDispatch();
   const snackbar = useAppSelector((state) => state.ui.snackbar);
+  const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const { isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
   const { data: settings } = useGetSettingsQuery({});
   const { data: user, isLoading: isFetchingUser, isError } = useGetMeQuery();
@@ -39,6 +40,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
       dispatch(setThemeMode(settings.theme));
     }
   }, [settings, dispatch]);
+
+  // Load sidebar state from localStorage on mount
+  useEffect(() => {
+    const savedSidebarState = localStorage.getItem('sidebarOpen');
+    if (savedSidebarState !== null) {
+      dispatch(setSidebarOpen(savedSidebarState === 'true'));
+    }
+  }, [dispatch]);
+
+  // Save sidebar state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', String(sidebarOpen));
+  }, [sidebarOpen]);
 
   // Show loading state while fetching user
   if (isFetchingUser || isAuthLoading) {

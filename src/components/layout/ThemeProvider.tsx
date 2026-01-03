@@ -10,21 +10,14 @@ import type {} from '@mui/x-date-pickers/themeAugmentation';
 // Extend MUI theme to include DataGrid component
 declare module '@mui/material/styles' {
   interface ComponentNameToClassKey {
-    MuiDataGrid: any;
+    MuiDataGrid: Record<string, string>;
+  }
+  interface ComponentsPropsList {
+    MuiDataGrid: Record<string, unknown>;
   }
   interface Components {
     MuiDataGrid?: {
-      styleOverrides?: {
-        root?: any;
-        main?: any;
-        columnHeaders?: any;
-        columnHeader?: any;
-        columnHeaderTitle?: any;
-        cell?: any;
-        row?: any;
-        footerContainer?: any;
-        virtualScroller?: any;
-      };
+      styleOverrides?: Record<string, unknown>;
     };
   }
 }

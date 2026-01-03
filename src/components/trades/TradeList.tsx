@@ -9,7 +9,6 @@ import {
   Delete as DeleteIcon,
   TrendingUp as LongIcon,
   TrendingDown as ShortIcon,
-  Image as ImageIcon,
   CheckCircle as PassIcon,
   Cancel as FailIcon,
   ChecklistRtl as ChecklistIcon,

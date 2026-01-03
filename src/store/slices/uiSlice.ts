@@ -12,7 +12,7 @@ interface UiState {
 }
 
 const initialState: UiState = {
-  sidebarOpen: true,
+  sidebarOpen: false,
   themeMode: 'dark',
   selectedAccountId: null, // Default to Paper Account
   snackbar: {
