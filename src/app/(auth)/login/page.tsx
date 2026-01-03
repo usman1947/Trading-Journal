@@ -13,8 +13,8 @@ import {
   CircularProgress,
   Link as MuiLink,
 } from '@mui/material';
-import { ShowChart as LogoIcon } from '@mui/icons-material';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,9 +55,11 @@ export default function LoginPage() {
     <Card sx={{ maxWidth: 400, width: '100%', mx: 2 }}>
       <CardContent sx={{ p: 4 }}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <LogoIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+          <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center' }}>
+            <Image src="/logo.svg" alt="Caliber Logo" width={48} height={48} />
+          </Box>
           <Typography variant="h5" fontWeight="bold" color="primary">
-            Trading Journal
+            Caliber
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Sign in to your account

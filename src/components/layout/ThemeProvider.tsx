@@ -27,23 +27,36 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         palette: {
           mode,
           primary: {
-            main: '#1976d2',
+            main: '#f59e0b', // Gold
+            light: '#fbbf24',
+            dark: '#d97706',
           },
           secondary: {
-            main: '#9c27b0',
+            main: '#0c1e2e', // Navy Dark
+            light: '#1a2f4b',
+            dark: '#051019',
           },
           success: {
-            main: '#2e7d32',
-            light: '#4caf50',
+            main: '#10b981',
+            light: '#34d399',
           },
           error: {
-            main: '#d32f2f',
-            light: '#ef5350',
+            main: '#ef4444',
+            light: '#f87171',
+          },
+          warning: {
+            main: '#f59e0b',
+            light: '#fbbf24',
           },
           background: {
-            default: mode === 'light' ? '#f5f5f5' : '#121212',
-            paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+            default: mode === 'light' ? '#f8fafc' : '#0a0f17',
+            paper: mode === 'light' ? '#ffffff' : '#121820',
           },
+          text: {
+            primary: mode === 'light' ? '#0f172a' : '#f1f5f9',
+            secondary: mode === 'light' ? '#475569' : '#cbd5e1',
+          },
+          divider: mode === 'light' ? '#e2e8f0' : '#1f2937',
         },
         typography: {
           fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -62,6 +75,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             styleOverrides: {
               root: {
                 borderRadius: 12,
+                backgroundImage: 'none', // Remove default MUI gradient
               },
             },
           },
@@ -71,6 +85,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
                 borderRadius: 8,
                 textTransform: 'none',
                 fontWeight: 500,
+                transition: 'all 0.2s ease',
+              },
+              contained: {
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 20px rgba(245, 158, 11, 0.3)',
+                },
+              },
+              outlined: {
+                '&:hover': {
+                  backgroundColor: mode === 'dark' ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.04)',
+                },
               },
             },
           },
@@ -78,6 +104,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             styleOverrides: {
               root: {
                 borderRadius: 6,
+              },
+            },
+          },
+          MuiAppBar: {
+            styleOverrides: {
+              root: {
+                backgroundImage: 'none',
+                backgroundColor: mode === 'light' ? '#ffffff' : '#0f1419',
+                borderBottom: `1px solid ${mode === 'light' ? '#e2e8f0' : '#1f2937'}`,
+              },
+            },
+          },
+          MuiPaper: {
+            styleOverrides: {
+              root: {
+                backgroundImage: 'none',
               },
             },
           },

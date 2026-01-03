@@ -73,6 +73,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           p: 3,
           backgroundColor: 'background.default',
           minHeight: '100vh',
+          width: 0,
         }}
       >
         <Toolbar />

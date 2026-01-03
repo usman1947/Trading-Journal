@@ -19,11 +19,11 @@ import {
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
   Add as AddIcon,
-  ShowChart as LogoIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleSidebar, toggleThemeMode } from '@/store/slices/uiSlice';
@@ -91,10 +91,21 @@ export default function Header() {
           <MenuIcon />
         </IconButton>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}>
-          <LogoIcon color="primary" />
+        <Box
+          component={Link}
+          href="/"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            ml: 1,
+            textDecoration: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <Image src="/logo.svg" alt="Caliber Logo" width={32} height={32} />
           <Typography variant="h6" fontWeight="bold" color="primary">
-            Journal
+            Caliber
           </Typography>
         </Box>
 

@@ -1,0 +1,23 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="Caliber-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    
+    <!-- Outer circle background -->
+    <circle cx="100" cy="100" r="95" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.2"/>
+    
+    <!-- Hexagon shape -->
+    <polygon points="100,40 140,65 140,115 100,140 60,115 60,65" fill="none" stroke="url(#Caliber-gold)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Inner circle -->
+    <circle cx="100" cy="100" r="20" fill="none" stroke="url(#Caliber-gold)" stroke-width="2"/>
+    
+    <!-- Center target dot -->
+    <circle cx="100" cy="100" r="8" fill="url(#Caliber-gold)"/>
+    
+    <!-- Vertical line to center -->
+    <line x1="100" y1="100" x2="100" y2="60" stroke="url(#Caliber-gold)" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+</svg>
