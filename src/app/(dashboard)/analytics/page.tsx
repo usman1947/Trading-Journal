@@ -462,7 +462,7 @@ export default function AnalyticsPage() {
                 <PnLDistributionChart data={pnlDistribution} />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ height: 350 }}>
+                <Card sx={{ height: 453 }}>
                   <CardContent sx={{ height: '100%', p: 0 }}>
                     <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
                       <Typography variant="h6" fontWeight={600}>

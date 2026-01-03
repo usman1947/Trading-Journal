@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
   Card,
   CardContent,
-  CardActionArea,
   Button,
   TextField,
   Dialog,
@@ -19,6 +18,7 @@ import {
   InputAdornment,
   Divider,
   CircularProgress,
+  Collapse,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -37,11 +37,13 @@ import {
   useDeleteStrategyMutation,
   useUploadStrategyScreenshotsMutation,
   useDeleteStrategyScreenshotMutation,
+  useGetStrategyStatsQuery,
 } from '@/store';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { StrategyRule, StrategyScreenshot } from '@/types';
+import { formatCurrency } from '@/utils/formatters';
 
 interface Strategy {
   id: string;
@@ -51,6 +53,235 @@ interface Strategy {
   rules?: StrategyRule[];
   screenshots?: StrategyScreenshot[];
   _count?: { trades: number };
+}
+
+interface StrategyCardProps {
+  strategy: Strategy;
+  onEdit: (strategy: Strategy) => void;
+  onDelete: (id: string) => void;
+  onClick: () => void;
+  expanded: boolean;
+  onToggleExpand: () => void;
+}
+
+function StrategyCard({ strategy, onEdit, onDelete, onClick, expanded, onToggleExpand }: StrategyCardProps) {
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+  const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
+  const { data: statsData } = useGetStrategyStatsQuery({ id: strategy.id, accountId: accountFilter });
+
+  const stats = statsData?.stats;
+
+  return (
+    <Card
+      sx={{
+        position: 'relative',
+        '&::before': expanded ? {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '4px',
+          height: '100%',
+          backgroundColor: 'primary.main',
+          borderRadius: '12px 0 0 12px',
+        } : undefined,
+      }}
+    >
+      <CardContent sx={{ p: 0 }}>
+        {/* Header */}
+        <Box
+          sx={{
+            px: 3,
+            pt: 2.5,
+            pb: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            cursor: 'pointer',
+          }}
+          onClick={onToggleExpand}
+        >
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="h6"
+              fontWeight={600}
+              sx={{
+                mb: 0.5,
+                display: 'inline',
+                cursor: 'pointer',
+                '&:hover': {
+                  color: 'primary.main',
+                },
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+            >
+              {strategy.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {strategy.description || 'No description'}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(strategy);
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              color="error"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(strategy.id);
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <Divider />
+
+          {/* SETUPS Section */}
+          <Box sx={{ px: 3, pt: 2.5, pb: 2 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                color: 'text.secondary',
+                mb: 1.5,
+                display: 'block',
+              }}
+            >
+              SETUPS
+            </Typography>
+            {strategy.setups && strategy.setups.length > 0 ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {strategy.setups.map((setup) => (
+                  <Chip
+                    key={setup}
+                    label={setup}
+                    variant="outlined"
+                    color="primary"
+                  />
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                No setups defined
+              </Typography>
+            )}
+          </Box>
+
+          <Divider />
+
+          {/* PERFORMANCE Section */}
+          <Box sx={{ px: 3, pt: 2.5, pb: 2 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                color: 'text.secondary',
+                mb: 1.5,
+                display: 'block',
+              }}
+            >
+              PERFORMANCE
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 4 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Total Trades
+                  </Typography>
+                  <Typography variant="h6" fontWeight={600}>
+                    {stats?.totalTrades || 0}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 4 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Win Rate
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    color={stats && stats.winRate >= 50 ? 'success.main' : 'error.main'}
+                  >
+                    {stats ? `${stats.winRate.toFixed(1)}%` : '0%'}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 4 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    P&L
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    color={stats && stats.totalPnl >= 0 ? 'success.main' : 'error.main'}
+                  >
+                    {stats ? (stats.totalPnl >= 0 ? '+' : '') + formatCurrency(stats.totalPnl) : '$0'}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Divider />
+
+          {/* NOTES Section */}
+          <Box sx={{ px: 3, pt: 2.5, pb: 2.5 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                color: 'text.secondary',
+                mb: 1.5,
+                display: 'block',
+              }}
+            >
+              NOTES
+            </Typography>
+            {strategy.rules && strategy.rules.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {strategy.rules.map((rule, index) => (
+                  <Box key={rule.id} sx={{ display: 'flex', gap: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ minWidth: 20 }}>
+                      {index + 1}.
+                    </Typography>
+                    <Typography variant="body2" color="text.primary">
+                      {rule.text}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                No rules defined
+              </Typography>
+            )}
+          </Box>
+        </Collapse>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function StrategiesPage() {
@@ -77,6 +308,14 @@ export default function StrategiesPage() {
   const [localScreenshots, setLocalScreenshots] = useState<StrategyScreenshot[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [expandedStrategyId, setExpandedStrategyId] = useState<string | null>(null);
+
+  // Set first strategy as expanded by default
+  useEffect(() => {
+    if (strategies.length > 0 && expandedStrategyId === null) {
+      setExpandedStrategyId(strategies[0].id);
+    }
+  }, [strategies, expandedStrategyId]);
 
   const handleOpenDialog = (strategy?: Strategy) => {
     if (strategy) {
@@ -235,7 +474,9 @@ export default function StrategiesPage() {
       </Typography>
 
       {isLoading ? (
-        <Typography>Loading...</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
       ) : strategies.length === 0 ? (
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 6 }}>
@@ -252,102 +493,19 @@ export default function StrategiesPage() {
           </CardContent>
         </Card>
       ) : (
-        <Grid container spacing={2}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {strategies.map((strategy: Strategy) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={strategy.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1, pt: 1 }}>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenDialog(strategy);
-                    }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteId(strategy.id);
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-                <CardActionArea
-                  onClick={() => router.push(`/strategies/${strategy.id}`)}
-                  sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
-                >
-                  <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', pt: 0 }}>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      {strategy.name}
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        mb: 2,
-                        minHeight: 40,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                      }}
-                    >
-                      {strategy.description || 'No description'}
-                    </Typography>
-
-                    <Box sx={{ flex: 1, mb: 2 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                        Setups:
-                      </Typography>
-                      {strategy.setups && strategy.setups.length > 0 ? (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {strategy.setups.map((setup) => (
-                            <Chip
-                              key={setup}
-                              label={setup}
-                              size="small"
-                              variant="outlined"
-                              color="primary"
-                            />
-                          ))}
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                          No setups defined
-                        </Typography>
-                      )}
-                    </Box>
-
-                    <Box sx={{ mt: 'auto', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      <Chip
-                        label={`${strategy._count?.trades || 0} trades`}
-                        size="small"
-                        variant="filled"
-                        color="default"
-                      />
-                      {strategy.rules && strategy.rules.length > 0 && (
-                        <Chip
-                          icon={<ChecklistIcon fontSize="small" />}
-                          label={`${strategy.rules.length} rules`}
-                          size="small"
-                          variant="outlined"
-                          color="secondary"
-                        />
-                      )}
-                    </Box>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
+            <StrategyCard
+              key={strategy.id}
+              strategy={strategy}
+              onEdit={handleOpenDialog}
+              onDelete={(id) => setDeleteId(id)}
+              onClick={() => router.push(`/strategies/${strategy.id}`)}
+              expanded={expandedStrategyId === strategy.id}
+              onToggleExpand={() => setExpandedStrategyId(expandedStrategyId === strategy.id ? null : strategy.id)}
+            />
           ))}
-        </Grid>
+        </Box>
       )}
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
