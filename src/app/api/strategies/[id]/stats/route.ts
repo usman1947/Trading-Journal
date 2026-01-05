@@ -55,19 +55,21 @@ export async function GET(
       return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
     }
 
-    // Calculate stats - exclude BE trades from P&L analytics
+    // Calculate stats - include BE trades in totals, but exclude from win/loss analytics
     const closedTrades = strategy.trades.filter((t: TradeWithScreenshots) => t.result !== null);
     const beTrades = closedTrades.filter((t: TradeWithScreenshots) => t.isBreakEven);
     const nonBETrades = closedTrades.filter((t: TradeWithScreenshots) => !t.isBreakEven);
     const winningTrades = nonBETrades.filter((t: TradeWithScreenshots) => (t.result ?? 0) > 0);
     const losingTrades = nonBETrades.filter((t: TradeWithScreenshots) => (t.result ?? 0) < 0);
-    const passingTrades = nonBETrades.filter((t: TradeWithScreenshots) => t.execution === 'PASS');
+    const passingTrades = closedTrades.filter((t: TradeWithScreenshots) => t.execution === 'PASS');
 
-    const totalPnl = nonBETrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0);
-    const totalRisk = nonBETrades.reduce((sum: number, t: TradeWithScreenshots) => sum + t.risk, 0);
+    // Total PnL and risk include ALL trades (including BE)
+    const totalPnl = closedTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0);
+    const totalRisk = closedTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + t.risk, 0);
     const totalWins = winningTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0);
     const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0));
 
+    // Average R-multiple uses non-BE trades only
     const tradesWithResult = nonBETrades.filter((t: TradeWithScreenshots) => t.result !== null && t.risk > 0);
     const averageRMultiple =
       tradesWithResult.length > 0
@@ -90,11 +92,12 @@ export async function GET(
       },
       trades: strategy.trades,
       stats: {
-        totalTrades: nonBETrades.length,
+        totalTrades: closedTrades.length, // Include BE trades in total count
         openTrades: strategy.trades.length - closedTrades.length,
         breakEvenTrades: beTrades.length,
         winningTrades: winningTrades.length,
         losingTrades: losingTrades.length,
+        // Win rate uses non-BE trades only to not skew the ratio
         winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
         totalPnl,
         totalRisk,
@@ -104,7 +107,7 @@ export async function GET(
         averageRMultiple,
         largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t: TradeWithScreenshots) => t.result ?? 0)) : 0,
         largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t: TradeWithScreenshots) => t.result ?? 0)) : 0,
-        executionRate: nonBETrades.length > 0 ? (passingTrades.length / nonBETrades.length) * 100 : 0,
+        executionRate: closedTrades.length > 0 ? (passingTrades.length / closedTrades.length) * 100 : 0,
       },
     });
   } catch (error) {

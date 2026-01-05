@@ -27,15 +27,19 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
     };
   }
 
-  const winningTrades = completedTrades.filter((t) => (t.result ?? 0) > 0);
-  const losingTrades = completedTrades.filter((t) => (t.result ?? 0) < 0);
+  // Filter out BE trades for win/loss analytics only (not for total counts)
+  const nonBETrades = completedTrades.filter((t) => !t.isBreakEven);
 
+  const winningTrades = nonBETrades.filter((t) => (t.result ?? 0) > 0);
+  const losingTrades = nonBETrades.filter((t) => (t.result ?? 0) < 0);
+
+  // Total result includes ALL trades (including BE)
   const totalResult = completedTrades.reduce((sum, t) => sum + (t.result ?? 0), 0);
   const totalWins = winningTrades.reduce((sum, t) => sum + (t.result ?? 0), 0);
   const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.result ?? 0), 0));
-  const totalRisk = trades.reduce((sum, t) => sum + (t.risk ?? 0), 0);
+  const totalRisk = completedTrades.reduce((sum, t) => sum + (t.risk ?? 0), 0);
 
-  // Calculate average R-multiples for winners and losers
+  // Calculate average R-multiples for winners and losers (non-BE only)
   const winnersWithRisk = winningTrades.filter((t) => t.risk > 0);
   const losersWithRisk = losingTrades.filter((t) => t.risk > 0);
 
@@ -49,14 +53,15 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
       ? losersWithRisk.reduce((sum, t) => sum + calculateRMultiple(t.result ?? 0, t.risk), 0) / losersWithRisk.length
       : 0;
 
-  // Calculate execution rate (% of PASS trades)
-  const passTrades = trades.filter((t) => t.execution === 'PASS');
-  const executionRate = trades.length > 0 ? (passTrades.length / trades.length) * 100 : 0;
+  // Calculate execution rate (% of PASS trades) - includes all completed trades
+  const passTrades = completedTrades.filter((t) => t.execution === 'PASS');
+  const executionRate = completedTrades.length > 0 ? (passTrades.length / completedTrades.length) * 100 : 0;
 
   return {
     totalResult,
-    winRate: (winningTrades.length / completedTrades.length) * 100,
-    totalTrades: trades.length,
+    // Win rate uses non-BE trades only to not skew the ratio
+    winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
+    totalTrades: completedTrades.length, // Include BE trades in total count
     winningTrades: winningTrades.length,
     losingTrades: losingTrades.length,
     averageWin: winningTrades.length > 0 ? totalWins / winningTrades.length : 0,

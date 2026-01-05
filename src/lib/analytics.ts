@@ -59,10 +59,7 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
 
   const trades = await prisma.trade.findMany({ where });
 
-  // Filter out BE trades for P&L analytics
-  const nonBETrades = trades.filter((t: TradeRecord) => !t.isBreakEven);
-
-  if (nonBETrades.length === 0) {
+  if (trades.length === 0) {
     return {
       totalResult: 0,
       winRate: 0,
@@ -80,16 +77,20 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     };
   }
 
+  // Filter out BE trades for win/loss analytics only (not for total counts)
+  const nonBETrades = trades.filter((t: TradeRecord) => !t.isBreakEven);
+
   const winningTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
   const losingTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
-  const passingTrades = nonBETrades.filter((t: TradeRecord) => t.execution === 'PASS');
+  const passingTrades = trades.filter((t: TradeRecord) => t.execution === 'PASS');
 
-  const totalResult = nonBETrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
-  const totalRisk = nonBETrades.reduce((sum: number, t: TradeRecord) => sum + t.risk, 0);
+  // Total result and risk include ALL trades (including BE)
+  const totalResult = trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
+  const totalRisk = trades.reduce((sum: number, t: TradeRecord) => sum + t.risk, 0);
   const totalWins = winningTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
   const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0));
 
-  // Calculate average R-multiples for winners and losers
+  // Calculate average R-multiples for winners and losers (non-BE only)
   const winnersWithRisk = winningTrades.filter((t: TradeRecord) => t.risk > 0);
   const losersWithRisk = losingTrades.filter((t: TradeRecord) => t.risk > 0);
 
@@ -105,8 +106,9 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
 
   return {
     totalResult,
-    winRate: (winningTrades.length / nonBETrades.length) * 100,
-    totalTrades: nonBETrades.length,
+    // Win rate uses non-BE trades only to not skew the ratio
+    winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
+    totalTrades: trades.length, // Include BE trades in total count
     winningTrades: winningTrades.length,
     losingTrades: losingTrades.length,
     averageWin: winningTrades.length > 0 ? totalWins / winningTrades.length : 0,
@@ -116,7 +118,7 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
     largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
     totalRisk,
-    executionRate: (passingTrades.length / nonBETrades.length) * 100,
+    executionRate: trades.length > 0 ? (passingTrades.length / trades.length) * 100 : 0,
   };
 }
 
@@ -139,25 +141,27 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
     orderBy: { tradeTime: 'asc' },
   });
 
-  // Filter out BE trades for P&L analytics
-  const nonBETrades = trades.filter((t: TradeRecord) => !t.isBreakEven);
+  // Track daily stats: total includes all trades, nonBETotal for winRate calculation
+  const dailyMap = new Map<string, { pnl: number; wins: number; total: number; nonBETotal: number }>();
 
-  const dailyMap = new Map<string, { pnl: number; wins: number; total: number }>();
-
-  nonBETrades.forEach((trade: TradeRecord) => {
+  trades.forEach((trade: TradeRecord) => {
     const date = trade.tradeTime.toISOString().split('T')[0];
-    const existing = dailyMap.get(date) || { pnl: 0, wins: 0, total: 0 };
+    const existing = dailyMap.get(date) || { pnl: 0, wins: 0, total: 0, nonBETotal: 0 };
     existing.pnl += trade.result ?? 0;
-    existing.total += 1;
-    if ((trade.result ?? 0) > 0) existing.wins += 1;
+    existing.total += 1; // Count all trades including BE
+    if (!trade.isBreakEven) {
+      existing.nonBETotal += 1; // Non-BE trades for winRate denominator
+      if ((trade.result ?? 0) > 0) existing.wins += 1; // Only count non-BE wins
+    }
     dailyMap.set(date, existing);
   });
 
   return Array.from(dailyMap.entries()).map(([date, stats]) => ({
     date,
     pnl: stats.pnl,
-    trades: stats.total,
-    winRate: stats.total > 0 ? (stats.wins / stats.total) * 100 : 0,
+    trades: stats.total, // Total trades including BE
+    // Win rate uses non-BE trades only to not skew the ratio
+    winRate: stats.nonBETotal > 0 ? (stats.wins / stats.nonBETotal) * 100 : 0,
   }));
 }
 
@@ -189,7 +193,7 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
   };
 
   return strategies.map((strategy: { id: string; name: string; trades: TradeWithRuleChecks[]; rules: { id: string }[] }) => {
-    // Filter out BE trades for P&L analytics
+    // Filter out BE trades for win/loss analytics only (not for total counts)
     const nonBETrades = strategy.trades.filter((t) => !t.isBreakEven);
     const winningTrades = nonBETrades.filter((t) => (t.result ?? 0) > 0);
     const losingTrades = nonBETrades.filter((t) => (t.result ?? 0) < 0);
@@ -223,9 +227,11 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
     return {
       strategyId: strategy.id,
       strategyName: strategy.name,
-      totalTrades: nonBETrades.length,
+      totalTrades: strategy.trades.length, // Include BE trades in total count
+      // Win rate uses non-BE trades only to not skew the ratio
       winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
-      totalPnl: nonBETrades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
+      // Total PnL includes all trades (BE trades have ~0 result anyway)
+      totalPnl: strategy.trades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
       averageRMultiple:
         tradesWithResult.length > 0
           ? tradesWithResult.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
