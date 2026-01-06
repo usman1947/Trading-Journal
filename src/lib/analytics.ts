@@ -4,6 +4,7 @@ import type { AnalyticsData, DailyStats, StrategyStats, TradeFilters, TradeTimeS
 type TradeRecord = {
   result: number | null;
   risk: number;
+  commission: number;
   execution: string | null;
   tradeTime: Date;
   exitTime: Date | null;
@@ -73,6 +74,7 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
       largestWin: 0,
       largestLoss: 0,
       totalRisk: 0,
+      totalCommissions: 0,
       executionRate: 0,
     };
   }
@@ -85,7 +87,9 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
   const passingTrades = trades.filter((t: TradeRecord) => t.execution === 'PASS');
 
   // Total result and risk include ALL trades (including BE)
-  const totalResult = trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
+  // Commissions are subtracted from total result
+  const totalCommissions = trades.reduce((sum: number, t: TradeRecord) => sum + (t.commission ?? 0), 0);
+  const totalResult = trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0) - totalCommissions;
   const totalRisk = trades.reduce((sum: number, t: TradeRecord) => sum + t.risk, 0);
   const totalWins = winningTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
   const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0));
@@ -118,6 +122,7 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
     largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
     totalRisk,
+    totalCommissions,
     executionRate: trades.length > 0 ? (passingTrades.length / trades.length) * 100 : 0,
   };
 }
@@ -147,7 +152,8 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
   trades.forEach((trade: TradeRecord) => {
     const date = trade.tradeTime.toISOString().split('T')[0];
     const existing = dailyMap.get(date) || { pnl: 0, wins: 0, total: 0, nonBETotal: 0 };
-    existing.pnl += trade.result ?? 0;
+    // Subtract commission from PnL
+    existing.pnl += (trade.result ?? 0) - (trade.commission ?? 0);
     existing.total += 1; // Count all trades including BE
     if (!trade.isBreakEven) {
       existing.nonBETotal += 1; // Non-BE trades for winRate denominator

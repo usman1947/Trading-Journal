@@ -183,6 +183,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
     setup: trade?.setup || '',
     risk: trade?.risk ?? defaultRisk,
     result: trade?.result ?? undefined,
+    commission: trade?.commission ?? 0,
     execution: trade?.execution || 'PASS',
     isBreakEven: trade?.isBreakEven || false,
     notes: trade?.notes || '',
@@ -423,6 +424,22 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                       startAdornment: <InputAdornment position="start">$</InputAdornment>,
                     }}
                     helperText="Leave empty for open trades"
+                  />
+                </Grid>
+
+                {/* Commission */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Commission $"
+                    name="commission"
+                    type="number"
+                    value={formik.values.commission ?? 0}
+                    onChange={formik.handleChange}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    }}
+                    helperText="Fees/commissions paid"
                   />
                 </Grid>
 

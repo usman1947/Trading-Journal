@@ -23,6 +23,7 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
       largestWin: 0,
       largestLoss: 0,
       totalRisk: 0,
+      totalCommissions: 0,
       executionRate: 0,
     };
   }
@@ -33,8 +34,9 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
   const winningTrades = nonBETrades.filter((t) => (t.result ?? 0) > 0);
   const losingTrades = nonBETrades.filter((t) => (t.result ?? 0) < 0);
 
-  // Total result includes ALL trades (including BE)
-  const totalResult = completedTrades.reduce((sum, t) => sum + (t.result ?? 0), 0);
+  // Total result includes ALL trades (including BE), minus commissions
+  const totalCommissions = completedTrades.reduce((sum, t) => sum + (t.commission ?? 0), 0);
+  const totalResult = completedTrades.reduce((sum, t) => sum + (t.result ?? 0), 0) - totalCommissions;
   const totalWins = winningTrades.reduce((sum, t) => sum + (t.result ?? 0), 0);
   const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.result ?? 0), 0));
   const totalRisk = completedTrades.reduce((sum, t) => sum + (t.risk ?? 0), 0);
@@ -71,6 +73,7 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
     largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t) => t.result ?? 0)) : 0,
     largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t) => t.result ?? 0)) : 0,
     totalRisk,
+    totalCommissions,
     executionRate,
   };
 }

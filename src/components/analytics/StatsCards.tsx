@@ -7,6 +7,7 @@ import {
   TrendingDown as TrendingDownIcon,
   Assessment as AssessmentIcon,
   CheckCircle as PassIcon,
+  Payments as PaymentsIcon,
 } from '@mui/icons-material';
 import type { AnalyticsData } from '@/types';
 import { formatCurrency, formatPercent } from '@/utils/formatters';
@@ -21,6 +22,7 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
   const executionRate = analytics.executionRate ?? 0;
   const avgWinnerR = analytics.averageWinnerR ?? 0;
   const avgLoserR = analytics.averageLoserR ?? 0;
+  const totalCommissions = analytics.totalCommissions ?? 0;
 
   const stats = [
     {
@@ -41,6 +43,12 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
       value: (analytics.totalTrades ?? 0).toString(),
       color: 'primary.main',
       icon: <AssessmentIcon />,
+    },
+    {
+      title: 'Total Commissions',
+      value: formatCurrency(totalCommissions),
+      color: 'warning.main',
+      icon: <PaymentsIcon />,
     },
     {
       title: 'Avg Win',

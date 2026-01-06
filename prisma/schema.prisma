@@ -50,6 +50,7 @@ model Trade {
   setup              String?          // Trade setup description
   risk               Float            // Risk amount in dollars
   result             Float?           // P&L result in dollars
+  commission         Float            @default(0) // Commission/fees paid for this trade
   execution          String           @default("PASS") // PASS, FAIL
   isBreakEven        Boolean          @default(false) // Break even trade - excluded from P&L analytics
   notes              String?

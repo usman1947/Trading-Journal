@@ -24,6 +24,7 @@ export interface Trade {
   setup?: string | null;
   risk: number;
   result?: number | null;
+  commission: number;
   execution: Execution;
   isBreakEven: boolean;
   notes?: string | null;
@@ -147,6 +148,7 @@ export interface TradeFormData {
   setup?: string;
   risk: number;
   result?: number;
+  commission?: number;
   execution: Execution;
   isBreakEven?: boolean;
   notes?: string;
@@ -186,6 +188,7 @@ export interface AnalyticsData {
   largestWin: number;
   largestLoss: number;
   totalRisk: number;
+  totalCommissions: number; // Total commissions/fees paid
   executionRate: number; // % of PASS executions
   avgWinnerTime?: number; // Average time in winning trades (minutes)
   avgLoserTime?: number; // Average time in losing trades (minutes)
