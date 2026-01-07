@@ -225,28 +225,29 @@ export default function TradeList() {
 
   return (
     <>
-      <DataGrid
-        rows={trades}
-        columns={columns}
-        loading={isLoading}
-        autoHeight
-        pageSizeOptions={[10, 25, 50, 100]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 25 } },
-          sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
-        }}
-        disableRowSelectionOnClick
-        sx={{
-          '& .MuiDataGrid-cell': {
-            display: 'flex',
-            alignItems: 'center',
-          },
-          '& .MuiDataGrid-row:hover': {
-            cursor: 'pointer',
-          },
-        }}
-        onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
-      />
+      <Box sx={{ height: 'calc(100vh - 280px)', minHeight: 400, width: '100%' }}>
+        <DataGrid
+          rows={trades}
+          columns={columns}
+          loading={isLoading}
+          pageSizeOptions={[10, 25, 50, 100]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 25 } },
+            sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
+          }}
+          disableRowSelectionOnClick
+          sx={{
+            '& .MuiDataGrid-cell': {
+              display: 'flex',
+              alignItems: 'center',
+            },
+            '& .MuiDataGrid-row:hover': {
+              cursor: 'pointer',
+            },
+          }}
+          onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
+        />
+      </Box>
 
       <ConfirmDialog
         open={!!deleteId}
