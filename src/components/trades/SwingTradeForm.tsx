@@ -87,11 +87,17 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
 
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const [partials, setPartials] = useState<number[]>(() => {
-    if (trade?.partials && trade.partials.length > 0) {
-      return trade.partials;
+  const [partials, setPartials] = useState<(number | null)[]>(() => {
+    if (trade?.partials) {
+      // Handle partials as JSON string from database or as array
+      const parsed = typeof trade.partials === 'string'
+        ? JSON.parse(trade.partials)
+        : trade.partials;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
     }
-    return [0]; // Default to one empty partial
+    return [null]; // Default to one empty partial
   });
 
   const handleFileSelect = useCallback((files: FileList | null) => {
@@ -131,7 +137,9 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
     tradeTime: trade?.tradeTime || new Date().toISOString(),
     exitTime: trade?.exitTime || null,
     risk: trade?.risk ?? defaultRisk,
-    partials: trade?.partials || [],
+    partials: trade?.partials
+      ? (typeof trade.partials === 'string' ? JSON.parse(trade.partials) : trade.partials)
+      : [],
     notes: trade?.notes || '',
     strategyId: trade?.strategyId || '',
     accountId: trade?.accountId ?? selectedAccountId,
@@ -139,14 +147,14 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
 
   // Calculate total result from partials
   const totalResult = useMemo(() => {
-    return partials.reduce((sum, p) => sum + p, 0);
+    return partials.reduce((sum, p) => (sum || 0) + (p || 0), 0);
   }, [partials]);
 
   const addPartial = () => {
-    setPartials([...partials, 0]);
+    setPartials([...partials, null]);
   };
 
-  const updatePartial = (index: number, value: number) => {
+  const updatePartial = (index: number, value: number | null) => {
     const newPartials = [...partials];
     newPartials[index] = value;
     setPartials(newPartials);
@@ -169,8 +177,8 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
           tradeTime: values.tradeTime,
           exitTime: values.exitTime,
           risk: values.risk,
-          result: totalResult,
-          partials: partials.length > 0 ? partials : undefined,
+          result: totalResult || 0,
+          partials: partials.filter((p): p is number => p !== null),
           execution: 'PASS' as const,
           notes: values.notes || null,
           strategyId: values.strategyId || null,
@@ -310,14 +318,14 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
                   <TextField
                     fullWidth
                     label="Total Result $"
-                    value={totalResult.toFixed(2)}
+                    value={(totalResult || 0).toFixed(2)}
                     InputProps={{
                       readOnly: true,
                       startAdornment: <InputAdornment position="start">$</InputAdornment>,
                     }}
                     sx={{
                       '& .MuiInputBase-input': {
-                        color: totalResult >= 0 ? 'success.main' : 'error.main',
+                        color: (totalResult || 0) >= 0 ? 'success.main' : 'error.main',
                         fontWeight: 'bold',
                       },
                     }}
@@ -360,15 +368,18 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
                               fullWidth
                               size="small"
                               type="number"
-                              value={partial}
-                              onChange={(e) => updatePartial(index, parseFloat(e.target.value) || 0)}
+                              value={partial === null ? '' : partial}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                updatePartial(index, val === '' ? null : parseFloat(val));
+                              }}
                               InputProps={{
                                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
                               }}
-                              placeholder="Enter profit/loss (negative for loss)"
+                              placeholder="Enter profit/loss"
                               sx={{
                                 '& .MuiInputBase-input': {
-                                  color: partial >= 0 ? 'success.main' : 'error.main',
+                                  color: partial === null ? 'inherit' : (partial >= 0 ? 'success.main' : 'error.main'),
                                 },
                               }}
                             />
