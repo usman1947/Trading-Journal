@@ -11,6 +11,7 @@ export interface Account {
   id: string;
   name: string;
   description?: string | null;
+  isSwingAccount: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,6 +25,7 @@ export interface Trade {
   setup?: string | null;
   risk: number;
   result?: number | null;
+  partials?: number[] | null;
   commission: number;
   execution: Execution;
   isBreakEven: boolean;
@@ -52,6 +54,7 @@ export interface Strategy {
   name: string;
   description?: string | null;
   setups?: string[] | null;
+  isSwingStrategy: boolean;
   trades?: Trade[];
   rules?: StrategyRule[];
   screenshots?: StrategyScreenshot[];
@@ -148,6 +151,7 @@ export interface TradeFormData {
   setup?: string;
   risk: number;
   result?: number;
+  partials?: number[];
   commission?: number;
   execution: Execution;
   isBreakEven?: boolean;

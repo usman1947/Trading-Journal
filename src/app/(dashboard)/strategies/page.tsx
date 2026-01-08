@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -19,6 +19,8 @@ import {
   Divider,
   CircularProgress,
   Collapse,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -38,11 +40,12 @@ import {
   useUploadStrategyScreenshotsMutation,
   useDeleteStrategyScreenshotMutation,
   useGetStrategyStatsQuery,
+  useGetAccountsQuery,
 } from '@/store';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
-import { StrategyRule, StrategyScreenshot } from '@/types';
+import { StrategyRule, StrategyScreenshot, Account } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
 
 interface Strategy {
@@ -50,6 +53,7 @@ interface Strategy {
   name: string;
   description?: string | null;
   setups?: string[];
+  isSwingStrategy?: boolean;
   rules?: StrategyRule[];
   screenshots?: StrategyScreenshot[];
   _count?: { trades: number };
@@ -290,7 +294,23 @@ export default function StrategiesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
   const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
-  const { data: strategies = [], isLoading } = useGetStrategiesQuery({ accountId: accountFilter });
+  const { data: allStrategies = [], isLoading } = useGetStrategiesQuery({ accountId: accountFilter });
+  const { data: accounts = [] } = useGetAccountsQuery({});
+
+  // Check if the selected account is a swing account
+  const isSwingAccount = useMemo(() => {
+    if (!selectedAccountId) return false;
+    const account = accounts.find((a: Account) => a.id === selectedAccountId);
+    return account?.isSwingAccount || false;
+  }, [selectedAccountId, accounts]);
+
+  // Filter strategies based on account type
+  const strategies = useMemo(() => {
+    if (isSwingAccount) {
+      return allStrategies.filter((s: Strategy) => s.isSwingStrategy);
+    }
+    return allStrategies.filter((s: Strategy) => !s.isSwingStrategy);
+  }, [allStrategies, isSwingAccount]);
   const [createStrategy] = useCreateStrategyMutation();
   const [updateStrategy] = useUpdateStrategyMutation();
   const [deleteStrategy, { isLoading: deleting }] = useDeleteStrategyMutation();
@@ -305,6 +325,7 @@ export default function StrategiesPage() {
   const [newSetup, setNewSetup] = useState('');
   const [rules, setRules] = useState<string[]>([]);
   const [newRule, setNewRule] = useState('');
+  const [isSwingStrategy, setIsSwingStrategy] = useState(false);
   const [localScreenshots, setLocalScreenshots] = useState<StrategyScreenshot[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -324,6 +345,7 @@ export default function StrategiesPage() {
       setDescription(strategy.description || '');
       setSetups(strategy.setups || []);
       setRules(strategy.rules?.map((r) => r.text) || []);
+      setIsSwingStrategy(strategy.isSwingStrategy || false);
       setLocalScreenshots(strategy.screenshots || []);
     } else {
       setEditingStrategy(null);
@@ -331,6 +353,7 @@ export default function StrategiesPage() {
       setDescription('');
       setSetups([]);
       setRules([]);
+      setIsSwingStrategy(isSwingAccount); // Default to current account type
       setLocalScreenshots([]);
     }
     setNewSetup('');
@@ -347,6 +370,7 @@ export default function StrategiesPage() {
     setNewSetup('');
     setRules([]);
     setNewRule('');
+    setIsSwingStrategy(false);
     setLocalScreenshots([]);
   };
 
@@ -431,10 +455,10 @@ export default function StrategiesPage() {
   const handleSave = async () => {
     try {
       if (editingStrategy) {
-        await updateStrategy({ id: editingStrategy.id, name, description, setups, rules }).unwrap();
+        await updateStrategy({ id: editingStrategy.id, name, description, setups, rules, isSwingStrategy }).unwrap();
         dispatch(showSnackbar({ message: 'Strategy updated', severity: 'success' }));
       } else {
-        await createStrategy({ name, description, setups, rules }).unwrap();
+        await createStrategy({ name, description, setups, rules, isSwingStrategy }).unwrap();
         dispatch(showSnackbar({ message: 'Strategy created', severity: 'success' }));
       }
       handleCloseDialog();
@@ -532,6 +556,21 @@ export default function StrategiesPage() {
             rows={2}
             placeholder="Describe when you use this strategy..."
           />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isSwingStrategy}
+                onChange={(e) => setIsSwingStrategy(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Swing Strategy"
+            sx={{ mt: 2 }}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 4, mt: -0.5 }}>
+            Enable this for strategies used with swing trading accounts
+          </Typography>
 
           {/* Setups Section */}
           <Box sx={{ mt: 3 }}>

@@ -44,7 +44,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, description } = body;
+    const { name, description, isSwingAccount } = body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
       return NextResponse.json({ error: 'Account name is required' }, { status: 400 });
@@ -64,6 +64,7 @@ export async function PUT(
       data: {
         name: name.trim(),
         description: description?.trim() || null,
+        isSwingAccount: isSwingAccount ?? existing.isSwingAccount,
       },
     });
 

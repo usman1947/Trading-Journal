@@ -13,18 +13,26 @@ import {
   Cancel as FailIcon,
   ChecklistRtl as ChecklistIcon,
 } from '@mui/icons-material';
-import { useGetTradesQuery, useDeleteTradeMutation } from '@/store';
+import { useGetTradesQuery, useDeleteTradeMutation, useGetAccountsQuery } from '@/store';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
-import type { Trade } from '@/types';
+import type { Trade, Account } from '@/types';
 
 export default function TradeList() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.filters.tradeFilters);
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+  const { data: accounts = [] } = useGetAccountsQuery({});
+
+  // Check if the selected account is a swing account
+  const isSwingAccount = useMemo(() => {
+    if (!selectedAccountId) return false;
+    const account = accounts.find((a: Account) => a.id === selectedAccountId);
+    return account?.isSwingAccount || false;
+  }, [selectedAccountId, accounts]);
 
   // Include account filter - null means Paper Account
   const queryFilters = {
@@ -68,7 +76,139 @@ export default function TradeList() {
     return { score: Math.round((checkedCount / strategy.rules.length) * 100), checkedCount, total: strategy.rules.length };
   }, []);
 
-  const columns: GridColDef[] = useMemo(() => [
+  // Swing account columns: Symbol, Entry Date, Exit Date, Days in Trade, Strategy, Risk, Result, R, Actions
+  const swingColumns: GridColDef[] = useMemo(() => [
+    {
+      field: 'symbol',
+      headerName: 'Symbol',
+      width: 110,
+      renderCell: (params: GridRenderCellParams<Trade>) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {params.row.side === 'LONG' ? (
+            <LongIcon fontSize="small" color="success" />
+          ) : (
+            <ShortIcon fontSize="small" color="error" />
+          )}
+          <Typography fontWeight="medium">{params.value}</Typography>
+        </Box>
+      ),
+    },
+    {
+      field: 'entryDate',
+      headerName: 'Entry Date',
+      width: 110,
+      valueGetter: (_, row) => row.tradeTime,
+      valueFormatter: (value) => formatDateOnly(value),
+    },
+    {
+      field: 'exitDate',
+      headerName: 'Exit Date',
+      width: 110,
+      valueGetter: (_, row) => row.exitTime,
+      valueFormatter: (value) => value ? formatDateOnly(value) : '-',
+    },
+    {
+      field: 'daysInTrade',
+      headerName: 'Days',
+      width: 70,
+      valueGetter: (_, row) => {
+        if (!row.tradeTime) return null;
+        const entryDate = new Date(row.tradeTime);
+        const exitDate = row.exitTime ? new Date(row.exitTime) : new Date();
+        const diffTime = Math.abs(exitDate.getTime() - entryDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+      },
+      renderCell: (params: GridRenderCellParams<Trade>) => {
+        const days = params.value;
+        const isOpen = !params.row.exitTime;
+        return (
+          <Typography color={isOpen ? 'text.secondary' : 'text.primary'}>
+            {days}{isOpen ? '*' : ''}
+          </Typography>
+        );
+      },
+    },
+    {
+      field: 'strategy',
+      headerName: 'Strategy',
+      width: 130,
+      valueGetter: (value: { name: string } | null) => value?.name || '-',
+    },
+    {
+      field: 'risk',
+      headerName: 'Risk $',
+      width: 90,
+      renderCell: (params: GridRenderCellParams<Trade>) => (
+        <Typography color="warning.main">
+          {formatCurrency(params.value as number)}
+        </Typography>
+      ),
+    },
+    {
+      field: 'result',
+      headerName: 'Result $',
+      width: 110,
+      renderCell: (params: GridRenderCellParams<Trade>) => {
+        if (params.value === null || params.value === undefined) {
+          return <Typography color="text.secondary">Open</Typography>;
+        }
+        return (
+          <Typography
+            color={params.value >= 0 ? 'success.main' : 'error.main'}
+            fontWeight="medium"
+          >
+            {params.value >= 0 ? '+' : ''}
+            {formatCurrency(params.value)}
+          </Typography>
+        );
+      },
+    },
+    {
+      field: 'rMultiple',
+      headerName: 'R',
+      width: 70,
+      renderCell: (params: GridRenderCellParams<Trade>) => {
+        const result = params.row.result;
+        const risk = params.row.risk;
+        if (result === null || result === undefined || !risk) {
+          return <Typography color="text.secondary">-</Typography>;
+        }
+        const r = result / risk;
+        return (
+          <Typography color={r >= 0 ? 'success.main' : 'error.main'}>
+            {r >= 0 ? '+' : ''}{r.toFixed(1)}R
+          </Typography>
+        );
+      },
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 100,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams<Trade>) => (
+        <Box>
+          <IconButton
+            size="small"
+            onClick={(e) => handleEdit(e, params.row.id)}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            color="error"
+            onClick={(e) => handleDeleteClick(e, params.row.id)}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      ),
+    },
+  ], [handleEdit, handleDeleteClick]);
+
+  // Regular account columns
+  const regularColumns: GridColDef[] = useMemo(() => [
     {
       field: 'symbol',
       headerName: 'Symbol',
@@ -222,6 +362,9 @@ export default function TradeList() {
       ),
     },
   ], [calculateScore, handleEdit, handleDeleteClick]);
+
+  // Select columns based on account type
+  const columns = isSwingAccount ? swingColumns : regularColumns;
 
   return (
     <>

@@ -63,7 +63,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, setups, rules } = body;
+    const { name, description, setups, rules, isSwingStrategy } = body;
 
     // Update strategy with rules in a transaction
     const strategy = await prisma.$transaction(async (tx) => {
@@ -90,6 +90,7 @@ export async function PUT(
           name,
           description: description || null,
           setups: setups && setups.length > 0 ? JSON.stringify(setups) : null,
+          isSwingStrategy: isSwingStrategy ?? existing.isSwingStrategy,
         },
         include: {
           rules: {

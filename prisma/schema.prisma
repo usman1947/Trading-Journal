@@ -28,15 +28,16 @@ model User {
 }
 
 model Account {
-  id          String     @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  trades      Trade[]
-  settings    Settings[]
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
+  id             String     @id @default(cuid())
+  name           String
+  description    String?
+  isSwingAccount Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  trades         Trade[]
+  settings       Settings[]
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
 
   @@unique([userId, name])
 }
@@ -50,6 +51,7 @@ model Trade {
   setup              String?          // Trade setup description
   risk               Float            // Risk amount in dollars
   result             Float?           // P&L result in dollars
+  partials           String?          // JSON array of partial results for swing trades
   commission         Float            @default(0) // Commission/fees paid for this trade
   execution          String           @default("PASS") // PASS, FAIL
   isBreakEven        Boolean          @default(false) // Break even trade - excluded from P&L analytics
@@ -77,17 +79,18 @@ model Trade {
 }
 
 model Strategy {
-  id          String              @id @default(cuid())
-  name        String
-  description String?
-  setups      String?             // JSON array of setup names
-  trades      Trade[]
-  rules       StrategyRule[]
-  screenshots StrategyScreenshot[]
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id              String              @id @default(cuid())
+  name            String
+  description     String?
+  setups          String?             // JSON array of setup names
+  isSwingStrategy Boolean             @default(false)
+  trades          Trade[]
+  rules           StrategyRule[]
+  screenshots     StrategyScreenshot[]
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   @@unique([userId, name])
 }

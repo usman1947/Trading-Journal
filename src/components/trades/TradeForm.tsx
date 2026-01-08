@@ -110,9 +110,14 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
   const [updateTrade, { isLoading: updating }] = useUpdateTradeMutation();
   const [uploadScreenshots] = useUploadScreenshotsMutation();
   const [updateRuleChecks] = useUpdateTradeRuleChecksMutation();
-  const { data: strategies = [] } = useGetStrategiesQuery({});
+  const { data: allStrategies = [] } = useGetStrategiesQuery({});
   const { data: existingSetups = [] } = useGetSetupsQuery({});
   const { data: settings } = useGetSettingsQuery({});
+
+  // Filter to only show non-swing strategies
+  const strategies = useMemo(() => {
+    return allStrategies.filter((s: Strategy) => !s.isSwingStrategy);
+  }, [allStrategies]);
 
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -120,8 +125,8 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
 
   // Get the currently selected strategy with its rules
   const selectedStrategy = useMemo(() => {
-    return strategies.find((s: Strategy) => s.id === trade?.strategyId) as Strategy | undefined;
-  }, [strategies, trade?.strategyId]);
+    return allStrategies.find((s: Strategy) => s.id === trade?.strategyId) as Strategy | undefined;
+  }, [allStrategies, trade?.strategyId]);
 
   // Initialize rule checks from trade data
   useEffect(() => {

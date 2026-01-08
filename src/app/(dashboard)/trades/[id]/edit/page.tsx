@@ -4,6 +4,7 @@ import { Box, Typography, Breadcrumbs, Skeleton } from '@mui/material';
 import Link from 'next/link';
 import { useGetTradeQuery } from '@/store';
 import TradeForm from '@/components/trades/TradeForm';
+import SwingTradeForm from '@/components/trades/SwingTradeForm';
 
 interface EditTradePageProps {
   params: { id: string };
@@ -33,6 +34,9 @@ export default function EditTradePage({ params }: EditTradePageProps) {
     );
   }
 
+  // Check if the trade belongs to a swing account
+  const isSwingTrade = trade.account?.isSwingAccount || false;
+
   return (
     <Box>
       <Breadcrumbs sx={{ mb: 2 }}>
@@ -46,10 +50,14 @@ export default function EditTradePage({ params }: EditTradePageProps) {
       </Breadcrumbs>
 
       <Typography variant="h4" fontWeight="bold" sx={{ mb: 3 }}>
-        Edit Trade - {trade.symbol}
+        {isSwingTrade ? 'Edit Swing Trade' : 'Edit Trade'} - {trade.symbol}
       </Typography>
 
-      <TradeForm mode="edit" trade={trade} />
+      {isSwingTrade ? (
+        <SwingTradeForm mode="edit" trade={trade} />
+      ) : (
+        <TradeForm mode="edit" trade={trade} />
+      )}
     </Box>
   );
 }

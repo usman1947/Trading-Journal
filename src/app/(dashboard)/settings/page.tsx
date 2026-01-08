@@ -59,6 +59,7 @@ interface AccountDialogData {
   id?: string;
   name: string;
   description: string;
+  isSwingAccount: boolean;
 }
 
 export default function SettingsPage() {
@@ -91,6 +92,7 @@ export default function SettingsPage() {
   const [accountDialogData, setAccountDialogData] = useState<AccountDialogData>({
     name: '',
     description: '',
+    isSwingAccount: false,
   });
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [saving, setSaving] = useState(false);
@@ -242,16 +244,17 @@ export default function SettingsPage() {
         id: account.id,
         name: account.name,
         description: account.description || '',
+        isSwingAccount: account.isSwingAccount || false,
       });
     } else {
-      setAccountDialogData({ name: '', description: '' });
+      setAccountDialogData({ name: '', description: '', isSwingAccount: false });
     }
     setAccountDialogOpen(true);
   };
 
   const handleCloseAccountDialog = () => {
     setAccountDialogOpen(false);
-    setAccountDialogData({ name: '', description: '' });
+    setAccountDialogData({ name: '', description: '', isSwingAccount: false });
   };
 
   const handleSaveAccount = async () => {
@@ -261,12 +264,14 @@ export default function SettingsPage() {
           id: accountDialogData.id,
           name: accountDialogData.name,
           description: accountDialogData.description || null,
+          isSwingAccount: accountDialogData.isSwingAccount,
         }).unwrap();
         dispatch(showSnackbar({ message: 'Account updated successfully', severity: 'success' }));
       } else {
         await createAccount({
           name: accountDialogData.name,
           description: accountDialogData.description || null,
+          isSwingAccount: accountDialogData.isSwingAccount,
         }).unwrap();
         dispatch(showSnackbar({ message: 'Account created successfully', severity: 'success' }));
       }
@@ -625,6 +630,19 @@ export default function SettingsPage() {
               multiline
               rows={2}
             />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={accountDialogData.isSwingAccount}
+                  onChange={(e) => setAccountDialogData({ ...accountDialogData, isSwingAccount: e.target.checked })}
+                  color="primary"
+                />
+              }
+              label="Swing Account"
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+              Swing accounts are for longer-term trades held over multiple days or weeks
+            </Typography>
           </Box>
         </DialogContent>
         <DialogActions>

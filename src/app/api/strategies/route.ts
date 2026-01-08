@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
-    const { name, description, setups, rules } = body;
+    const { name, description, setups, rules, isSwingStrategy } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         setups: setups && setups.length > 0 ? JSON.stringify(setups) : null,
+        isSwingStrategy: isSwingStrategy ?? false,
         userId: user.id,
         rules: rules && rules.length > 0
           ? {

@@ -224,6 +224,13 @@ export const api = createApi({
       }),
       providesTags: ['Analytics'],
     }),
+    getStrategyDistribution: builder.query({
+      query: (filters) => ({
+        url: '/analytics/strategy-distribution',
+        params: filters,
+      }),
+      providesTags: ['Analytics'],
+    }),
 
     // Settings
     getSettings: builder.query({
@@ -376,6 +383,7 @@ export const {
   useGetStrategyStatsQuery,
   useGetStrategiesAnalyticsQuery,
   useGetTradeTimeStatsQuery,
+  useGetStrategyDistributionQuery,
   useGetSettingsQuery,
   useUpdateSettingsMutation,
   useUploadScreenshotsMutation,

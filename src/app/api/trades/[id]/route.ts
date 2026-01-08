@@ -78,6 +78,7 @@ export async function PUT(
       setup,
       risk,
       result,
+      partials,
       commission,
       execution,
       isBreakEven,
@@ -100,6 +101,12 @@ export async function PUT(
       holdDurationMins = Math.round((exitDateTime.getTime() - tradeDateTime.getTime()) / 60000);
     }
 
+    // Calculate result from partials if provided
+    let finalResult = result ?? null;
+    if (partials && Array.isArray(partials) && partials.length > 0) {
+      finalResult = partials.reduce((sum: number, p: number) => sum + p, 0);
+    }
+
     const trade = await prisma.trade.update({
       where: { id },
       data: {
@@ -109,7 +116,8 @@ export async function PUT(
         exitTime: exitDateTime,
         setup: setup || null,
         risk,
-        result: result ?? null,
+        result: finalResult,
+        partials: partials !== undefined ? (partials && partials.length > 0 ? JSON.stringify(partials) : null) : undefined,
         commission: commission ?? 0,
         execution,
         isBreakEven: isBreakEven ?? undefined,

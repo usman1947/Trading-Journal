@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -23,21 +24,40 @@ import {
   Category as StrategiesIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '@/store/hooks';
+import { useGetAccountsQuery } from '@/store';
+import { Account } from '@/types';
 
 export const DRAWER_WIDTH = 240;
 export const DRAWER_WIDTH_COLLAPSED = 64;
 
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Trades', icon: <TradesIcon />, path: '/trades' },
-  { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-  { text: 'Journal', icon: <JournalIcon />, path: '/journal' },
-  { text: 'Strategies', icon: <StrategiesIcon />, path: '/strategies' },
+const allMenuItems = [
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/', showForSwing: true },
+  { text: 'Trades', icon: <TradesIcon />, path: '/trades', showForSwing: true },
+  { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics', showForSwing: false },
+  { text: 'Journal', icon: <JournalIcon />, path: '/journal', showForSwing: false },
+  { text: 'Strategies', icon: <StrategiesIcon />, path: '/strategies', showForSwing: true },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
+  const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
+  const { data: accounts = [] } = useGetAccountsQuery({});
+
+  // Check if the selected account is a swing account
+  const isSwingAccount = useMemo(() => {
+    if (!selectedAccountId) return false;
+    const account = accounts.find((a: Account) => a.id === selectedAccountId);
+    return account?.isSwingAccount || false;
+  }, [selectedAccountId, accounts]);
+
+  // Filter menu items based on account type
+  const menuItems = useMemo(() => {
+    if (isSwingAccount) {
+      return allMenuItems.filter(item => item.showForSwing);
+    }
+    return allMenuItems;
+  }, [isSwingAccount]);
 
   const drawerWidth = sidebarOpen ? DRAWER_WIDTH : DRAWER_WIDTH_COLLAPSED;
 
