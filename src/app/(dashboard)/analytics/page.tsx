@@ -392,6 +392,28 @@ export default function AnalyticsPage() {
                   placeholder="AAPL, SPY..."
                 />
               </Grid>
+              <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Time After"
+                  type="time"
+                  value={filters.timeAfter || ''}
+                  onChange={(e) => handleFilterChange('timeAfter', e.target.value || null)}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Time Before"
+                  type="time"
+                  value={filters.timeBefore || ''}
+                  onChange={(e) => handleFilterChange('timeBefore', e.target.value || null)}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
+              </Grid>
             </Grid>
           </CardContent>
         </Card>

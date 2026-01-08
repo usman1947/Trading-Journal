@@ -168,6 +168,8 @@ export interface TradeFormData {
 export interface TradeFilters {
   dateFrom?: string;
   dateTo?: string;
+  timeBefore?: string; // HH:mm format, e.g., "09:35"
+  timeAfter?: string;  // HH:mm format, e.g., "10:00"
   symbol?: string;
   side?: TradeSide;
   execution?: Execution;

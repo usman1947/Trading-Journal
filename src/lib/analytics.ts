@@ -29,6 +29,30 @@ function applyUserFilter(where: Record<string, unknown>, userId: string | undefi
   }
 }
 
+// Helper function to filter trades by time of day (HH:mm format)
+function filterByTimeOfDay<T extends { tradeTime: Date }>(
+  trades: T[],
+  timeAfter?: string,
+  timeBefore?: string
+): T[] {
+  if (!timeAfter && !timeBefore) return trades;
+
+  return trades.filter((trade) => {
+    const tradeDate = new Date(trade.tradeTime);
+    // Use America/New_York timezone to match trade time display
+    const timeStr = tradeDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/New_York'
+    });
+
+    if (timeAfter && timeStr < timeAfter) return false;
+    if (timeBefore && timeStr > timeBefore) return false;
+    return true;
+  });
+}
+
 export async function getAnalytics(filters: TradeFilters = {}): Promise<AnalyticsData> {
   const where: Record<string, unknown> = {
     result: { not: null },
@@ -54,11 +78,12 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     where.execution = filters.execution;
   }
   if (filters.setup) {
-    where.setup = { contains: filters.setup };
+    where.setup = filters.setup;
   }
   applyAccountFilter(where, filters.accountId);
 
-  const trades = await prisma.trade.findMany({ where });
+  const allTrades = await prisma.trade.findMany({ where });
+  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   if (trades.length === 0) {
     return {

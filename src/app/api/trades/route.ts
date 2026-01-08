@@ -4,6 +4,29 @@ import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
+// Helper function to filter trades by time of day (HH:mm format)
+function filterByTimeOfDay<T extends { tradeTime: Date }>(
+  trades: T[],
+  timeAfter?: string | null,
+  timeBefore?: string | null
+): T[] {
+  if (!timeAfter && !timeBefore) return trades;
+
+  return trades.filter((trade) => {
+    const tradeDate = new Date(trade.tradeTime);
+    const timeStr = tradeDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/New_York'
+    });
+
+    if (timeAfter && timeStr < timeAfter) return false;
+    if (timeBefore && timeStr > timeBefore) return false;
+    return true;
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser();
@@ -21,6 +44,8 @@ export async function GET(request: NextRequest) {
     const strategyId = searchParams.get('strategyId');
     const setup = searchParams.get('setup');
     const accountId = searchParams.get('accountId');
+    const timeAfter = searchParams.get('timeAfter');
+    const timeBefore = searchParams.get('timeBefore');
 
     if (dateFrom) {
       where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(dateFrom) };
@@ -41,7 +66,7 @@ export async function GET(request: NextRequest) {
       where.strategyId = strategyId;
     }
     if (setup) {
-      where.setup = { contains: setup };
+      where.setup = setup;
     }
     // Handle accountId filter - 'paper' or null means Paper Account (accountId is null)
     if (accountId !== undefined && accountId !== null) {
@@ -52,7 +77,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const trades = await prisma.trade.findMany({
+    const allTrades = await prisma.trade.findMany({
       where,
       include: {
         strategy: {
@@ -77,6 +102,8 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { tradeTime: 'desc' },
     });
+
+    const trades = filterByTimeOfDay(allTrades, timeAfter, timeBefore);
 
     return NextResponse.json(trades);
   } catch (error) {

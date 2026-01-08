@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const filters = {
       dateFrom: searchParams.get('dateFrom') || undefined,
       dateTo: searchParams.get('dateTo') || undefined,
+      timeAfter: searchParams.get('timeAfter') || undefined,
+      timeBefore: searchParams.get('timeBefore') || undefined,
       symbol: searchParams.get('symbol') || undefined,
       strategyId: searchParams.get('strategyId') || undefined,
       side: searchParams.get('side') as 'LONG' | 'SHORT' | undefined,
