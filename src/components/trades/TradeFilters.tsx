@@ -10,22 +10,23 @@ import {
   Button,
   Collapse,
   IconButton,
+  Autocomplete,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
-import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { updateTradeFilter, clearTradeFilters } from '@/store/slices/filtersSlice';
-import { useGetStrategiesQuery } from '@/store';
+import { updateTradeFilter, clearTradeFilters, setShowTradeFilters } from '@/store/slices/filtersSlice';
+import { useGetStrategiesQuery, useGetSetupsQuery } from '@/store';
 
 export default function TradeFilters() {
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.filters.tradeFilters);
+  const showFilters = useAppSelector((state) => state.filters.showTradeFilters);
   const { data: strategies = [] } = useGetStrategiesQuery({});
-  const [showFilters, setShowFilters] = useState(false);
+  const { data: existingSetups = [] } = useGetSetupsQuery({});
 
   const hasFilters = Object.keys(filters).length > 0;
 
@@ -35,7 +36,7 @@ export default function TradeFilters() {
         <Button
           variant={showFilters ? 'contained' : 'outlined'}
           startIcon={<FilterIcon />}
-          onClick={() => setShowFilters(!showFilters)}
+          onClick={() => dispatch(setShowTradeFilters(!showFilters))}
         >
           Filters
           {hasFilters && ` (${Object.keys(filters).length})`}
@@ -116,6 +117,19 @@ export default function TradeFilters() {
               ))}
             </Select>
           </FormControl>
+
+          <Autocomplete
+            size="small"
+            options={existingSetups}
+            value={filters.setup || null}
+            onChange={(_, newValue) => {
+              dispatch(updateTradeFilter({ key: 'setup', value: newValue || '' }));
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Setup" />
+            )}
+            sx={{ width: 180 }}
+          />
 
           <DatePicker
             label="From Date"

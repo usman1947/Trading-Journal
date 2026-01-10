@@ -3,6 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import filtersReducer from './slices/filtersSlice';
 import uiReducer from './slices/uiSlice';
 import authReducer from './slices/authSlice';
+import analyticsReducer from './slices/analyticsSlice';
 import type { User } from './slices/authSlice';
 
 // RTK Query API
@@ -343,6 +344,7 @@ export const store = configureStore({
     filters: filtersReducer,
     ui: uiReducer,
     auth: authReducer,
+    analytics: analyticsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(api.middleware),
@@ -403,3 +405,11 @@ export const {
 // Re-export auth slice actions and types
 export { setUser, clearUser, setLoading } from './slices/authSlice';
 export type { User } from './slices/authSlice';
+
+// Re-export analytics slice actions
+export {
+  setAnalyticsViewMode,
+  setAnalyticsFilters,
+  updateAnalyticsFilter,
+  clearAnalyticsFilters,
+} from './slices/analyticsSlice';

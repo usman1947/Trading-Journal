@@ -31,8 +31,10 @@ import {
   useGetStrategiesQuery,
   useGetSetupsQuery,
   useGetTradeTimeStatsQuery,
+  setAnalyticsViewMode,
+  updateAnalyticsFilter,
 } from '@/store';
-import { useAppSelector } from '@/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import StatsCards from '@/components/analytics/StatsCards';
 import StrategyBreakdown from '@/components/analytics/StrategyBreakdown';
 import StrategyDistributionChart from '@/components/analytics/StrategyDistributionChart';
@@ -45,8 +47,9 @@ import type { Trade, TradeFilters } from '@/types';
 
 export default function AnalyticsPage() {
   const router = useRouter();
-  const [viewMode, setViewMode] = useState<'strategies' | 'trades'>('strategies');
-  const [filters, setFilters] = useState<TradeFilters>({});
+  const dispatch = useAppDispatch();
+  const viewMode = useAppSelector((state) => state.analytics.viewMode);
+  const filters = useAppSelector((state) => state.analytics.filters);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [strategyDistribution, setStrategyDistribution] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,10 +112,7 @@ export default function AnalyticsPage() {
   }, [trades]);
 
   const handleFilterChange = (key: keyof TradeFilters, value: string | null) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value || undefined,
-    }));
+    dispatch(updateAnalyticsFilter({ key, value: value || undefined }));
   };
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
@@ -275,7 +275,7 @@ export default function AnalyticsPage() {
         <ToggleButtonGroup
           value={viewMode}
           exclusive
-          onChange={(_, value) => value && setViewMode(value)}
+          onChange={(_, value) => value && dispatch(setAnalyticsViewMode(value))}
           size="small"
         >
           <ToggleButton value="strategies">

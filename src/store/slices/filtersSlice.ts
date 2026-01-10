@@ -3,10 +3,12 @@ import type { TradeFilters } from '@/types';
 
 interface FiltersState {
   tradeFilters: TradeFilters;
+  showTradeFilters: boolean;
 }
 
 const initialState: FiltersState = {
   tradeFilters: {},
+  showTradeFilters: false,
 };
 
 const filtersSlice = createSlice({
@@ -30,8 +32,11 @@ const filtersSlice = createSlice({
     clearTradeFilters: (state) => {
       state.tradeFilters = {};
     },
+    setShowTradeFilters: (state, action: PayloadAction<boolean>) => {
+      state.showTradeFilters = action.payload;
+    },
   },
 });
 
-export const { setTradeFilters, updateTradeFilter, clearTradeFilters } = filtersSlice.actions;
+export const { setTradeFilters, updateTradeFilter, clearTradeFilters, setShowTradeFilters } = filtersSlice.actions;
 export default filtersSlice.reducer;
