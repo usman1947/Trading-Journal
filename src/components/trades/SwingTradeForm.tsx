@@ -542,7 +542,7 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
             <Button
               variant="outlined"
               fullWidth
-              onClick={() => router.push('/trades')}
+              onClick={() => router.back()}
               disabled={isLoading}
             >
               Cancel

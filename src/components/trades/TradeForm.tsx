@@ -811,7 +811,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
             <Button
               variant="outlined"
               fullWidth
-              onClick={() => router.push('/trades')}
+              onClick={() => router.back()}
               disabled={isLoading}
             >
               Cancel

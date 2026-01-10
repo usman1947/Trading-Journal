@@ -108,7 +108,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={() => router.push('/trades')}>
+          <IconButton onClick={() => router.back()}>
             <BackIcon />
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
