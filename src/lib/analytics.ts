@@ -286,14 +286,32 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
   if (filters.dateTo) {
     where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
   }
+  if (filters.symbol) {
+    where.symbol = { contains: filters.symbol };
+  }
+  if (filters.strategyId) {
+    where.strategyId = filters.strategyId;
+  }
+  if (filters.side) {
+    where.side = filters.side;
+  }
+  if (filters.execution) {
+    where.execution = filters.execution;
+  }
+  if (filters.setup) {
+    where.setup = filters.setup;
+  }
   applyAccountFilter(where, filters.accountId);
 
-  const trades = await prisma.trade.findMany({
+  const allTrades = await prisma.trade.findMany({
     where,
     include: {
       strategy: true,
     },
   });
+
+  // Apply time of day filter
+  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // Filter out BE trades for P&L analytics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -330,12 +348,27 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
+  if (filters.symbol) {
+    where.symbol = { contains: filters.symbol };
+  }
+  if (filters.side) {
+    where.side = filters.side;
+  }
+  if (filters.execution) {
+    where.execution = filters.execution;
+  }
+  if (filters.setup) {
+    where.setup = filters.setup;
+  }
   applyAccountFilter(where, filters.accountId);
 
-  const trades = await prisma.trade.findMany({
+  const allTrades = await prisma.trade.findMany({
     where,
     orderBy: { tradeTime: 'asc' },
   });
+
+  // Apply time of day filter
+  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return trades.map((trade: any) => {
@@ -377,12 +410,27 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
+  if (filters.symbol) {
+    where.symbol = { contains: filters.symbol };
+  }
+  if (filters.side) {
+    where.side = filters.side;
+  }
+  if (filters.execution) {
+    where.execution = filters.execution;
+  }
+  if (filters.setup) {
+    where.setup = filters.setup;
+  }
   applyAccountFilter(where, filters.accountId);
 
-  const trades = await prisma.trade.findMany({
+  const allTrades = await prisma.trade.findMany({
     where,
     orderBy: { tradeTime: 'asc' },
   });
+
+  // Apply time of day filter
+  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // Filter out BE trades for P&L analytics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -416,12 +464,27 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
+  if (filters.symbol) {
+    where.symbol = { contains: filters.symbol };
+  }
+  if (filters.side) {
+    where.side = filters.side;
+  }
+  if (filters.execution) {
+    where.execution = filters.execution;
+  }
+  if (filters.setup) {
+    where.setup = filters.setup;
+  }
   applyAccountFilter(where, filters.accountId);
 
-  const trades = await prisma.trade.findMany({
+  const allTrades = await prisma.trade.findMany({
     where,
     orderBy: { tradeTime: 'asc' },
   });
+
+  // Apply time of day filter
+  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // Filter out BE trades for P&L analytics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -516,15 +579,24 @@ export async function getTradeTimeStats(filters: TradeFilters = {}): Promise<Tra
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
+  if (filters.symbol) {
+    where.symbol = { contains: filters.symbol };
+  }
   if (filters.side) {
     where.side = filters.side;
   }
   if (filters.execution) {
     where.execution = filters.execution;
   }
+  if (filters.setup) {
+    where.setup = filters.setup;
+  }
   applyAccountFilter(where, filters.accountId);
 
-  const trades = await prisma.trade.findMany({ where });
+  const allTrades = await prisma.trade.findMany({ where });
+
+  // Apply time of day filter
+  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // Separate BE trades and non-BE trades
   const breakevenTrades = trades.filter((t: TradeRecord) => t.isBreakEven);

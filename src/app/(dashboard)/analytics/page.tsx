@@ -83,6 +83,13 @@ export default function AnalyticsPage() {
       if (viewMode === 'trades') {
         if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
         if (filters.dateTo) params.append('dateTo', filters.dateTo);
+        if (filters.side) params.append('side', filters.side);
+        if (filters.execution) params.append('execution', filters.execution);
+        if (filters.strategyId) params.append('strategyId', filters.strategyId);
+        if (filters.setup) params.append('setup', filters.setup);
+        if (filters.symbol) params.append('symbol', filters.symbol);
+        if (filters.timeAfter) params.append('timeAfter', filters.timeAfter);
+        if (filters.timeBefore) params.append('timeBefore', filters.timeBefore);
       }
       const queryString = params.toString();
 

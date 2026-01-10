@@ -17,6 +17,10 @@ export async function GET(request: NextRequest) {
       strategyId: searchParams.get('strategyId') || undefined,
       side: searchParams.get('side') as 'LONG' | 'SHORT' | undefined,
       execution: searchParams.get('execution') as 'PASS' | 'FAIL' | undefined,
+      setup: searchParams.get('setup') || undefined,
+      symbol: searchParams.get('symbol') || undefined,
+      timeAfter: searchParams.get('timeAfter') || undefined,
+      timeBefore: searchParams.get('timeBefore') || undefined,
       accountId: accountIdParam !== null ? accountIdParam : undefined,
       userId: user.id,
     };

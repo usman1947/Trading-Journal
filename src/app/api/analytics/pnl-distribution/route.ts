@@ -22,6 +22,24 @@ export async function GET(request: NextRequest) {
     if (searchParams.get('strategyId')) {
       filters.strategyId = searchParams.get('strategyId')!;
     }
+    if (searchParams.get('side')) {
+      filters.side = searchParams.get('side') as 'LONG' | 'SHORT';
+    }
+    if (searchParams.get('execution')) {
+      filters.execution = searchParams.get('execution') as 'PASS' | 'FAIL';
+    }
+    if (searchParams.get('setup')) {
+      filters.setup = searchParams.get('setup')!;
+    }
+    if (searchParams.get('symbol')) {
+      filters.symbol = searchParams.get('symbol')!;
+    }
+    if (searchParams.get('timeAfter')) {
+      filters.timeAfter = searchParams.get('timeAfter')!;
+    }
+    if (searchParams.get('timeBefore')) {
+      filters.timeBefore = searchParams.get('timeBefore')!;
+    }
     const accountIdParam = searchParams.get('accountId');
     if (accountIdParam !== null) {
       filters.accountId = accountIdParam || null;
