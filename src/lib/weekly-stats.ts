@@ -33,9 +33,28 @@ export interface WeeklyStats {
     pnl: number;
   }>;
 
+  // Setup breakdown
+  setupPerformance: Array<{
+    name: string;
+    trades: number;
+    winRate: number;
+    pnl: number;
+    avgR: number;
+  }>;
+
   // Symbols traded
   symbolsTraded: string[];
   topSymbol: { symbol: string; pnl: number } | null;
+
+  // Time-of-day performance
+  timeOfDayPerformance: Array<{
+    period: string;
+    trades: number;
+    winRate: number;
+    pnl: number;
+  }>;
+  bestTimePeriod: { period: string; pnl: number } | null;
+  worstTimePeriod: { period: string; pnl: number } | null;
 }
 
 export async function getWeeklyStats(
@@ -211,6 +230,36 @@ export async function getWeeklyStats(
     })
   );
 
+  // Setup breakdown
+  const setupMap = new Map<
+    string,
+    { trades: number; wins: number; pnl: number; totalR: number; tradesWithR: number }
+  >();
+  trades.forEach((t) => {
+    if (t.setup) {
+      const name = t.setup;
+      const existing = setupMap.get(name) ?? { trades: 0, wins: 0, pnl: 0, totalR: 0, tradesWithR: 0 };
+      existing.trades += 1;
+      if (!t.isBreakEven && (t.result ?? 0) > 0) existing.wins += 1;
+      existing.pnl += (t.result ?? 0) - (t.commission ?? 0);
+      if (t.risk > 0) {
+        existing.totalR += (t.result ?? 0) / t.risk;
+        existing.tradesWithR += 1;
+      }
+      setupMap.set(name, existing);
+    }
+  });
+
+  const setupPerformance = Array.from(setupMap.entries())
+    .map(([name, stats]) => ({
+      name,
+      trades: stats.trades,
+      winRate: stats.trades > 0 ? (stats.wins / stats.trades) * 100 : 0,
+      pnl: stats.pnl,
+      avgR: stats.tradesWithR > 0 ? stats.totalR / stats.tradesWithR : 0,
+    }))
+    .sort((a, b) => b.trades - a.trades); // Sort by most used
+
   // Symbol analysis
   const symbolPnl = new Map<string, number>();
   trades.forEach((t) => {
@@ -223,6 +272,60 @@ export async function getWeeklyStats(
           (top, [symbol, pnl]) =>
             pnl > (top?.pnl ?? -Infinity) ? { symbol, pnl } : top,
           null as { symbol: string; pnl: number } | null
+        )
+      : null;
+
+  // Time-of-day analysis
+  const getTimePeriod = (date: Date): string => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const time = hours * 60 + minutes;
+
+    if (time < 9 * 60 + 30) return 'Pre-market (before 9:30)';
+    if (time < 10 * 60 + 30) return 'Market Open (9:30-10:30)';
+    if (time < 12 * 60) return 'Mid-morning (10:30-12:00)';
+    if (time < 14 * 60) return 'Midday (12:00-2:00)';
+    if (time < 16 * 60) return 'Afternoon (2:00-4:00)';
+    return 'After-hours (after 4:00)';
+  };
+
+  const timeMap = new Map<
+    string,
+    { trades: number; wins: number; pnl: number }
+  >();
+  trades.forEach((t) => {
+    const period = getTimePeriod(new Date(t.tradeTime));
+    const existing = timeMap.get(period) ?? { trades: 0, wins: 0, pnl: 0 };
+    existing.trades += 1;
+    if (!t.isBreakEven && (t.result ?? 0) > 0) existing.wins += 1;
+    existing.pnl += (t.result ?? 0) - (t.commission ?? 0);
+    timeMap.set(period, existing);
+  });
+
+  const timeOfDayPerformance = Array.from(timeMap.entries()).map(
+    ([period, stats]) => ({
+      period,
+      trades: stats.trades,
+      winRate: stats.trades > 0 ? (stats.wins / stats.trades) * 100 : 0,
+      pnl: stats.pnl,
+    })
+  );
+
+  const bestTimePeriod =
+    timeOfDayPerformance.length > 0
+      ? timeOfDayPerformance.reduce(
+          (best, curr) =>
+            curr.pnl > (best?.pnl ?? -Infinity) ? { period: curr.period, pnl: curr.pnl } : best,
+          null as { period: string; pnl: number } | null
+        )
+      : null;
+
+  const worstTimePeriod =
+    timeOfDayPerformance.length > 0
+      ? timeOfDayPerformance.reduce(
+          (worst, curr) =>
+            curr.pnl < (worst?.pnl ?? Infinity) ? { period: curr.period, pnl: curr.pnl } : worst,
+          null as { period: string; pnl: number } | null
         )
       : null;
 
@@ -243,7 +346,11 @@ export async function getWeeklyStats(
     mostCommonMistake,
     moodDistribution,
     strategyPerformance,
+    setupPerformance,
     symbolsTraded,
     topSymbol,
+    timeOfDayPerformance,
+    bestTimePeriod,
+    worstTimePeriod,
   };
 }

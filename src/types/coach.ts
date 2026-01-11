@@ -12,6 +12,8 @@ export interface WeeklyCoachReport {
   mostCommonMistake: string | null;
   moodDistribution: Record<string, number> | null;
   summary: string;
+  commonTheme: string | null;
+  progressNotes: string | null;
   strengths: string[];
   improvements: string[];
   actionItems: string[];

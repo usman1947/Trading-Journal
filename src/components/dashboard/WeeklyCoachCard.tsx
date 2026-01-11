@@ -29,6 +29,8 @@ import {
   ExpandLess as ExpandLessIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
+  Lightbulb as ThemeIcon,
+  CompareArrows as ProgressIcon,
 } from '@mui/icons-material';
 import { format, startOfWeek, endOfWeek, subWeeks, getDay } from 'date-fns';
 import { useGetWeeklyCoachQuery, useGenerateWeeklyCoachMutation } from '@/store';
@@ -219,6 +221,56 @@ export default function WeeklyCoachCard() {
             &ldquo;{report.summary}&rdquo;
           </Typography>
         </Box>
+
+        {/* Common Theme */}
+        {report.commonTheme && (
+          <Box
+            sx={{
+              px: 3,
+              py: 2,
+              bgcolor: 'info.main',
+              color: 'info.contrastText',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1.5,
+            }}
+          >
+            <ThemeIcon sx={{ mt: 0.25 }} />
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600}>
+                Common Theme
+              </Typography>
+              <Typography variant="body2">
+                {report.commonTheme}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
+        {/* Progress Notes - Week over Week */}
+        {report.progressNotes && (
+          <Box
+            sx={{
+              px: 3,
+              py: 2,
+              bgcolor: 'success.main',
+              color: 'success.contrastText',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1.5,
+            }}
+          >
+            <ProgressIcon sx={{ mt: 0.25 }} />
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600}>
+                Week-over-Week Progress
+              </Typography>
+              <Typography variant="body2">
+                {report.progressNotes}
+              </Typography>
+            </Box>
+          </Box>
+        )}
 
         {/* Detailed sections */}
         <Collapse in={expanded}>

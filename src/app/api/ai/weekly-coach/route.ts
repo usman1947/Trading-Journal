@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { getWeeklyStats } from '@/lib/weekly-stats';
 import { generateCoachingInsights } from '@/lib/groq-client';
-import { buildCoachingPrompt } from '@/lib/coach-prompt';
+import { buildCoachingPrompt, type PreviousWeekContext } from '@/lib/coach-prompt';
 import prisma from '@/lib/prisma';
-import { startOfWeek, endOfWeek, parseISO } from 'date-fns';
+import { startOfWeek, endOfWeek, parseISO, subWeeks, format } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,12 +89,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch previous week's report for context
+    const previousWeekStart = startOfWeek(subWeeks(targetDate, 1), { weekStartsOn: 1 });
+    const previousWeekEnd = endOfWeek(subWeeks(targetDate, 1), { weekStartsOn: 1 });
+    const previousReport = await prisma.weeklyCoachReport.findFirst({
+      where: {
+        userId: user.id,
+        accountId: accountId,
+        weekStart: previousWeekStart,
+      },
+    });
+
+    // Build previous week context if report exists
+    let previousWeekContext: PreviousWeekContext | null = null;
+    if (previousReport) {
+      previousWeekContext = {
+        weekRange: `${format(previousWeekStart, 'MMM d')} - ${format(previousWeekEnd, 'MMM d')}`,
+        totalTrades: previousReport.totalTrades,
+        winRate: previousReport.winRate,
+        totalPnl: previousReport.totalPnl,
+        avgWinnerR: previousReport.avgWinnerR,
+        avgLoserR: previousReport.avgLoserR,
+        executionRate: previousReport.executionRate,
+        summary: previousReport.summary,
+        commonTheme: previousReport.commonTheme,
+        strengths: JSON.parse(previousReport.strengths),
+        improvements: JSON.parse(previousReport.improvements),
+        actionItems: JSON.parse(previousReport.actionItems),
+      };
+    }
+
     // Generate coaching insights
-    const prompt = buildCoachingPrompt(stats);
+    const prompt = buildCoachingPrompt(stats, previousWeekContext);
     const aiResponse = await generateCoachingInsights(prompt);
 
     let insights: {
       summary: string;
+      commonTheme?: string;
+      progressNotes?: string;
       strengths: string[];
       improvements: string[];
       actionItems: string[];
@@ -129,6 +161,8 @@ export async function POST(request: NextRequest) {
       mostCommonMistake: stats.mostCommonMistake,
       moodDistribution: JSON.stringify(stats.moodDistribution),
       summary: insights.summary,
+      commonTheme: insights.commonTheme ?? null,
+      progressNotes: insights.progressNotes ?? null,
       strengths: JSON.stringify(insights.strengths),
       improvements: JSON.stringify(insights.improvements),
       actionItems: JSON.stringify(insights.actionItems),
@@ -156,6 +190,8 @@ export async function POST(request: NextRequest) {
       success: true,
       report: {
         ...report,
+        commonTheme: insights.commonTheme ?? null,
+        progressNotes: insights.progressNotes ?? null,
         strengths: insights.strengths,
         improvements: insights.improvements,
         actionItems: insights.actionItems,
