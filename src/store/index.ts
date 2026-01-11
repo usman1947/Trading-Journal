@@ -10,7 +10,7 @@ import type { User } from './slices/authSlice';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts', 'User'],
+  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts', 'User', 'WeeklyCoach'],
   endpoints: (builder) => ({
     // Accounts
     getAccounts: builder.query({
@@ -335,6 +335,27 @@ export const api = createApi({
       invalidatesTags: ['User'],
     }),
 
+    // Weekly Coach
+    getWeeklyCoach: builder.query({
+      query: ({ weekDate, accountId }) => ({
+        url: '/ai/weekly-coach',
+        params: { weekDate, accountId },
+      }),
+      providesTags: (_result, _error, { weekDate, accountId }) => [
+        { type: 'WeeklyCoach', id: `${weekDate}-${accountId}` },
+      ],
+    }),
+    generateWeeklyCoach: builder.mutation({
+      query: ({ weekDate, accountId }) => ({
+        url: '/ai/weekly-coach',
+        method: 'POST',
+        body: { weekDate, accountId },
+      }),
+      invalidatesTags: (_result, _error, { weekDate, accountId }) => [
+        { type: 'WeeklyCoach', id: `${weekDate}-${accountId}` },
+      ],
+    }),
+
   }),
 });
 
@@ -400,6 +421,9 @@ export const {
   useLogoutMutation,
   useGetMeQuery,
   useUpdateProfileMutation,
+  // Weekly Coach
+  useGetWeeklyCoachQuery,
+  useGenerateWeeklyCoachMutation,
 } = api;
 
 // Re-export auth slice actions and types

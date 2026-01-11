@@ -19,6 +19,7 @@ import CalendarView from '@/components/analytics/CalendarView';
 import DailyPnLChart from '@/components/analytics/DailyPnLChart';
 import WinLossChart from '@/components/analytics/WinLossChart';
 import AvgTradeTimeChart from '@/components/analytics/AvgTradeTimeChart';
+import WeeklyCoachCard from '@/components/dashboard/WeeklyCoachCard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import type { Account, Trade } from '@/types';
 
@@ -278,6 +279,11 @@ export default function Dashboard() {
             />
           </Grid>
 
+          {/* Weekly Coach Card */}
+          <Grid size={{ xs: 12 }}>
+            <WeeklyCoachCard />
+          </Grid>
+
           {/* P&L Over Time Chart */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Card sx={{ height: 450 }}>
@@ -405,6 +411,11 @@ export default function Dashboard() {
             icon={<TimeIcon fontSize="large" />}
             color="primary"
           />
+        </Grid>
+
+        {/* Weekly Coach Card */}
+        <Grid size={{ xs: 12 }}>
+          <WeeklyCoachCard />
         </Grid>
 
         <Grid size={{ xs: 12, md: 8 }}>
