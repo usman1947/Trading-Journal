@@ -30,14 +30,21 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
-import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subWeeks, getDay } from 'date-fns';
 import { useGetWeeklyCoachQuery, useGenerateWeeklyCoachMutation } from '@/store';
 import { useAppSelector } from '@/store/hooks';
 import type { WeeklyCoachReport } from '@/types/coach';
 
+// On Fri/Sat/Sun, current week's trading is done - show current week
+// On Mon-Thu, current week is still in progress - show last week
+const getDefaultWeekOffset = () => {
+  const day = getDay(new Date()); // 0 = Sunday, 5 = Friday, 6 = Saturday
+  return day === 0 || day === 5 || day === 6 ? 0 : 1;
+};
+
 export default function WeeklyCoachCard() {
   const [expanded, setExpanded] = useState(true);
-  const [weekOffset, setWeekOffset] = useState(1); // 1 = last week, 2 = 2 weeks ago, etc.
+  const [weekOffset, setWeekOffset] = useState(getDefaultWeekOffset);
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
 
   // Calculate the target week based on offset
@@ -47,9 +54,11 @@ export default function WeeklyCoachCard() {
   const weekDate = format(weekStart, 'yyyy-MM-dd');
   const accountId = selectedAccountId === null ? 'paper' : selectedAccountId;
 
+  // Min offset: 0 on Fri/Sat/Sun (current week done), 1 on Mon-Thu (current week in progress)
+  const minOffset = getDefaultWeekOffset();
   const handlePreviousWeek = () => setWeekOffset((prev) => prev + 1);
-  const handleNextWeek = () => setWeekOffset((prev) => Math.max(1, prev - 1));
-  const isLatestWeek = weekOffset === 1;
+  const handleNextWeek = () => setWeekOffset((prev) => Math.max(minOffset, prev - 1));
+  const isLatestWeek = weekOffset === minOffset;
 
   const { data, isLoading, isFetching, error } = useGetWeeklyCoachQuery({
     weekDate,
