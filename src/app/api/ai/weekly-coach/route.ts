@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         avgLoserR: previousReport.avgLoserR,
         executionRate: previousReport.executionRate,
         summary: previousReport.summary,
-        commonTheme: previousReport.commonTheme,
+        commonTheme: previousReport.commonTheme ?? null,
         strengths: JSON.parse(previousReport.strengths),
         improvements: JSON.parse(previousReport.improvements),
         actionItems: JSON.parse(previousReport.actionItems),
