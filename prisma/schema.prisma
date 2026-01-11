@@ -244,6 +244,8 @@ model WeeklyCoachReport {
 
   // AI-generated content
   summary           String   // 2-3 sentence executive summary
+  commonTheme       String?  // Common theme identified across performance/psychology
+  progressNotes     String?  // Week-over-week comparison and progress on action items
   strengths         String   // JSON array of strengths identified
   improvements      String   // JSON array of areas for improvement
   actionItems       String   // JSON array of specific action items
