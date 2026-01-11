@@ -2,7 +2,7 @@
 
 ---
 
-**#1 Weekly Performance Coach**
+**#1 Weekly Performance Coach** ✅
 Aggregates your week's trades, calculates stats (win rate, total R, avg winner/loser), and sends to LLM to generate a coaching summary with observations and suggestions.
 Skills: Data aggregation, basic prompting
 
