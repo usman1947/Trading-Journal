@@ -45,7 +45,7 @@ const getDefaultWeekOffset = () => {
 };
 
 export default function WeeklyCoachCard() {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [weekOffset, setWeekOffset] = useState(getDefaultWeekOffset);
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
 
