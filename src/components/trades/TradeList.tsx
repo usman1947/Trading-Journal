@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Chip, IconButton, Tooltip, Typography } from '@mui/material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, GridSortModel } from '@mui/x-data-grid';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -16,6 +16,7 @@ import {
 import { useGetTradesQuery, useDeleteTradeMutation, useGetAccountsQuery } from '@/store';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
+import { setTradeSortModel } from '@/store/slices/filtersSlice';
 import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import type { Trade, Account } from '@/types';
@@ -24,6 +25,7 @@ export default function TradeList() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.filters.tradeFilters);
+  const sortModel = useAppSelector((state) => state.filters.tradeSortModel);
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
   const { data: accounts = [] } = useGetAccountsQuery({});
 
@@ -63,6 +65,10 @@ export default function TradeList() {
     e.stopPropagation();
     setDeleteId(id);
   }, []);
+
+  const handleSortModelChange = useCallback((newSortModel: GridSortModel) => {
+    dispatch(setTradeSortModel([...newSortModel]));
+  }, [dispatch]);
 
   // Helper to calculate strategy score
   const calculateScore = useCallback((strategy: Trade['strategy'], ruleChecks: Trade['ruleChecks']) => {
@@ -376,8 +382,9 @@ export default function TradeList() {
           pageSizeOptions={[10, 25, 50, 100]}
           initialState={{
             pagination: { paginationModel: { pageSize: 25 } },
-            sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
           }}
+          sortModel={sortModel}
+          onSortModelChange={handleSortModelChange}
           disableRowSelectionOnClick
           sx={{
             '& .MuiDataGrid-cell': {

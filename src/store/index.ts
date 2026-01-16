@@ -436,4 +436,14 @@ export {
   setAnalyticsFilters,
   updateAnalyticsFilter,
   clearAnalyticsFilters,
+  setAnalyticsSortModel,
 } from './slices/analyticsSlice';
+
+// Re-export filters slice actions
+export {
+  setTradeFilters,
+  updateTradeFilter,
+  clearTradeFilters,
+  setShowTradeFilters,
+  setTradeSortModel,
+} from './slices/filtersSlice';

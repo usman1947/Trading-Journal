@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { DatePicker } from '@mui/x-date-pickers';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, GridSortModel } from '@mui/x-data-grid';
 import {
   TableChart as TableIcon,
   PieChart as ChartIcon,
@@ -35,6 +35,7 @@ import {
   updateAnalyticsFilter,
 } from '@/store';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { setAnalyticsSortModel } from '@/store/slices/analyticsSlice';
 import StatsCards from '@/components/analytics/StatsCards';
 import StrategyBreakdown from '@/components/analytics/StrategyBreakdown';
 import StrategyDistributionChart from '@/components/analytics/StrategyDistributionChart';
@@ -50,6 +51,7 @@ export default function AnalyticsPage() {
   const dispatch = useAppDispatch();
   const viewMode = useAppSelector((state) => state.analytics.viewMode);
   const filters = useAppSelector((state) => state.analytics.filters);
+  const sortModel = useAppSelector((state) => state.analytics.sortModel);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [strategyDistribution, setStrategyDistribution] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -120,6 +122,10 @@ export default function AnalyticsPage() {
 
   const handleFilterChange = (key: keyof TradeFilters, value: string | null) => {
     dispatch(updateAnalyticsFilter({ key, value: value || undefined }));
+  };
+
+  const handleSortModelChange = (newSortModel: GridSortModel) => {
+    dispatch(setAnalyticsSortModel([...newSortModel]));
   };
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
@@ -527,8 +533,9 @@ export default function AnalyticsPage() {
                   pageSizeOptions={[10, 25, 50, 100]}
                   initialState={{
                     pagination: { paginationModel: { pageSize: 25 } },
-                    sorting: { sortModel: [{ field: 'tradeTime', sort: 'desc' }] },
                   }}
+                  sortModel={sortModel}
+                  onSortModelChange={handleSortModelChange}
                   disableRowSelectionOnClick
                   onRowClick={(params) => router.push(`/trades/${params.row.id}`)}
                   sx={{

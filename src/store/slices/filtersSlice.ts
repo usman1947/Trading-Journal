@@ -1,14 +1,21 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { TradeFilters } from '@/types';
 
+export interface SortModel {
+  field: string;
+  sort: 'asc' | 'desc' | null | undefined;
+}
+
 interface FiltersState {
   tradeFilters: TradeFilters;
   showTradeFilters: boolean;
+  tradeSortModel: SortModel[];
 }
 
 const initialState: FiltersState = {
   tradeFilters: {},
   showTradeFilters: false,
+  tradeSortModel: [{ field: 'tradeTime', sort: 'desc' }],
 };
 
 const filtersSlice = createSlice({
@@ -35,8 +42,11 @@ const filtersSlice = createSlice({
     setShowTradeFilters: (state, action: PayloadAction<boolean>) => {
       state.showTradeFilters = action.payload;
     },
+    setTradeSortModel: (state, action: PayloadAction<SortModel[]>) => {
+      state.tradeSortModel = action.payload;
+    },
   },
 });
 
-export const { setTradeFilters, updateTradeFilter, clearTradeFilters, setShowTradeFilters } = filtersSlice.actions;
+export const { setTradeFilters, updateTradeFilter, clearTradeFilters, setShowTradeFilters, setTradeSortModel } = filtersSlice.actions;
 export default filtersSlice.reducer;
