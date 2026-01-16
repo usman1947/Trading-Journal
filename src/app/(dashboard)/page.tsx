@@ -279,11 +279,6 @@ export default function Dashboard() {
             />
           </Grid>
 
-          {/* Weekly Coach Card */}
-          <Grid size={{ xs: 12 }}>
-            <WeeklyCoachCard />
-          </Grid>
-
           {/* P&L Over Time Chart */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Card sx={{ height: 450 }}>
