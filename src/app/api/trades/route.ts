@@ -1,31 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError } from '@/lib/api-helpers';
+import { applyAccountFilter, buildDateRangeFilter, filterByTimeOfDay } from '@/lib/query-helpers';
+import { TRADE_FULL_INCLUDE } from '@/lib/prisma-includes';
+import {
+  calculateHoldDuration,
+  calculateResultFromPartials,
+  calculateSequenceInSession,
+  serializePartials,
+  normalizeSymbol,
+} from '@/utils/trade-calculations';
 
 export const dynamic = 'force-dynamic';
-
-// Helper function to filter trades by time of day (HH:mm format)
-function filterByTimeOfDay<T extends { tradeTime: Date }>(
-  trades: T[],
-  timeAfter?: string | null,
-  timeBefore?: string | null
-): T[] {
-  if (!timeAfter && !timeBefore) return trades;
-
-  return trades.filter((trade) => {
-    const tradeDate = new Date(trade.tradeTime);
-    const timeStr = tradeDate.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'America/New_York'
-    });
-
-    if (timeAfter && timeStr < timeAfter) return false;
-    if (timeBefore && timeStr > timeBefore) return false;
-    return true;
-  });
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,12 +34,8 @@ export async function GET(request: NextRequest) {
     const timeAfter = searchParams.get('timeAfter');
     const timeBefore = searchParams.get('timeBefore');
 
-    if (dateFrom) {
-      where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(dateFrom) };
-    }
-    if (dateTo) {
-      where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(dateTo) };
-    }
+    buildDateRangeFilter(where, dateFrom || undefined, dateTo || undefined);
+
     if (symbol) {
       where.symbol = { contains: symbol };
     }
@@ -68,38 +51,12 @@ export async function GET(request: NextRequest) {
     if (setup) {
       where.setup = setup;
     }
-    // Handle accountId filter - 'paper' or null means Paper Account (accountId is null)
-    if (accountId !== undefined && accountId !== null) {
-      if (accountId === 'paper' || accountId === '') {
-        where.accountId = null;
-      } else {
-        where.accountId = accountId;
-      }
-    }
+
+    applyAccountFilter(where, accountId);
 
     const allTrades = await prisma.trade.findMany({
       where,
-      include: {
-        strategy: {
-          include: {
-            rules: {
-              orderBy: { order: 'asc' },
-            },
-          },
-        },
-        account: true,
-        screenshots: true,
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-        ruleChecks: {
-          include: {
-            rule: true,
-          },
-        },
-      },
+      include: TRADE_FULL_INCLUDE,
       orderBy: { tradeTime: 'desc' },
     });
 
@@ -107,8 +64,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(trades);
   } catch (error) {
-    console.error('Error fetching trades:', error);
-    return NextResponse.json({ error: 'Failed to fetch trades' }, { status: 500 });
+    return handleApiError(error, 'fetching trades');
   }
 }
 
@@ -143,45 +99,21 @@ export async function POST(request: NextRequest) {
     const tradeDateTime = new Date(tradeTime);
     const exitDateTime = exitTime ? new Date(exitTime) : null;
 
-    // Calculate holdDurationMins if both entry and exit times exist
-    let holdDurationMins: number | null = null;
-    if (exitDateTime) {
-      holdDurationMins = Math.round((exitDateTime.getTime() - tradeDateTime.getTime()) / 60000);
-    }
-
-    // Calculate sequenceInSession (count trades for same user on same date)
-    const startOfDay = new Date(tradeDateTime);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(tradeDateTime);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const tradesOnSameDay = await prisma.trade.count({
-      where: {
-        userId: user.id,
-        tradeTime: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-    });
-    const sequenceInSession = tradesOnSameDay + 1;
-
-    // Calculate result from partials if provided
-    let finalResult = result ?? null;
-    if (partials && Array.isArray(partials) && partials.length > 0) {
-      finalResult = partials.reduce((sum: number, p: number) => sum + p, 0);
-    }
+    // Calculate derived fields using helper functions
+    const holdDurationMins = calculateHoldDuration(tradeDateTime, exitDateTime);
+    const sequenceInSession = await calculateSequenceInSession(user.id, tradeDateTime);
+    const finalResult = calculateResultFromPartials(partials) ?? result ?? null;
 
     const trade = await prisma.trade.create({
       data: {
-        symbol: symbol.toUpperCase(),
+        symbol: normalizeSymbol(symbol),
         side,
         tradeTime: tradeDateTime,
         exitTime: exitDateTime,
         setup: setup || null,
         risk,
         result: finalResult,
-        partials: partials && partials.length > 0 ? JSON.stringify(partials) : null,
+        partials: serializePartials(partials),
         commission: commission ?? 0,
         execution,
         isBreakEven: isBreakEven || false,
@@ -197,32 +129,11 @@ export async function POST(request: NextRequest) {
         sequenceInSession,
         holdDurationMins,
       },
-      include: {
-        strategy: {
-          include: {
-            rules: {
-              orderBy: { order: 'asc' },
-            },
-          },
-        },
-        account: true,
-        screenshots: true,
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-        ruleChecks: {
-          include: {
-            rule: true,
-          },
-        },
-      },
+      include: TRADE_FULL_INCLUDE,
     });
 
     return NextResponse.json(trade, { status: 201 });
   } catch (error) {
-    console.error('Error creating trade:', error);
-    return NextResponse.json({ error: 'Failed to create trade' }, { status: 500 });
+    return handleApiError(error, 'creating trade');
   }
 }

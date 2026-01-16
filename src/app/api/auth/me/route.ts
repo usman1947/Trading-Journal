@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,10 +14,6 @@ export async function GET() {
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error('Get current user error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get user' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'getting current user');
   }
 }

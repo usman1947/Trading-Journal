@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError } from '@/lib/api-helpers';
+import { deserializeSetups } from '@/utils/trade-calculations';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,20 +44,13 @@ export async function GET() {
       .filter((s: string | null): s is string => s !== null && s.trim() !== '');
 
     const strategySetups = strategies
-      .flatMap((s: { setups: string | null }) => {
-        try {
-          return s.setups ? JSON.parse(s.setups) : [];
-        } catch {
-          return [];
-        }
-      })
+      .flatMap((s: { setups: string | null }) => deserializeSetups(s.setups))
       .filter((s: unknown): s is string => typeof s === 'string' && s.trim() !== '');
 
     const allSetups = Array.from(new Set([...tradeSetups, ...strategySetups])).sort();
 
     return NextResponse.json(allSetups);
   } catch (error) {
-    console.error('Error fetching setups:', error);
-    return NextResponse.json({ error: 'Failed to fetch setups' }, { status: 500 });
+    return handleApiError(error, 'fetching setups');
   }
 }

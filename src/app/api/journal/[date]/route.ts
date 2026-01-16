@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers';
+import { JOURNAL_WITH_SCREENSHOTS_INCLUDE } from '@/lib/prisma-includes';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,16 +21,15 @@ export async function GET(
 
     const entry = await prisma.dailyJournal.findFirst({
       where: { userId: user.id, date: dateObj },
-      include: { screenshots: true },
+      include: JOURNAL_WITH_SCREENSHOTS_INCLUDE,
     });
 
     if (!entry) {
-      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
+      return notFoundResponse('Journal entry');
     }
 
     return NextResponse.json(entry);
   } catch (error) {
-    console.error('Error fetching journal entry:', error);
-    return NextResponse.json({ error: 'Failed to fetch journal entry' }, { status: 500 });
+    return handleApiError(error, 'fetching journal entry');
   }
 }

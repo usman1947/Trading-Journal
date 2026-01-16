@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +22,7 @@ export async function GET() {
 
     return NextResponse.json(tags);
   } catch (error) {
-    console.error('Error fetching tags:', error);
-    return NextResponse.json({ error: 'Failed to fetch tags' }, { status: 500 });
+    return handleApiError(error, 'fetching tags');
   }
 }
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const { name, color = '#1976d2' } = body;
 
     if (!name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+      return validationError('Name is required');
     }
 
     const tag = await prisma.tag.create({
@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(tag, { status: 201 });
   } catch (error) {
-    console.error('Error creating tag:', error);
-    return NextResponse.json({ error: 'Failed to create tag' }, { status: 500 });
+    return handleApiError(error, 'creating tag');
   }
 }

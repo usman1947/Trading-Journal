@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,8 +27,7 @@ export async function GET() {
 
     return NextResponse.json(settings);
   } catch (error) {
-    console.error('Error fetching settings:', error);
-    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+    return handleApiError(error, 'fetching settings');
   }
 }
 
@@ -58,7 +58,6 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(settings);
   } catch (error) {
-    console.error('Error updating settings:', error);
-    return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
+    return handleApiError(error, 'updating settings');
   }
 }

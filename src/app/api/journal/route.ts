@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { deleteFromCloudinary } from '@/lib/cloudinary';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError, notFoundResponse, successResponse } from '@/lib/api-helpers';
+import { JOURNAL_WITH_SCREENSHOTS_INCLUDE } from '@/lib/prisma-includes';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,13 +30,12 @@ export async function GET(request: NextRequest) {
     const entries = await prisma.dailyJournal.findMany({
       where,
       orderBy: { date: 'desc' },
-      include: { screenshots: true },
+      include: JOURNAL_WITH_SCREENSHOTS_INCLUDE,
     });
 
     return NextResponse.json(entries);
   } catch (error) {
-    console.error('Error fetching journal entries:', error);
-    return NextResponse.json({ error: 'Failed to fetch journal entries' }, { status: 500 });
+    return handleApiError(error, 'fetching journal entries');
   }
 }
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!date || !notes) {
-      return NextResponse.json({ error: 'Date and notes are required' }, { status: 400 });
+      return validationError('Date and notes are required');
     }
 
     // Parse as UTC noon to avoid timezone issues
@@ -103,8 +104,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(entry);
   } catch (error) {
-    console.error('Error saving journal entry:', error);
-    return NextResponse.json({ error: 'Failed to save journal entry' }, { status: 500 });
+    return handleApiError(error, 'saving journal entry');
   }
 }
 
@@ -117,17 +117,17 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Journal entry ID is required' }, { status: 400 });
+      return validationError('Journal entry ID is required');
     }
 
     // Get the entry with screenshots to delete from Cloudinary
     const entry = await prisma.dailyJournal.findFirst({
       where: { id, userId: user.id },
-      include: { screenshots: true },
+      include: JOURNAL_WITH_SCREENSHOTS_INCLUDE,
     });
 
     if (!entry) {
-      return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
+      return notFoundResponse('Journal entry');
     }
 
     // Delete screenshots from Cloudinary
@@ -142,9 +142,8 @@ export async function DELETE(request: NextRequest) {
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error('Error deleting journal entry:', error);
-    return NextResponse.json({ error: 'Failed to delete journal entry' }, { status: 500 });
+    return handleApiError(error, 'deleting journal entry');
   }
 }

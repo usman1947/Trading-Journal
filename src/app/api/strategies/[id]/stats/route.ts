@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers';
+import { applyAccountFilter, excludeBreakevenTrades, separateWinLossTrades } from '@/lib/query-helpers';
+import { calculateAverageRMultiple, deserializeSetups } from '@/utils/trade-calculations';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,13 +29,7 @@ export async function GET(
 
     // Build the trade filter based on accountId
     const tradeWhere: Record<string, unknown> = { userId: user.id };
-    if (accountIdParam !== null) {
-      if (accountIdParam === 'paper' || accountIdParam === '') {
-        tradeWhere.accountId = null;
-      } else {
-        tradeWhere.accountId = accountIdParam;
-      }
-    }
+    applyAccountFilter(tradeWhere, accountIdParam);
 
     const strategy = await prisma.strategy.findFirst({
       where: { id, userId: user.id },
@@ -52,15 +49,14 @@ export async function GET(
     });
 
     if (!strategy) {
-      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+      return notFoundResponse('Strategy');
     }
 
     // Calculate stats - include BE trades in totals, but exclude from win/loss analytics
     const closedTrades = strategy.trades.filter((t: TradeWithScreenshots) => t.result !== null);
     const beTrades = closedTrades.filter((t: TradeWithScreenshots) => t.isBreakEven);
-    const nonBETrades = closedTrades.filter((t: TradeWithScreenshots) => !t.isBreakEven);
-    const winningTrades = nonBETrades.filter((t: TradeWithScreenshots) => (t.result ?? 0) > 0);
-    const losingTrades = nonBETrades.filter((t: TradeWithScreenshots) => (t.result ?? 0) < 0);
+    const nonBETrades = excludeBreakevenTrades(closedTrades);
+    const { winningTrades, losingTrades } = separateWinLossTrades(nonBETrades);
     const passingTrades = closedTrades.filter((t: TradeWithScreenshots) => t.execution === 'PASS');
 
     // Total PnL and risk include ALL trades (including BE)
@@ -70,14 +66,10 @@ export async function GET(
     const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0));
 
     // Average R-multiple uses non-BE trades only
-    const tradesWithResult = nonBETrades.filter((t: TradeWithScreenshots) => t.result !== null && t.risk > 0);
-    const averageRMultiple =
-      tradesWithResult.length > 0
-        ? tradesWithResult.reduce((sum: number, t: TradeWithScreenshots) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
-        : 0;
+    const averageRMultiple = calculateAverageRMultiple(nonBETrades);
 
     // Parse setups from JSON
-    const setups = strategy.setups ? JSON.parse(strategy.setups) : [];
+    const setups = deserializeSetups(strategy.setups);
 
     return NextResponse.json({
       strategy: {
@@ -111,7 +103,6 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error fetching strategy stats:', error);
-    return NextResponse.json({ error: 'Failed to fetch strategy stats' }, { status: 500 });
+    return handleApiError(error, 'fetching strategy stats');
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,10 +26,7 @@ export async function PUT(request: NextRequest) {
 
     if (name !== undefined) {
       if (!name.trim()) {
-        return NextResponse.json(
-          { error: 'Name cannot be empty' },
-          { status: 400 }
-        );
+        return validationError('Name cannot be empty');
       }
       updateData.name = name.trim();
     }
@@ -40,17 +38,11 @@ export async function PUT(request: NextRequest) {
     // Handle password change
     if (newPassword) {
       if (!currentPassword) {
-        return NextResponse.json(
-          { error: 'Current password is required to change password' },
-          { status: 400 }
-        );
+        return validationError('Current password is required to change password');
       }
 
       if (newPassword.length < 6) {
-        return NextResponse.json(
-          { error: 'New password must be at least 6 characters' },
-          { status: 400 }
-        );
+        return validationError('New password must be at least 6 characters');
       }
 
       // Get user with password hash
@@ -66,10 +58,7 @@ export async function PUT(request: NextRequest) {
       const isValid = await verifyPassword(currentPassword, userWithPassword.passwordHash);
 
       if (!isValid) {
-        return NextResponse.json(
-          { error: 'Current password is incorrect' },
-          { status: 400 }
-        );
+        return validationError('Current password is incorrect');
       }
 
       updateData.passwordHash = await hashPassword(newPassword);
@@ -89,10 +78,6 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error('Update profile error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'updating profile');
   }
 }

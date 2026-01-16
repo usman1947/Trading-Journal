@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, createToken } from '@/lib/auth';
 import { createAuthResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,17 +13,11 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     if (!email || !password || !name) {
-      return NextResponse.json(
-        { error: 'Email, password, and name are required' },
-        { status: 400 }
-      );
+      return validationError('Email, password, and name are required');
     }
 
     if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
+      return validationError('Password must be at least 6 characters');
     }
 
     // Check if user already exists
@@ -31,10 +26,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 400 }
-      );
+      return validationError('An account with this email already exists');
     }
 
     // Create user
@@ -67,10 +59,6 @@ export async function POST(request: NextRequest) {
     const token = await createToken(user.id);
     return createAuthResponse(user, token, 201);
   } catch (error) {
-    console.error('Signup error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create account' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'creating account');
   }
 }

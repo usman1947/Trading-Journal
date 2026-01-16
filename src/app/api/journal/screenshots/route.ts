@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { uploadToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError, notFoundResponse, successResponse } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     const journalId = searchParams.get('journalId');
 
     if (!journalId) {
-      return NextResponse.json({ error: 'Journal ID is required' }, { status: 400 });
+      return validationError('Journal ID is required');
     }
 
     // Verify journal exists and belongs to user
@@ -23,14 +24,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!journal) {
-      return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
+      return notFoundResponse('Journal entry');
     }
 
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
 
     if (files.length === 0) {
-      return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
+      return validationError('No files uploaded');
     }
 
     const screenshots = [];
@@ -57,8 +58,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(screenshots, { status: 201 });
   } catch (error) {
-    console.error('Error uploading journal screenshots:', error);
-    return NextResponse.json({ error: 'Failed to upload files' }, { status: 500 });
+    return handleApiError(error, 'uploading journal screenshots');
   }
 }
 
@@ -71,7 +71,7 @@ export async function DELETE(request: NextRequest) {
     const screenshotId = searchParams.get('screenshotId');
 
     if (!screenshotId) {
-      return NextResponse.json({ error: 'Screenshot ID is required' }, { status: 400 });
+      return validationError('Screenshot ID is required');
     }
 
     // Find screenshot and verify ownership through journal
@@ -81,7 +81,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!screenshot || screenshot.journal.userId !== user.id) {
-      return NextResponse.json({ error: 'Screenshot not found' }, { status: 404 });
+      return notFoundResponse('Screenshot');
     }
 
     // Delete from Cloudinary
@@ -94,9 +94,8 @@ export async function DELETE(request: NextRequest) {
       where: { id: screenshotId },
     });
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error('Error deleting journal screenshot:', error);
-    return NextResponse.json({ error: 'Failed to delete screenshot' }, { status: 500 });
+    return handleApiError(error, 'deleting journal screenshot');
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError, notFoundResponse, errorResponse, successResponse } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,13 +25,12 @@ export async function GET(
     });
 
     if (!account) {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+      return notFoundResponse('Account');
     }
 
     return NextResponse.json(account);
   } catch (error) {
-    console.error('Error fetching account:', error);
-    return NextResponse.json({ error: 'Failed to fetch account' }, { status: 500 });
+    return handleApiError(error, 'fetching account');
   }
 }
 
@@ -47,7 +47,7 @@ export async function PUT(
     const { name, description, isSwingAccount } = body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      return NextResponse.json({ error: 'Account name is required' }, { status: 400 });
+      return validationError('Account name is required');
     }
 
     // Verify ownership
@@ -56,7 +56,7 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+      return notFoundResponse('Account');
     }
 
     const account = await prisma.account.update({
@@ -70,11 +70,10 @@ export async function PUT(
 
     return NextResponse.json(account);
   } catch (error: unknown) {
-    console.error('Error updating account:', error);
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-      return NextResponse.json({ error: 'An account with this name already exists' }, { status: 400 });
+      return validationError('An account with this name already exists');
     }
-    return NextResponse.json({ error: 'Failed to update account' }, { status: 500 });
+    return handleApiError(error, 'updating account');
   }
 }
 
@@ -94,7 +93,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+      return notFoundResponse('Account');
     }
 
     // Check if account has trades
@@ -103,19 +102,15 @@ export async function DELETE(
     });
 
     if (tradeCount > 0) {
-      return NextResponse.json(
-        { error: `Cannot delete account with ${tradeCount} trades. Move or delete the trades first.` },
-        { status: 400 }
-      );
+      return errorResponse(`Cannot delete account with ${tradeCount} trades. Move or delete the trades first.`);
     }
 
     await prisma.account.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error: unknown) {
-    console.error('Error deleting account:', error);
-    return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 });
+    return handleApiError(error, 'deleting account');
   }
 }

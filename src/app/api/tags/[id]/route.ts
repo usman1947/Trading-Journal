@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, notFoundResponse, successResponse } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,16 +21,15 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
+      return notFoundResponse('Tag');
     }
 
     await prisma.tag.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error('Error deleting tag:', error);
-    return NextResponse.json({ error: 'Failed to delete tag' }, { status: 500 });
+    return handleApiError(error, 'deleting tag');
   }
 }

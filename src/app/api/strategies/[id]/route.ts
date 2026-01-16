@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, notFoundResponse, successResponse } from '@/lib/api-helpers';
+import { deserializeSetups, serializeSetups } from '@/utils/trade-calculations';
+import { STRATEGY_WITH_RULES_INCLUDE } from '@/lib/prisma-includes';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +20,9 @@ export async function GET(
     const strategy = await prisma.strategy.findFirst({
       where: { id, userId: user.id },
       include: {
-        rules: {
-          orderBy: { order: 'asc' },
-        },
+        ...STRATEGY_WITH_RULES_INCLUDE,
         screenshots: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: 'asc' as const },
         },
         _count: {
           select: { trades: true },
@@ -30,16 +31,15 @@ export async function GET(
     });
 
     if (!strategy) {
-      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+      return notFoundResponse('Strategy');
     }
 
     return NextResponse.json({
       ...strategy,
-      setups: strategy.setups ? JSON.parse(strategy.setups) : [],
+      setups: deserializeSetups(strategy.setups),
     });
   } catch (error) {
-    console.error('Error fetching strategy:', error);
-    return NextResponse.json({ error: 'Failed to fetch strategy' }, { status: 500 });
+    return handleApiError(error, 'fetching strategy');
   }
 }
 
@@ -59,7 +59,7 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+      return notFoundResponse('Strategy');
     }
 
     const body = await request.json();
@@ -89,25 +89,19 @@ export async function PUT(
         data: {
           name,
           description: description || null,
-          setups: setups && setups.length > 0 ? JSON.stringify(setups) : null,
+          setups: serializeSetups(setups),
           isSwingStrategy: isSwingStrategy ?? existing.isSwingStrategy,
         },
-        include: {
-          rules: {
-            orderBy: { order: 'asc' },
-          },
-          screenshots: true,
-        },
+        include: STRATEGY_WITH_RULES_INCLUDE,
       });
     });
 
     return NextResponse.json({
       ...strategy,
-      setups: strategy.setups ? JSON.parse(strategy.setups) : [],
+      setups: deserializeSetups(strategy.setups),
     });
   } catch (error) {
-    console.error('Error updating strategy:', error);
-    return NextResponse.json({ error: 'Failed to update strategy' }, { status: 500 });
+    return handleApiError(error, 'updating strategy');
   }
 }
 
@@ -127,16 +121,15 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+      return notFoundResponse('Strategy');
     }
 
     await prisma.strategy.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error('Error deleting strategy:', error);
-    return NextResponse.json({ error: 'Failed to delete strategy' }, { status: 500 });
+    return handleApiError(error, 'deleting strategy');
   }
 }

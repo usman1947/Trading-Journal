@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, notFoundResponse, successResponse } from '@/lib/api-helpers';
+import { TRADE_FULL_INCLUDE } from '@/lib/prisma-includes';
+import {
+  calculateHoldDuration,
+  calculateResultFromPartials,
+  serializePartials,
+  normalizeSymbol,
+} from '@/utils/trade-calculations';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,37 +24,16 @@ export async function GET(
 
     const trade = await prisma.trade.findFirst({
       where: { id, userId: user.id },
-      include: {
-        strategy: {
-          include: {
-            rules: {
-              orderBy: { order: 'asc' },
-            },
-          },
-        },
-        account: true,
-        screenshots: true,
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-        ruleChecks: {
-          include: {
-            rule: true,
-          },
-        },
-      },
+      include: TRADE_FULL_INCLUDE,
     });
 
     if (!trade) {
-      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+      return notFoundResponse('Trade');
     }
 
     return NextResponse.json(trade);
   } catch (error) {
-    console.error('Error fetching trade:', error);
-    return NextResponse.json({ error: 'Failed to fetch trade' }, { status: 500 });
+    return handleApiError(error, 'fetching trade');
   }
 }
 
@@ -66,7 +53,7 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+      return notFoundResponse('Trade');
     }
 
     const body = await request.json();
@@ -95,29 +82,21 @@ export async function PUT(
     const tradeDateTime = new Date(tradeTime);
     const exitDateTime = exitTime ? new Date(exitTime) : null;
 
-    // Recalculate holdDurationMins if both entry and exit times exist
-    let holdDurationMins: number | null = null;
-    if (exitDateTime) {
-      holdDurationMins = Math.round((exitDateTime.getTime() - tradeDateTime.getTime()) / 60000);
-    }
-
-    // Calculate result from partials if provided
-    let finalResult = result ?? null;
-    if (partials && Array.isArray(partials) && partials.length > 0) {
-      finalResult = partials.reduce((sum: number, p: number) => sum + p, 0);
-    }
+    // Recalculate derived fields using helper functions
+    const holdDurationMins = calculateHoldDuration(tradeDateTime, exitDateTime);
+    const finalResult = calculateResultFromPartials(partials) ?? result ?? null;
 
     const trade = await prisma.trade.update({
       where: { id },
       data: {
-        symbol: symbol.toUpperCase(),
+        symbol: normalizeSymbol(symbol),
         side,
         tradeTime: tradeDateTime,
         exitTime: exitDateTime,
         setup: setup || null,
         risk,
         result: finalResult,
-        partials: partials !== undefined ? (partials && partials.length > 0 ? JSON.stringify(partials) : null) : undefined,
+        partials: partials !== undefined ? serializePartials(partials) : undefined,
         commission: commission ?? 0,
         execution,
         isBreakEven: isBreakEven ?? undefined,
@@ -131,33 +110,12 @@ export async function PUT(
         mistake: mistake || null,
         holdDurationMins,
       },
-      include: {
-        strategy: {
-          include: {
-            rules: {
-              orderBy: { order: 'asc' },
-            },
-          },
-        },
-        account: true,
-        screenshots: true,
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-        ruleChecks: {
-          include: {
-            rule: true,
-          },
-        },
-      },
+      include: TRADE_FULL_INCLUDE,
     });
 
     return NextResponse.json(trade);
   } catch (error) {
-    console.error('Error updating trade:', error);
-    return NextResponse.json({ error: 'Failed to update trade' }, { status: 500 });
+    return handleApiError(error, 'updating trade');
   }
 }
 
@@ -177,16 +135,15 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+      return notFoundResponse('Trade');
     }
 
     await prisma.trade.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error('Error deleting trade:', error);
-    return NextResponse.json({ error: 'Failed to delete trade' }, { status: 500 });
+    return handleApiError(error, 'deleting trade');
   }
 }

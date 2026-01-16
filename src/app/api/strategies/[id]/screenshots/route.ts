@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { uploadToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError, notFoundResponse, successResponse } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export async function POST(
     });
 
     if (!strategy) {
-      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+      return notFoundResponse('Strategy');
     }
 
     const formData = await request.formData();
@@ -29,7 +30,7 @@ export async function POST(
     const caption = formData.get('caption') as string | null;
 
     if (files.length === 0) {
-      return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
+      return validationError('No files uploaded');
     }
 
     const screenshots = [];
@@ -58,8 +59,7 @@ export async function POST(
 
     return NextResponse.json(screenshots, { status: 201 });
   } catch (error) {
-    console.error('Error uploading strategy screenshots:', error);
-    return NextResponse.json({ error: 'Failed to upload screenshots' }, { status: 500 });
+    return handleApiError(error, 'uploading strategy screenshots');
   }
 }
 
@@ -76,7 +76,7 @@ export async function DELETE(
     const screenshotId = searchParams.get('screenshotId');
 
     if (!screenshotId) {
-      return NextResponse.json({ error: 'Screenshot ID is required' }, { status: 400 });
+      return validationError('Screenshot ID is required');
     }
 
     // Verify strategy belongs to user
@@ -85,7 +85,7 @@ export async function DELETE(
     });
 
     if (!strategy) {
-      return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+      return notFoundResponse('Strategy');
     }
 
     // Find the screenshot
@@ -97,7 +97,7 @@ export async function DELETE(
     });
 
     if (!screenshot) {
-      return NextResponse.json({ error: 'Screenshot not found' }, { status: 404 });
+      return notFoundResponse('Screenshot');
     }
 
     // Delete from Cloudinary
@@ -110,9 +110,8 @@ export async function DELETE(
       where: { id: screenshotId },
     });
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error('Error deleting strategy screenshot:', error);
-    return NextResponse.json({ error: 'Failed to delete screenshot' }, { status: 500 });
+    return handleApiError(error, 'deleting strategy screenshot');
   }
 }

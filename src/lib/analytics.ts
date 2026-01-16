@@ -1,5 +1,14 @@
 import prisma from './prisma';
 import type { AnalyticsData, DailyStats, StrategyStats, TradeFilters, TradeTimeStats } from '@/types';
+import {
+  applyAccountFilter,
+  applyUserFilter,
+  buildDateRangeFilter,
+  filterByTimeOfDay,
+  excludeBreakevenTrades,
+  separateWinLossTrades,
+} from './query-helpers';
+import { calculateAverageRMultiple, formatTimeOfDay } from '@/utils/trade-calculations';
 
 type TradeRecord = {
   result: number | null;
@@ -11,60 +20,14 @@ type TradeRecord = {
   isBreakEven: boolean;
 };
 
-// Helper function to apply account filter
-function applyAccountFilter(where: Record<string, unknown>, accountId: string | null | undefined) {
-  if (accountId !== undefined && accountId !== null) {
-    if (accountId === 'paper' || accountId === '') {
-      where.accountId = null;
-    } else {
-      where.accountId = accountId;
-    }
-  }
-}
-
-// Helper function to apply user filter
-function applyUserFilter(where: Record<string, unknown>, userId: string | undefined) {
-  if (userId) {
-    where.userId = userId;
-  }
-}
-
-// Helper function to filter trades by time of day (HH:mm format)
-function filterByTimeOfDay<T extends { tradeTime: Date }>(
-  trades: T[],
-  timeAfter?: string,
-  timeBefore?: string
-): T[] {
-  if (!timeAfter && !timeBefore) return trades;
-
-  return trades.filter((trade) => {
-    const tradeDate = new Date(trade.tradeTime);
-    // Use America/New_York timezone to match trade time display
-    const timeStr = tradeDate.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'America/New_York'
-    });
-
-    if (timeAfter && timeStr < timeAfter) return false;
-    if (timeBefore && timeStr > timeBefore) return false;
-    return true;
-  });
-}
-
 export async function getAnalytics(filters: TradeFilters = {}): Promise<AnalyticsData> {
   const where: Record<string, unknown> = {
     result: { not: null },
   };
 
   applyUserFilter(where, filters.userId);
-  if (filters.dateFrom) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
-  }
-  if (filters.dateTo) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
-  }
+  buildDateRangeFilter(where, filters.dateFrom, filters.dateTo);
+
   if (filters.symbol) {
     where.symbol = { contains: filters.symbol };
   }
@@ -105,10 +68,8 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
   }
 
   // Filter out BE trades for win/loss analytics only (not for total counts)
-  const nonBETrades = trades.filter((t: TradeRecord) => !t.isBreakEven);
-
-  const winningTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
-  const losingTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
+  const nonBETrades = excludeBreakevenTrades(trades);
+  const { winningTrades, losingTrades } = separateWinLossTrades(trades);
   const passingTrades = trades.filter((t: TradeRecord) => t.execution === 'PASS');
 
   // Total result and risk include ALL trades (including BE)
@@ -120,18 +81,8 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
   const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0));
 
   // Calculate average R-multiples for winners and losers (non-BE only)
-  const winnersWithRisk = winningTrades.filter((t: TradeRecord) => t.risk > 0);
-  const losersWithRisk = losingTrades.filter((t: TradeRecord) => t.risk > 0);
-
-  const averageWinnerR =
-    winnersWithRisk.length > 0
-      ? winnersWithRisk.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / winnersWithRisk.length
-      : 0;
-
-  const averageLoserR =
-    losersWithRisk.length > 0
-      ? losersWithRisk.reduce((sum: number, t: TradeRecord) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
-      : 0;
+  const averageWinnerR = calculateAverageRMultiple(winningTrades);
+  const averageLoserR = calculateAverageRMultiple(losingTrades);
 
   return {
     totalResult,
@@ -158,12 +109,7 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
   };
 
   applyUserFilter(where, filters.userId);
-  if (filters.dateFrom) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
-  }
-  if (filters.dateTo) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
-  }
+  buildDateRangeFilter(where, filters.dateFrom, filters.dateTo);
   applyAccountFilter(where, filters.accountId);
 
   const trades = await prisma.trade.findMany({
@@ -225,20 +171,12 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
 
   return strategies.map((strategy: { id: string; name: string; trades: TradeWithRuleChecks[]; rules: { id: string }[] }) => {
     // Filter out BE trades for win/loss analytics only (not for total counts)
-    const nonBETrades = strategy.trades.filter((t) => !t.isBreakEven);
-    const winningTrades = nonBETrades.filter((t) => (t.result ?? 0) > 0);
-    const losingTrades = nonBETrades.filter((t) => (t.result ?? 0) < 0);
+    const nonBETrades = excludeBreakevenTrades(strategy.trades);
+    const { winningTrades, losingTrades } = separateWinLossTrades(strategy.trades);
     const tradesWithResult = nonBETrades.filter((t) => t.result !== null && t.risk > 0);
-    const winnersWithRisk = winningTrades.filter((t) => t.risk > 0);
-    const losersWithRisk = losingTrades.filter((t) => t.risk > 0);
 
-    const averageWinR = winnersWithRisk.length > 0
-      ? winnersWithRisk.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / winnersWithRisk.length
-      : 0;
-
-    const averageLossR = losersWithRisk.length > 0
-      ? losersWithRisk.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / losersWithRisk.length
-      : 0;
+    const averageWinR = calculateAverageRMultiple(winningTrades);
+    const averageLossR = calculateAverageRMultiple(losingTrades);
 
     // Calculate average rule satisfaction (use all trades for this)
     const totalRules = strategy.rules.length;
@@ -280,12 +218,8 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
   };
 
   applyUserFilter(where, filters.userId);
-  if (filters.dateFrom) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
-  }
-  if (filters.dateTo) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
-  }
+  buildDateRangeFilter(where, filters.dateFrom, filters.dateTo);
+
   if (filters.symbol) {
     where.symbol = { contains: filters.symbol };
   }
@@ -315,7 +249,7 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
 
   // Filter out BE trades for P&L analytics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nonBETrades = trades.filter((t: any) => !t.isBreakEven);
+  const nonBETrades = excludeBreakevenTrades(trades as any);
 
   const strategyMap = new Map<string, number>();
   const totalTrades = nonBETrades.length;
@@ -339,12 +273,8 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
   };
 
   applyUserFilter(where, filters.userId);
-  if (filters.dateFrom) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
-  }
-  if (filters.dateTo) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
-  }
+  buildDateRangeFilter(where, filters.dateFrom, filters.dateTo);
+
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
@@ -373,13 +303,7 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return trades.map((trade: any) => {
     const tradeDate = new Date(trade.tradeTime);
-    // Use America/New_York timezone to display trades in EST
-    const timeStr = tradeDate.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'America/New_York'
-    });
+    const timeStr = formatTimeOfDay(tradeDate);
     const [hourStr, minuteStr] = timeStr.split(':');
     const hour = parseInt(hourStr, 10);
     const minute = parseInt(minuteStr, 10);
@@ -401,12 +325,8 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
   };
 
   applyUserFilter(where, filters.userId);
-  if (filters.dateFrom) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
-  }
-  if (filters.dateTo) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
-  }
+  buildDateRangeFilter(where, filters.dateFrom, filters.dateTo);
+
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
@@ -434,7 +354,7 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
 
   // Filter out BE trades for P&L analytics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nonBETrades = trades.filter((t: any) => !t.isBreakEven);
+  const nonBETrades = excludeBreakevenTrades(trades as any);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return nonBETrades.map((trade: any) => {
@@ -455,12 +375,8 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   };
 
   applyUserFilter(where, filters.userId);
-  if (filters.dateFrom) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
-  }
-  if (filters.dateTo) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
-  }
+  buildDateRangeFilter(where, filters.dateFrom, filters.dateTo);
+
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
@@ -488,7 +404,7 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
 
   // Filter out BE trades for P&L analytics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nonBETrades = trades.filter((t: any) => !t.isBreakEven);
+  const nonBETrades = excludeBreakevenTrades(trades as any);
 
   // 30-minute interval stats
   const intervalMap = new Map<string, { totalPnL: number; trades: number; wins: number }>();
@@ -500,13 +416,7 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   nonBETrades.forEach((trade: any) => {
     const date = new Date(trade.tradeTime);
-    // Use America/New_York timezone to display trades in EST
-    const timeStr = date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'America/New_York'
-    });
+    const timeStr = formatTimeOfDay(date);
     const [hourStr, minuteStr] = timeStr.split(':');
     const hour = parseInt(hourStr, 10);
     const minute = parseInt(minuteStr, 10);
@@ -570,12 +480,8 @@ export async function getTradeTimeStats(filters: TradeFilters = {}): Promise<Tra
   };
 
   applyUserFilter(where, filters.userId);
-  if (filters.dateFrom) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(filters.dateFrom) };
-  }
-  if (filters.dateTo) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(filters.dateTo) };
-  }
+  buildDateRangeFilter(where, filters.dateFrom, filters.dateTo);
+
   if (filters.strategyId) {
     where.strategyId = filters.strategyId;
   }
@@ -600,10 +506,7 @@ export async function getTradeTimeStats(filters: TradeFilters = {}): Promise<Tra
 
   // Separate BE trades and non-BE trades
   const breakevenTrades = trades.filter((t: TradeRecord) => t.isBreakEven);
-  const nonBETrades = trades.filter((t: TradeRecord) => !t.isBreakEven);
-
-  const winningTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) > 0);
-  const losingTrades = nonBETrades.filter((t: TradeRecord) => (t.result ?? 0) < 0);
+  const { winningTrades, losingTrades } = separateWinLossTrades(trades);
 
   // Calculate average time in minutes for winners
   let avgWinnerTime = 0;

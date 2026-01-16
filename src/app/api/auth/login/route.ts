@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyPassword, createToken } from '@/lib/auth';
 import { createAuthResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError, errorResponse } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +13,7 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
+      return validationError('Email and password are required');
     }
 
     // Find user
@@ -24,20 +22,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return errorResponse('Invalid email or password', 401);
     }
 
     // Verify password
     const isValid = await verifyPassword(password, user.passwordHash);
 
     if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return errorResponse('Invalid email or password', 401);
     }
 
     // Create token and return response with cookie
@@ -52,10 +44,6 @@ export async function POST(request: NextRequest) {
       token
     );
   } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Failed to log in' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'logging in');
   }
 }

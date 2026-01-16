@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
+import { handleApiError, validationError } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +17,7 @@ export async function GET() {
 
     return NextResponse.json(accounts);
   } catch (error) {
-    console.error('Error fetching accounts:', error);
-    return NextResponse.json({ error: 'Failed to fetch accounts' }, { status: 500 });
+    return handleApiError(error, 'fetching accounts');
   }
 }
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const { name, description, isSwingAccount } = body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      return NextResponse.json({ error: 'Account name is required' }, { status: 400 });
+      return validationError('Account name is required');
     }
 
     const account = await prisma.account.create({
@@ -44,10 +44,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(account, { status: 201 });
   } catch (error: unknown) {
-    console.error('Error creating account:', error);
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-      return NextResponse.json({ error: 'An account with this name already exists' }, { status: 400 });
+      return validationError('An account with this name already exists');
     }
-    return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
+    return handleApiError(error, 'creating account');
   }
 }
