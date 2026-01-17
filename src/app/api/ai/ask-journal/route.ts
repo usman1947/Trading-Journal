@@ -172,7 +172,9 @@ export async function POST(
       );
     }
 
-    const { question, dateFrom, dateTo } = body;
+    const { question, dateFrom, dateTo, accountId: rawAccountId } = body;
+    // Convert null to undefined for consistent handling
+    const accountId = rawAccountId ?? undefined;
 
     // Validate question
     if (!question || typeof question !== 'string' || question.trim().length < 3) {
@@ -222,7 +224,7 @@ export async function POST(
     if (isAnalytics) {
       try {
         console.log('[Ask Journal] Running analytics query...');
-        const analyticsResult = await runAnalyticsQuery(trimmedQuestion, user.id);
+        const analyticsResult = await runAnalyticsQuery(trimmedQuestion, user.id, accountId);
         console.log('[Ask Journal] Analytics query type:', analyticsResult.query);
 
         const response: AskJournalResponse = {
