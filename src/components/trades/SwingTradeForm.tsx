@@ -445,6 +445,7 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
             <CardContent>
               {mode === 'edit' && trade ? (
                 <ScreenshotUpload
+                  mode="edit"
                   tradeId={trade.id}
                   screenshots={trade.screenshots || []}
                 />

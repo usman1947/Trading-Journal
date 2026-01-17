@@ -229,6 +229,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
               {/* Upload more screenshots */}
               <Box sx={{ mt: 3 }}>
                 <ScreenshotUpload
+                  mode="edit"
                   tradeId={trade.id}
                   screenshots={[]}
                   disabled={false}

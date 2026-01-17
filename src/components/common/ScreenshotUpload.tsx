@@ -20,17 +20,31 @@ import {
 import { useUploadScreenshotsMutation, useDeleteScreenshotMutation } from '@/store';
 import type { Screenshot } from '@/types';
 
-interface ScreenshotUploadProps {
+export interface PendingFile {
+  file: File;
+  preview: string;
+}
+
+interface ScreenshotUploadEditProps {
+  mode: 'edit';
   tradeId: string;
   screenshots: Screenshot[];
   disabled?: boolean;
 }
 
-export default function ScreenshotUpload({
-  tradeId,
-  screenshots,
-  disabled = false,
-}: ScreenshotUploadProps) {
+interface ScreenshotUploadCreateProps {
+  mode: 'create';
+  pendingFiles: PendingFile[];
+  onFileSelect: (files: FileList | null) => void;
+  onRemovePendingFile: (index: number) => void;
+  disabled?: boolean;
+}
+
+type ScreenshotUploadProps = ScreenshotUploadEditProps | ScreenshotUploadCreateProps;
+
+export default function ScreenshotUpload(props: ScreenshotUploadProps) {
+  const { mode, disabled = false } = props;
+
   const [uploadScreenshots, { isLoading: uploading }] = useUploadScreenshotsMutation();
   const [deleteScreenshot, { isLoading: deleting }] = useDeleteScreenshotMutation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -40,18 +54,22 @@ export default function ScreenshotUpload({
     async (files: FileList | null) => {
       if (!files || files.length === 0) return;
 
-      const formData = new FormData();
-      Array.from(files).forEach((file) => {
-        formData.append('files', file);
-      });
+      if (mode === 'edit') {
+        const formData = new FormData();
+        Array.from(files).forEach((file) => {
+          formData.append('files', file);
+        });
 
-      try {
-        await uploadScreenshots({ tradeId, formData }).unwrap();
-      } catch (error) {
-        console.error('Failed to upload screenshots:', error);
+        try {
+          await uploadScreenshots({ tradeId: props.tradeId, formData }).unwrap();
+        } catch (error) {
+          console.error('Failed to upload screenshots:', error);
+        }
+      } else {
+        props.onFileSelect(files);
       }
     },
-    [tradeId, uploadScreenshots]
+    [mode, props, uploadScreenshots]
   );
 
   const handleDrop = useCallback(
@@ -68,6 +86,12 @@ export default function ScreenshotUpload({
       await deleteScreenshot(screenshotId).unwrap();
     } catch (error) {
       console.error('Failed to delete screenshot:', error);
+    }
+  };
+
+  const handleRemovePending = (index: number) => {
+    if (mode === 'create') {
+      props.onRemovePendingFile(index);
     }
   };
 
@@ -121,10 +145,10 @@ export default function ScreenshotUpload({
         )}
       </Box>
 
-      {/* Screenshot Gallery */}
-      {screenshots.length > 0 && (
+      {/* Screenshot Gallery - Edit Mode */}
+      {mode === 'edit' && props.screenshots.length > 0 && (
         <ImageList cols={3} gap={8}>
-          {screenshots.map((screenshot) => (
+          {props.screenshots.map((screenshot) => (
             <ImageListItem
               key={screenshot.id}
               sx={{
@@ -161,6 +185,56 @@ export default function ScreenshotUpload({
             </ImageListItem>
           ))}
         </ImageList>
+      )}
+
+      {/* Pending Files Preview - Create Mode */}
+      {mode === 'create' && props.pendingFiles.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {props.pendingFiles.map((pf, index) => (
+            <Box
+              key={index}
+              sx={{
+                position: 'relative',
+                width: 100,
+                height: 100,
+                borderRadius: 1,
+                overflow: 'hidden',
+                border: '1px solid',
+                borderColor: 'divider',
+                cursor: 'pointer',
+              }}
+              onClick={() => setSelectedImage(pf.preview)}
+            >
+              <Image
+                src={pf.preview}
+                alt={pf.file.name}
+                fill
+                style={{ objectFit: 'cover' }}
+                unoptimized
+              />
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemovePending(index);
+                }}
+                sx={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  color: 'white',
+                  padding: '4px',
+                  '&:hover': {
+                    backgroundColor: 'error.main',
+                  },
+                }}
+              >
+                <DeleteIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Box>
+          ))}
+        </Box>
       )}
 
       {/* Image Preview Dialog */}

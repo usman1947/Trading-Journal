@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import {
   Box,
   TextField,
@@ -15,9 +14,6 @@ import {
   CardContent,
   Typography,
   InputAdornment,
-  ToggleButtonGroup,
-  ToggleButton,
-  IconButton,
   Autocomplete,
   FormControlLabel,
   Checkbox,
@@ -25,13 +21,9 @@ import {
   LinearProgress,
   Divider,
   Switch,
-  Slider,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import {
-  CloudUpload as UploadIcon,
-  Delete as DeleteIcon,
   ChecklistRtl as ChecklistIcon,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
@@ -47,7 +39,10 @@ import {
 } from '@/store';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
-import ScreenshotUpload from '@/components/common/ScreenshotUpload';
+import ScreenshotUpload, { type PendingFile } from '@/components/common/ScreenshotUpload';
+import DateTimePickerGroup from '@/components/common/DateTimePickerGroup';
+import ToggleButtonGroupField, { type ToggleOption } from '@/components/common/ToggleButtonGroupField';
+import SliderInput from '@/components/common/SliderInput';
 import type { Trade, TradeFormData, Strategy, PreTradeMood, PostTradeMood, TradeMistake } from '@/types';
 
 // Options for psychology dropdowns
@@ -97,10 +92,16 @@ interface TradeFormProps {
   mode: 'create' | 'edit';
 }
 
-interface PendingFile {
-  file: File;
-  preview: string;
-}
+// Toggle button options
+const SIDE_OPTIONS: ToggleOption[] = [
+  { value: 'LONG', label: 'Long', color: 'success' },
+  { value: 'SHORT', label: 'Short', color: 'error' },
+];
+
+const EXECUTION_OPTIONS: ToggleOption[] = [
+  { value: 'PASS', label: 'Pass', color: 'success' },
+  { value: 'FAIL', label: 'Fail', color: 'error' },
+];
 
 export default function TradeForm({ trade, mode }: TradeFormProps) {
   const router = useRouter();
@@ -120,7 +121,6 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
   }, [allStrategies]);
 
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
-  const [dragOver, setDragOver] = useState(false);
   const [ruleChecks, setRuleChecks] = useState<Record<string, boolean>>({});
 
   // Get the currently selected strategy with its rules
@@ -157,15 +157,6 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
 
     setPendingFiles((prev) => [...prev, ...newFiles]);
   }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      handleFileSelect(e.dataTransfer.files);
-    },
-    [handleFileSelect]
-  );
 
   const removePendingFile = (index: number) => {
     setPendingFiles((prev) => {
@@ -291,113 +282,32 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                   />
                 </Grid>
 
-                {/* Date */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <DatePicker
-                    label="Date"
-                    value={new Date(formik.values.tradeTime)}
-                    onChange={(date) => {
-                      if (date) {
-                        const currentTime = new Date(formik.values.tradeTime);
-                        date.setHours(currentTime.getHours(), currentTime.getMinutes(), currentTime.getSeconds());
-                        formik.setFieldValue('tradeTime', date.toISOString());
-                      }
-                    }}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        error: formik.touched.tradeTime && Boolean(formik.errors.tradeTime),
-                      },
-                    }}
-                  />
-                </Grid>
-
-                {/* Entry Time */}
-                <Grid size={{ xs: 6, sm: 6 }}>
-                  <TimePicker
-                    label="Entry Time"
-                    value={new Date(formik.values.tradeTime)}
-                    onChange={(time) => {
-                      if (time) {
-                        const currentDate = new Date(formik.values.tradeTime);
-                        currentDate.setHours(time.getHours(), time.getMinutes(), time.getSeconds());
-                        formik.setFieldValue('tradeTime', currentDate.toISOString());
-                      }
-                    }}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                      },
-                    }}
-                  />
-                </Grid>
-
-                {/* Exit Time */}
-                <Grid size={{ xs: 6, sm: 6 }}>
-                  <TimePicker
-                    label="Exit Time"
-                    value={formik.values.exitTime ? new Date(formik.values.exitTime) : new Date(formik.values.tradeTime)}
-                    onChange={(time) => {
-                      if (time) {
-                        // Use the trade date for the exit time
-                        const tradeDate = new Date(formik.values.tradeTime);
-                        const exitDateTime = new Date(tradeDate);
-                        exitDateTime.setHours(time.getHours(), time.getMinutes(), time.getSeconds());
-                        formik.setFieldValue('exitTime', exitDateTime.toISOString());
-                      } else {
-                        formik.setFieldValue('exitTime', null);
-                      }
-                    }}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                      },
-                      field: {
-                        clearable: true,
-                      },
-                    }}
-                  />
-                </Grid>
+                {/* Date and Time */}
+                <DateTimePickerGroup
+                  entryDateTime={formik.values.tradeTime}
+                  exitDateTime={formik.values.exitTime}
+                  onEntryDateChange={(date) => formik.setFieldValue('tradeTime', date.toISOString())}
+                  onEntryTimeChange={(time) => formik.setFieldValue('tradeTime', time.toISOString())}
+                  onExitTimeChange={(time) => formik.setFieldValue('exitTime', time ? time.toISOString() : null)}
+                  error={Boolean(formik.errors.tradeTime)}
+                  touched={formik.touched.tradeTime}
+                />
 
                 {/* Side */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Side
-                  </Typography>
-                  <ToggleButtonGroup
-                    value={formik.values.side}
-                    exclusive
-                    onChange={(_, value) => value && formik.setFieldValue('side', value)}
-                    fullWidth
-                  >
-                    <ToggleButton value="LONG" color="success">
-                      Long
-                    </ToggleButton>
-                    <ToggleButton value="SHORT" color="error">
-                      Short
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </Grid>
+                <ToggleButtonGroupField
+                  label="Side"
+                  value={formik.values.side}
+                  onChange={(value) => formik.setFieldValue('side', value)}
+                  options={SIDE_OPTIONS}
+                />
 
                 {/* Execution */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Execution
-                  </Typography>
-                  <ToggleButtonGroup
-                    value={formik.values.execution}
-                    exclusive
-                    onChange={(_, value) => value && formik.setFieldValue('execution', value)}
-                    fullWidth
-                  >
-                    <ToggleButton value="PASS" color="success">
-                      Pass
-                    </ToggleButton>
-                    <ToggleButton value="FAIL" color="error">
-                      Fail
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </Grid>
+                <ToggleButtonGroupField
+                  label="Execution"
+                  value={formik.values.execution}
+                  onChange={(value) => formik.setFieldValue('execution', value)}
+                  options={EXECUTION_OPTIONS}
+                />
 
                 {/* Risk */}
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -563,24 +473,13 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
 
                 {/* Confidence Level */}
                 <Grid size={{ xs: 12 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                    Confidence Level
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Slider
-                      value={formik.values.confidenceLevel ?? 5}
-                      onChange={(_, value) => formik.setFieldValue('confidenceLevel', value)}
-                      min={1}
-                      max={10}
-                      step={1}
-                      valueLabelDisplay="auto"
-                      size="small"
-                      sx={{ flex: 1 }}
-                    />
-                    <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}>
-                      {formik.values.confidenceLevel ?? '-'}
-                    </Typography>
-                  </Box>
+                  <SliderInput
+                    label="Confidence Level"
+                    value={formik.values.confidenceLevel ?? 5}
+                    onChange={(value) => formik.setFieldValue('confidenceLevel', value)}
+                    min={1}
+                    max={10}
+                  />
                 </Grid>
 
                 {/* Mistake */}
@@ -714,95 +613,17 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
             <CardContent>
               {mode === 'edit' && trade ? (
                 <ScreenshotUpload
+                  mode="edit"
                   tradeId={trade.id}
                   screenshots={trade.screenshots || []}
                 />
               ) : (
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Screenshots
-                  </Typography>
-
-                  {/* Upload Area */}
-                  <Box
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOver(true);
-                    }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={handleDrop}
-                    sx={{
-                      border: '2px dashed',
-                      borderColor: dragOver ? 'primary.main' : 'divider',
-                      borderRadius: 2,
-                      p: 3,
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      backgroundColor: dragOver ? 'action.hover' : 'background.paper',
-                      transition: 'all 0.2s',
-                      mb: 2,
-                    }}
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.multiple = true;
-                      input.accept = 'image/*';
-                      input.onchange = (e) =>
-                        handleFileSelect((e.target as HTMLInputElement).files);
-                      input.click();
-                    }}
-                  >
-                    <UploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                    <Typography color="text.secondary" variant="body2">
-                      Drag & drop images or click to upload
-                    </Typography>
-                  </Box>
-
-                  {/* Pending Files Preview */}
-                  {pendingFiles.length > 0 && (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {pendingFiles.map((pf, index) => (
-                        <Box
-                          key={index}
-                          sx={{
-                            position: 'relative',
-                            width: 100,
-                            height: 100,
-                            borderRadius: 1,
-                            overflow: 'hidden',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                          }}
-                        >
-                          <Image
-                            src={pf.preview}
-                            alt={pf.file.name}
-                            fill
-                            style={{ objectFit: 'cover' }}
-                            unoptimized
-                          />
-                          <IconButton
-                            size="small"
-                            onClick={() => removePendingFile(index)}
-                            sx={{
-                              position: 'absolute',
-                              top: 2,
-                              right: 2,
-                              backgroundColor: 'rgba(0,0,0,0.6)',
-                              color: 'white',
-                              padding: '4px',
-                              '&:hover': {
-                                backgroundColor: 'error.main',
-                              },
-                            }}
-                          >
-                            <DeleteIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
-                </Box>
+                <ScreenshotUpload
+                  mode="create"
+                  pendingFiles={pendingFiles}
+                  onFileSelect={handleFileSelect}
+                  onRemovePendingFile={removePendingFile}
+                />
               )}
             </CardContent>
           </Card>

@@ -20,6 +20,9 @@ import DailyPnLChart from '@/components/analytics/DailyPnLChart';
 import WinLossChart from '@/components/analytics/WinLossChart';
 import AvgTradeTimeChart from '@/components/analytics/AvgTradeTimeChart';
 import WeeklyCoachCard from '@/components/dashboard/WeeklyCoachCard';
+import StatCard from '@/components/common/StatCard';
+import ChartCard from '@/components/common/ChartCard';
+import EmptyState from '@/components/common/EmptyState';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import type { Account, Trade } from '@/types';
 
@@ -48,97 +51,6 @@ function formatTime(minutes: number): string {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ReactNode;
-  color?: 'success' | 'error' | 'primary' | 'secondary' | 'warning';
-}
-
-function StatCard({ title, value, subtitle, icon, color = 'primary' }: StatCardProps) {
-  return (
-    <Card
-      sx={{
-        height: '100%',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '4px',
-          height: '100%',
-          backgroundColor: `${color}.main`,
-          borderRadius: '12px 0 0 12px',
-        },
-      }}
-    >
-      <CardContent sx={{ position: 'relative' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography
-              color="text.secondary"
-              variant="body2"
-              gutterBottom
-              sx={{
-                textTransform: 'uppercase',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                letterSpacing: '0.05em',
-              }}
-            >
-              {title}
-            </Typography>
-            <Typography
-              variant="h4"
-              component="div"
-              color={`${color}.main`}
-              fontWeight="bold"
-              sx={{ my: 1.5 }}
-            >
-              {value}
-            </Typography>
-            {subtitle && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontSize: '0.875rem' }}
-              >
-                {subtitle}
-              </Typography>
-            )}
-          </Box>
-          <Box
-            sx={{
-              backgroundColor: `${color}.main`,
-              borderRadius: 3,
-              p: 1.5,
-              opacity: 0.1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {icon}
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            color: `${color}.main`,
-            opacity: 0.8,
-          }}
-        >
-          {icon}
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function Dashboard() {
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
@@ -281,68 +193,48 @@ export default function Dashboard() {
 
           {/* P&L Over Time Chart */}
           <Grid size={{ xs: 12, md: 8 }}>
-            <Card sx={{ height: 450 }}>
-              <CardContent sx={{ height: '100%', p: 0 }}>
-                <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-                  <Typography variant="h6" fontWeight={600}>
-                    P&L Over Time
-                  </Typography>
-                </Box>
-                <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
-                  <PnLChart data={dailyStats || []} loading={dailyStatsLoading} />
-                </Box>
-              </CardContent>
-            </Card>
+            <ChartCard title="P&L Over Time">
+              <PnLChart data={dailyStats || []} loading={dailyStatsLoading} />
+            </ChartCard>
           </Grid>
 
           {/* Strategy Distribution Pie Chart */}
           <Grid size={{ xs: 12, md: 4 }}>
-            <Card sx={{ height: 450 }}>
-              <CardContent sx={{ height: '100%', p: 0 }}>
-                <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-                  <Typography variant="h6" fontWeight={600}>
-                    Strategy Distribution
-                  </Typography>
+            <ChartCard title="Strategy Distribution">
+              {strategyDistLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                  <Skeleton variant="circular" width={200} height={200} />
                 </Box>
-                <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
-                  {strategyDistLoading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                      <Skeleton variant="circular" width={200} height={200} />
-                    </Box>
-                  ) : strategyDistribution.length === 0 ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                      <Typography color="text.secondary">No trade data available</Typography>
-                    </Box>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={strategyDistribution}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          label={(props: any) => `${props.percentage?.toFixed(0) || 0}%`}
-                          outerRadius={100}
-                          innerRadius={60}
-                          fill="#8884d8"
-                          dataKey="trades"
-                          nameKey="name"
-                        >
-                          {strategyDistribution.map((_: unknown, index: number) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value) => [`${value} trades`, 'Trades']}
-                        />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
+              ) : strategyDistribution.length === 0 ? (
+                <EmptyState message="No trade data available" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={strategyDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      label={(props: any) => `${props.percentage?.toFixed(0) || 0}%`}
+                      outerRadius={100}
+                      innerRadius={60}
+                      fill="#8884d8"
+                      dataKey="trades"
+                      nameKey="name"
+                    >
+                      {strategyDistribution.map((_: unknown, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [`${value} trades`, 'Trades']}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </ChartCard>
           </Grid>
         </Grid>
       </Box>
