@@ -269,8 +269,8 @@ export interface RAGQueryOptions {
   };
   /** Filter by specific symbols */
   readonly symbols?: readonly string[];
-  /** Filter by account ID */
-  readonly accountId?: string;
+  /** Filter by account ID (null = Paper Account, undefined = no filter) */
+  readonly accountId?: string | null;
   /** Include source citations in response */
   readonly includeCitations?: boolean;
   /** Maximum tokens for context (default: 4000) */

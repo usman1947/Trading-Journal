@@ -136,14 +136,21 @@ export async function retrieveDocuments(
 async function retrieveTradeDocuments(
   queryEmbedding: EmbeddingVector,
   userId: string,
-  filters: { dateRange?: RAGQueryOptions['dateRange']; symbols?: readonly string[]; accountId?: string }
+  filters: { dateRange?: RAGQueryOptions['dateRange']; symbols?: readonly string[]; accountId?: string | null }
 ): Promise<RetrievedDocument[]> {
   // Build where clause for trades
   const tradeWhere: Record<string, unknown> = { userId };
 
-  // Filter by account if provided
-  if (filters.accountId) {
-    tradeWhere.accountId = filters.accountId;
+  // Filter by account:
+  // - null means "Paper Account" (filter for trades where accountId IS NULL)
+  // - undefined means "no filter" (return all trades)
+  // - string means filter by that specific accountId
+  if (filters.accountId !== undefined) {
+    if (filters.accountId === null || filters.accountId === 'paper' || filters.accountId === '') {
+      tradeWhere.accountId = null;
+    } else {
+      tradeWhere.accountId = filters.accountId;
+    }
   }
 
   if (filters.dateRange?.from || filters.dateRange?.to) {

@@ -172,9 +172,11 @@ export async function POST(
       );
     }
 
-    const { question, dateFrom, dateTo, accountId: rawAccountId } = body;
-    // Convert null to undefined for consistent handling
-    const accountId = rawAccountId ?? undefined;
+    const { question, dateFrom, dateTo, accountId } = body;
+    // Note: accountId can be:
+    // - null: Paper Account (filter for trades with accountId IS NULL)
+    // - undefined: no filter (return all trades)
+    // - string: specific account ID
 
     // Validate question
     if (!question || typeof question !== 'string' || question.trim().length < 3) {

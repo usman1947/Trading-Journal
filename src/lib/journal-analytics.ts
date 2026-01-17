@@ -25,6 +25,29 @@ import { getGroqClient } from '@/lib/groq-client';
 const MARKET_TIMEZONE = 'America/New_York';
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Build account filter for Prisma where clause.
+ * - null means "Paper Account" (filter for trades where accountId IS NULL)
+ * - undefined means "no filter" (return all trades)
+ * - string means filter by that specific accountId
+ */
+function buildAccountFilter(accountId: string | null | undefined): Record<string, unknown> {
+  if (accountId === undefined) {
+    // No filter - return all trades
+    return {};
+  }
+  if (accountId === null || accountId === 'paper' || accountId === '') {
+    // Paper Account - filter for trades with null accountId
+    return { accountId: null };
+  }
+  // Specific account
+  return { accountId };
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -287,12 +310,12 @@ function getMarketTime(date: Date): { hour: number; minute: number } {
 /**
  * Get hourly trading performance (in market timezone)
  */
-export async function getHourlyPerformance(userId: string, accountId?: string): Promise<HourlyStats[]> {
+export async function getHourlyPerformance(userId: string, accountId?: string | null): Promise<HourlyStats[]> {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: {
       tradeTime: true,
@@ -332,13 +355,13 @@ export async function getHourlyPerformance(userId: string, accountId?: string): 
 export async function getTimeWindowPerformance(
   userId: string,
   windowMinutes: number = 30,
-  accountId?: string
+  accountId?: string | null
 ): Promise<TimeWindowStats[]> {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: {
       tradeTime: true,
@@ -385,13 +408,13 @@ export async function getTimeWindowPerformance(
 /**
  * Get extreme trades (biggest winners/losers)
  */
-export async function getExtremeTrades(userId: string, accountId?: string) {
+export async function getExtremeTrades(userId: string, accountId?: string | null) {
   const [biggestWinner, biggestLoser] = await Promise.all([
     prisma.trade.findFirst({
       where: {
         userId,
         result: { gt: 0 },
-        ...(accountId && { accountId }),
+        ...buildAccountFilter(accountId),
       },
       orderBy: { result: 'desc' },
       select: {
@@ -407,7 +430,7 @@ export async function getExtremeTrades(userId: string, accountId?: string) {
       where: {
         userId,
         result: { lt: 0 },
-        ...(accountId && { accountId }),
+        ...buildAccountFilter(accountId),
       },
       orderBy: { result: 'asc' },
       select: {
@@ -427,12 +450,12 @@ export async function getExtremeTrades(userId: string, accountId?: string) {
 /**
  * Get overall statistics
  */
-export async function getOverallStats(userId: string, accountId?: string) {
+export async function getOverallStats(userId: string, accountId?: string | null) {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: { result: true },
   });
@@ -457,12 +480,12 @@ export async function getOverallStats(userId: string, accountId?: string) {
 /**
  * Get symbol performance
  */
-export async function getSymbolPerformance(userId: string, accountId?: string) {
+export async function getSymbolPerformance(userId: string, accountId?: string | null) {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: {
       symbol: true,
@@ -511,12 +534,12 @@ function getMarketDayOfWeek(date: Date): number {
 /**
  * Get day of week performance (in market timezone)
  */
-export async function getDayOfWeekPerformance(userId: string, accountId?: string) {
+export async function getDayOfWeekPerformance(userId: string, accountId?: string | null) {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: {
       tradeTime: true,
@@ -551,13 +574,13 @@ export async function getDayOfWeekPerformance(userId: string, accountId?: string
 /**
  * Get strategy performance
  */
-export async function getStrategyPerformance(userId: string, accountId?: string) {
+export async function getStrategyPerformance(userId: string, accountId?: string | null) {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
       strategyId: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: {
       result: true,
@@ -605,13 +628,13 @@ export async function getStrategyPerformance(userId: string, accountId?: string)
 /**
  * Get setup performance
  */
-export async function getSetupPerformance(userId: string, accountId?: string) {
+export async function getSetupPerformance(userId: string, accountId?: string | null) {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
       setup: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: {
       setup: true,
@@ -649,13 +672,13 @@ export async function getSetupPerformance(userId: string, accountId?: string) {
 /**
  * Get rule adherence analytics
  */
-export async function getRuleAdherence(userId: string, accountId?: string) {
+export async function getRuleAdherence(userId: string, accountId?: string | null) {
   // Get all trades with their rule checks
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: {
       id: true,
@@ -759,12 +782,12 @@ export async function getRuleAdherence(userId: string, accountId?: string) {
 /**
  * Get execution quality analytics (PASS vs FAIL)
  */
-export async function getExecutionAnalytics(userId: string, accountId?: string) {
+export async function getExecutionAnalytics(userId: string, accountId?: string | null) {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       result: { not: null },
-      ...(accountId && { accountId }),
+      ...buildAccountFilter(accountId),
     },
     select: {
       execution: true,
@@ -822,7 +845,7 @@ export async function getExecutionAnalytics(userId: string, accountId?: string) 
 export async function runAnalyticsQuery(
   question: string,
   userId: string,
-  accountId?: string
+  accountId?: string | null
 ): Promise<AnalyticsResult> {
   const queryType = detectAnalyticsType(question);
   let data: Record<string, unknown> = {};
