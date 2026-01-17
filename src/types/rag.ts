@@ -269,6 +269,8 @@ export interface RAGQueryOptions {
   };
   /** Filter by specific symbols */
   readonly symbols?: readonly string[];
+  /** Filter by account ID */
+  readonly accountId?: string;
   /** Include source citations in response */
   readonly includeCitations?: boolean;
   /** Maximum tokens for context (default: 4000) */

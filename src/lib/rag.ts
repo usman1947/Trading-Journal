@@ -87,6 +87,7 @@ export async function retrieveDocuments(
       documentTypes = ['trade', 'journal'],
       dateRange,
       symbols,
+      accountId,
     } = options;
 
     const results: RetrievedDocument[] = [];
@@ -96,7 +97,7 @@ export async function retrieveDocuments(
       const tradeResults = await retrieveTradeDocuments(
         queryEmbedding,
         userId,
-        { dateRange, symbols }
+        { dateRange, symbols, accountId }
       );
       results.push(...tradeResults);
     }
@@ -135,10 +136,15 @@ export async function retrieveDocuments(
 async function retrieveTradeDocuments(
   queryEmbedding: EmbeddingVector,
   userId: string,
-  filters: { dateRange?: RAGQueryOptions['dateRange']; symbols?: readonly string[] }
+  filters: { dateRange?: RAGQueryOptions['dateRange']; symbols?: readonly string[]; accountId?: string }
 ): Promise<RetrievedDocument[]> {
   // Build where clause for trades
   const tradeWhere: Record<string, unknown> = { userId };
+
+  // Filter by account if provided
+  if (filters.accountId) {
+    tradeWhere.accountId = filters.accountId;
+  }
 
   if (filters.dateRange?.from || filters.dateRange?.to) {
     tradeWhere.tradeTime = {};

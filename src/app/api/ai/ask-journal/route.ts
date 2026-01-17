@@ -260,6 +260,8 @@ export async function POST(
       documentTypes: ['trade', 'journal'],
       includeCitations: true,
       maxContextTokens: 4000,
+      // Add account filter if provided
+      accountId,
       // Add date range filter if provided
       dateRange: (dateFrom || dateTo) ? { from: dateFrom, to: dateTo } : undefined,
     };
