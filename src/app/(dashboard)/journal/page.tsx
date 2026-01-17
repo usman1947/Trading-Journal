@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper } from '@mui/material';
-import { Add as AddIcon, MenuBook as JournalIcon } from '@mui/icons-material';
+import { Box, Typography, Button, Paper, Tooltip } from '@mui/material';
+import {
+  Add as AddIcon,
+  MenuBook as JournalIcon,
+  Psychology as AskIcon,
+} from '@mui/icons-material';
 import JournalList from '@/components/journal/JournalList';
 import JournalContent from '@/components/journal/JournalContent';
 import JournalEntryDialog from '@/components/journal/JournalEntryDialog';
+import AskJournalDialog from '@/components/journal/AskJournalDialog';
 import { useGetJournalEntriesQuery } from '@/store';
 import type { DailyJournal } from '@/types';
 
@@ -14,6 +19,7 @@ export default function JournalPage() {
   const [selectedEntry, setSelectedEntry] = useState<DailyJournal | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<DailyJournal | null>(null);
+  const [askDialogOpen, setAskDialogOpen] = useState(false);
 
   // Auto-select first entry when entries load
   useEffect(() => {
@@ -65,9 +71,21 @@ export default function JournalPage() {
             Record your daily market observations and lessons
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleNewEntry}>
-          New Entry
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title="Ask AI questions about your trading journal">
+            <Button
+              variant="outlined"
+              startIcon={<AskIcon />}
+              onClick={() => setAskDialogOpen(true)}
+              disabled={entries.length === 0}
+            >
+              Ask Journal
+            </Button>
+          </Tooltip>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleNewEntry}>
+            New Entry
+          </Button>
+        </Box>
       </Box>
 
       {/* Main Content */}
@@ -136,6 +154,12 @@ export default function JournalPage() {
         open={dialogOpen}
         onClose={handleCloseDialog}
         entry={editingEntry}
+      />
+
+      {/* Ask Journal Dialog */}
+      <AskJournalDialog
+        open={askDialogOpen}
+        onClose={() => setAskDialogOpen(false)}
       />
     </Box>
   );

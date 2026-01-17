@@ -23,7 +23,10 @@
       "Bash(taskkill:*)",
       "Bash(test:*)",
       "Bash(npx tsc:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(sqlite3:*)"
     ]
   }
 }

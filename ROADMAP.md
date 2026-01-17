@@ -6,13 +6,13 @@
 Aggregates your week's trades, calculates stats (win rate, total R, avg winner/loser), and sends to LLM to generate a coaching summary with observations and suggestions.
 Skills: Data aggregation, basic prompting
 
-**#2 Emotional Pattern Detection**
+**#2 Emotional Pattern Detection** 
 Run sentiment analysis on journal notes, score each entry, correlate sentiment scores with trade outcomes. Surface patterns like "negative tone before trade = worse results."
 Skills: Sentiment analysis (can use LLM), correlation
 
 ---
 
-**#3 Ask Your Journal (RAG)**
+**#3 Ask Your Journal (RAG)** ✅
 Embed all journal entries into vectors, store in vector DB. When you ask a question, retrieve relevant entries and feed to LLM for answer. "When do I overtrade?" pulls matching entries and synthesizes insight.
 Skills: Embeddings, vector DB (pgvector/Chroma), RAG retrieval
 

@@ -356,6 +356,15 @@ export const api = createApi({
       ],
     }),
 
+    // Ask Journal (RAG)
+    askJournal: builder.mutation({
+      query: ({ question, accountId, dateFrom, dateTo }) => ({
+        url: '/ai/ask-journal',
+        method: 'POST',
+        body: { question, accountId, dateFrom, dateTo },
+      }),
+    }),
+
   }),
 });
 
@@ -424,6 +433,8 @@ export const {
   // Weekly Coach
   useGetWeeklyCoachQuery,
   useGenerateWeeklyCoachMutation,
+  // Ask Journal
+  useAskJournalMutation,
 } = api;
 
 // Re-export auth slice actions and types

@@ -235,3 +235,6 @@ export interface CSVColumnMapping {
   result?: string;
   execution?: string;
 }
+
+// Re-export RAG types for convenience
+export * from './rag';
