@@ -149,7 +149,19 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
   applyUserFilter(tradeWhere, filters.userId);
   applyAccountFilter(tradeWhere, filters.accountId);
 
-  const strategyWhere: Record<string, unknown> = {};
+  // Determine if this is a swing account to filter strategies appropriately
+  let isSwingAccount = false;
+  if (filters.accountId && filters.accountId !== 'paper' && filters.accountId !== '') {
+    const account = await prisma.account.findUnique({
+      where: { id: filters.accountId },
+      select: { isSwingAccount: true },
+    });
+    isSwingAccount = account?.isSwingAccount || false;
+  }
+
+  const strategyWhere: Record<string, unknown> = {
+    isSwingStrategy: isSwingAccount, // Only show strategies matching account type
+  };
   applyUserFilter(strategyWhere, filters.userId);
 
   const strategies = await prisma.strategy.findMany({

@@ -31,6 +31,7 @@ import {
   useGetStrategiesQuery,
   useGetSetupsQuery,
   useGetTradeTimeStatsQuery,
+  useGetAccountsQuery,
   setAnalyticsViewMode,
   updateAnalyticsFilter,
 } from '@/store';
@@ -44,7 +45,7 @@ import PnLDistributionChart from '@/components/analytics/PnLDistributionChart';
 import TimeDayProfitability from '@/components/analytics/TimeDayProfitability';
 import AvgTradeTimeChart from '@/components/analytics/AvgTradeTimeChart';
 import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
-import type { Trade, TradeFilters } from '@/types';
+import type { Trade, TradeFilters, Account } from '@/types';
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -64,7 +65,23 @@ export default function AnalyticsPage() {
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
   const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
 
-  const { data: strategies = [] } = useGetStrategiesQuery({});
+  const { data: accounts = [] } = useGetAccountsQuery({});
+  const { data: allStrategies = [] } = useGetStrategiesQuery({});
+
+  // Check if the selected account is a swing account
+  const isSwingAccount = useMemo(() => {
+    if (!selectedAccountId) return false;
+    const account = accounts.find((a: Account) => a.id === selectedAccountId);
+    return account?.isSwingAccount || false;
+  }, [selectedAccountId, accounts]);
+
+  // Filter strategies based on account type (swing vs day trading)
+  const strategies = useMemo(() => {
+    if (isSwingAccount) {
+      return allStrategies.filter((s: { id: string; name: string; isSwingStrategy?: boolean }) => s.isSwingStrategy);
+    }
+    return allStrategies.filter((s: { id: string; name: string; isSwingStrategy?: boolean }) => !s.isSwingStrategy);
+  }, [allStrategies, isSwingAccount]);
   const { data: existingSetups = [] } = useGetSetupsQuery({});
   const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery(
     viewMode === 'trades' ? { ...filters, accountId: accountFilter } : { accountId: accountFilter }
