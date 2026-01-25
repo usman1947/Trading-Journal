@@ -10,19 +10,18 @@ import {
   Alert,
   AlertTitle,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
 import { useAppSelector } from '@/store/hooks';
 import { useGetSetupProfilerQuery } from '@/store';
 import {
-  DimensionSelector,
-  ClusterFilters,
-  ClusterSummaryStats,
-  ClusterResultsTable,
+  HeroInsightCard,
+  DimensionTabs,
+  SingleDimensionBreakdown,
+  DataQualityBanner,
 } from '@/components/setup-profiler';
-import type { Cluster, SetupProfilerResults } from '@/types';
+import type { SetupProfilerResultsV2, DimensionAnalysis, PatternInsight } from '@/lib/setup-profiler';
 
 export default function SetupProfilerPage() {
-  const filters = useAppSelector((state) => state.setupProfiler.filters);
+  const activeDimension = useAppSelector((state) => state.setupProfiler.activeDimension);
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
 
   // Build account filter - null means paper account
@@ -30,55 +29,46 @@ export default function SetupProfilerPage() {
 
   // Build API query params
   const queryParams = useMemo(() => ({
-    dimensions: filters.selectedDimensions.join(','),
-    minSampleSize: filters.minTradeCount,
     accountId: accountFilter,
-  }), [filters.selectedDimensions, filters.minTradeCount, accountFilter]);
+  }), [accountFilter]);
 
   const { data, isLoading, error } = useGetSetupProfilerQuery(queryParams);
 
   // Type-safe data access
-  const profilerData = data as SetupProfilerResults | undefined;
+  const profilerData = data as SetupProfilerResultsV2 | undefined;
 
-  // Filter clusters based on edge/leak toggle
-  const filteredClusters = useMemo(() => {
-    if (!profilerData?.clusters) return [];
+  // Get top edge and leak from insights
+  const topEdge = useMemo(() => {
+    if (!profilerData?.topInsights) return null;
+    return profilerData.topInsights.find((i: PatternInsight) => i.type === 'EDGE') || null;
+  }, [profilerData?.topInsights]);
 
-    let clusters = profilerData.clusters;
+  const topLeak = useMemo(() => {
+    if (!profilerData?.topInsights) return null;
+    return profilerData.topInsights.find((i: PatternInsight) => i.type === 'LEAK') || null;
+  }, [profilerData?.topInsights]);
 
-    if (filters.showEdgesOnly) {
-      clusters = clusters.filter((c: Cluster) => c.classification === 'EDGE');
-    } else if (filters.showLeaksOnly) {
-      clusters = clusters.filter((c: Cluster) => c.classification === 'LEAK');
-    }
-
-    return clusters;
-  }, [profilerData?.clusters, filters.showEdgesOnly, filters.showLeaksOnly]);
+  // Get the analysis for the active dimension
+  const activeAnalysis = useMemo(() => {
+    if (!profilerData?.dimensionAnalyses) return undefined;
+    return profilerData.dimensionAnalyses.find(
+      (a: DimensionAnalysis) => a.dimension === activeDimension
+    );
+  }, [profilerData?.dimensionAnalyses, activeDimension]);
 
   if (isLoading) {
     return (
       <Box>
         <Typography variant="h4" gutterBottom fontWeight="bold">
-          Setup Profiler
+          Pattern Analysis
         </Typography>
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Skeleton variant="text" width="40%" height={30} />
-            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} variant="rounded" width={80} height={32} />
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
-        <Grid container spacing={2}>
-          {[1, 2, 3, 4].map((i) => (
-            <Grid size={{ xs: 6, sm: 3 }} key={i}>
-              <Skeleton variant="rounded" height={100} />
-            </Grid>
-          ))}
-        </Grid>
-        <Skeleton variant="rounded" height={400} sx={{ mt: 3 }} />
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Discover what&apos;s working and what&apos;s costing you money in your trading.
+        </Typography>
+        <Skeleton variant="rounded" height={100} sx={{ mb: 2 }} />
+        <Skeleton variant="rounded" height={100} sx={{ mb: 3 }} />
+        <Skeleton variant="rounded" height={48} sx={{ mb: 2 }} />
+        <Skeleton variant="rounded" height={300} />
       </Box>
     );
   }
@@ -87,10 +77,10 @@ export default function SetupProfilerPage() {
     return (
       <Box>
         <Typography variant="h4" gutterBottom fontWeight="bold">
-          Setup Profiler
+          Pattern Analysis
         </Typography>
         <Alert severity="error">
-          <AlertTitle>Error loading profiler data</AlertTitle>
+          <AlertTitle>Error loading analysis</AlertTitle>
           Something went wrong. Please try refreshing the page.
         </Alert>
       </Box>
@@ -100,143 +90,58 @@ export default function SetupProfilerPage() {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold">
-            Setup Profiler
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Identify your trading edges and leaks by clustering trades across multiple dimensions
-          </Typography>
-        </Box>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" fontWeight="bold">
+          Pattern Analysis
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Discover what&apos;s working and what&apos;s costing you money in your trading.
+        </Typography>
       </Box>
 
-      {/* Dimension Selector */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <DimensionSelector />
-          <Box sx={{ mt: 2 }}>
-            <ClusterFilters />
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Summary Stats */}
-      <ClusterSummaryStats
-        clusters={filteredClusters}
-        overallStats={profilerData?.overallStats ?? null}
-        isLoading={isLoading}
-      />
-
-      {/* Top Edges & Leaks Highlights */}
-      {profilerData && (profilerData.topEdges.length > 0 || profilerData.topLeaks.length > 0) && (
-        <Box sx={{ mt: 3 }}>
-          <Grid container spacing={3}>
-            {profilerData.topEdges.length > 0 && (
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ borderLeft: 4, borderColor: 'success.main' }}>
-                  <CardContent>
-                    <Typography variant="h6" fontWeight="bold" color="success.main" gutterBottom>
-                      🎯 Top Edges
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      Your most profitable trading patterns
-                    </Typography>
-                    {profilerData.topEdges.slice(0, 3).map((cluster: Cluster) => (
-                      <Box
-                        key={cluster.id}
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          py: 1,
-                          borderBottom: '1px solid',
-                          borderColor: 'divider',
-                          '&:last-child': { borderBottom: 'none' },
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight="medium">
-                          {cluster.displayKey}
-                        </Typography>
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="body2" color="success.main" fontWeight="bold">
-                            {cluster.stats.expectancyR >= 0 ? '+' : ''}{cluster.stats.expectancyR.toFixed(2)}R
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {cluster.stats.totalTrades} trades • {cluster.stats.winRate.toFixed(0)}% win
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ))}
-                  </CardContent>
-                </Card>
-              </Grid>
-            )}
-            {profilerData.topLeaks.length > 0 && (
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ borderLeft: 4, borderColor: 'error.main' }}>
-                  <CardContent>
-                    <Typography variant="h6" fontWeight="bold" color="error.main" gutterBottom>
-                      ⚠️ Top Leaks
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      Patterns to avoid or improve
-                    </Typography>
-                    {profilerData.topLeaks.slice(0, 3).map((cluster: Cluster) => (
-                      <Box
-                        key={cluster.id}
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          py: 1,
-                          borderBottom: '1px solid',
-                          borderColor: 'divider',
-                          '&:last-child': { borderBottom: 'none' },
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight="medium">
-                          {cluster.displayKey}
-                        </Typography>
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="body2" color="error.main" fontWeight="bold">
-                            {cluster.stats.expectancyR >= 0 ? '+' : ''}{cluster.stats.expectancyR.toFixed(2)}R
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {cluster.stats.totalTrades} trades • {cluster.stats.winRate.toFixed(0)}% win
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ))}
-                  </CardContent>
-                </Card>
-              </Grid>
-            )}
-          </Grid>
-        </Box>
+      {/* Data Quality Banner */}
+      {profilerData && (
+        <DataQualityBanner
+          quality={profilerData.summary.dataQuality}
+          message={profilerData.summary.dataQualityMessage}
+          tradesAnalyzed={profilerData.summary.tradesAnalyzed}
+        />
       )}
 
-      {/* Cluster Results */}
-      <Card sx={{ mt: 3 }}>
+      {/* Hero Insights - Most Important Finding */}
+      <Box sx={{ mb: 3 }}>
+        <HeroInsightCard
+          topEdge={topEdge}
+          topLeak={topLeak}
+          isLoading={isLoading}
+        />
+      </Box>
+
+      {/* Dimension Analysis Section */}
+      <Card>
         <CardContent sx={{ p: 0 }}>
-          <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="h6" fontWeight={600}>
-              All Clusters ({filteredClusters.length})
-            </Typography>
-            {profilerData && (
-              <Typography variant="body2" color="text.secondary">
-                Analyzed {profilerData.tradesAnalyzed} trades
-                {profilerData.dateRange && (
-                  <> from {new Date(profilerData.dateRange.from).toLocaleDateString()} to {new Date(profilerData.dateRange.to).toLocaleDateString()}</>
-                )}
-              </Typography>
-            )}
-          </Box>
+          {/* Dimension Tabs */}
+          <DimensionTabs />
+
+          {/* Active Dimension Breakdown */}
           <Box sx={{ p: 3 }}>
-            <ClusterResultsTable clusters={filteredClusters} />
+            <SingleDimensionBreakdown
+              analysis={activeAnalysis}
+              isLoading={isLoading}
+            />
           </Box>
         </CardContent>
       </Card>
+
+      {/* Analysis Info */}
+      {profilerData && profilerData.summary.tradesAnalyzed > 0 && (
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+          Analyzed {profilerData.summary.tradesAnalyzed} trades
+          {profilerData.summary.dateRange && (
+            <> from {new Date(profilerData.summary.dateRange.from).toLocaleDateString()} to {new Date(profilerData.summary.dateRange.to).toLocaleDateString()}</>
+          )}
+        </Typography>
+      )}
     </Box>
   );
 }

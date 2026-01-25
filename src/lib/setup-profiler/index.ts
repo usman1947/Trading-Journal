@@ -1,5 +1,6 @@
 import type {
   ClusterDimensionValue,
+  ClusterDimension,
   Cluster,
   SetupProfilerConfig,
   SetupProfilerResults,
@@ -20,6 +21,13 @@ import {
   buildDateRangeFilter,
   filterByTimeOfDay,
 } from '@/lib/query-helpers';
+import {
+  analyzeDimension,
+  generateInsights,
+  assessDataQuality,
+  type SetupProfilerResultsV2,
+  type DimensionAnalysis,
+} from './dimension-analyzer';
 
 /**
  * Default configuration for Setup Profiler.
@@ -240,8 +248,87 @@ function createEmptyResults(config: SetupProfilerConfig): SetupProfilerResults {
   };
 }
 
+/**
+ * V2 Setup Profiler - Analyzes dimensions independently with insights.
+ * This is the new, more intuitive approach that shows single-dimension
+ * breakdowns first before multi-dimensional clustering.
+ */
+export async function runSetupProfilerV2(
+  userId: string,
+  config: Partial<SetupProfilerConfig> = {}
+): Promise<SetupProfilerResultsV2> {
+  const fullConfig: SetupProfilerConfig = { ...DEFAULT_PROFILER_CONFIG, ...config };
+
+  // Fetch trades based on filters
+  const trades = await fetchTrades(userId, fullConfig.filters);
+
+  // Calculate overall baseline stats
+  const overallStats = calculateClusterStats(trades);
+
+  // Assess data quality
+  const dataQualityAssessment = assessDataQuality(trades.length);
+
+  // Determine date range
+  const sortedTrades = [...trades].sort(
+    (a, b) => new Date(a.tradeTime).getTime() - new Date(b.tradeTime).getTime()
+  );
+  const dateRange = trades.length > 0
+    ? {
+        from: new Date(sortedTrades[0].tradeTime).toISOString(),
+        to: new Date(sortedTrades[sortedTrades.length - 1].tradeTime).toISOString(),
+      }
+    : null;
+
+  // If insufficient data, return early
+  if (trades.length < 3) {
+    return {
+      summary: {
+        tradesAnalyzed: trades.length,
+        dateRange,
+        overallStats,
+        dataQuality: dataQualityAssessment.quality,
+        dataQualityMessage: dataQualityAssessment.message,
+      },
+      topInsights: [],
+      dimensionAnalyses: [],
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  // Analyze each dimension independently
+  const allDimensions: ClusterDimension[] = ['setup', 'strategy', 'timeGroup', 'execution', 'side'];
+  const dimensionAnalyses: DimensionAnalysis[] = [];
+
+  for (const dimension of allDimensions) {
+    const analysis = analyzeDimension(
+      trades,
+      dimension,
+      overallStats,
+      fullConfig.timeGroupIntervalMins
+    );
+    dimensionAnalyses.push(analysis);
+  }
+
+  // Generate top insights from all analyses
+  const topInsights = generateInsights(dimensionAnalyses).slice(0, 10);
+
+  return {
+    summary: {
+      tradesAnalyzed: trades.length,
+      dateRange,
+      overallStats,
+      dataQuality: dataQualityAssessment.quality,
+      dataQualityMessage: dataQualityAssessment.message,
+    },
+    topInsights,
+    dimensionAnalyses,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 // Re-export for convenience
 export { calculateClusterStats } from './stats-calculator';
 export { classifyCluster, DEFAULT_CLASSIFICATION_CONFIG } from './classifier';
 export { getDisplayLabel, generateClusterId, generateDisplayKey } from './clustering';
 export type { ClusterableTrade } from './clustering';
+export type { SetupProfilerResultsV2, DimensionAnalysis, PatternInsight, AnalyzedSegment, PatternClassification } from './dimension-analyzer';

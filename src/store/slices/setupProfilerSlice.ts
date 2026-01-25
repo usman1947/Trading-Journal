@@ -1,101 +1,65 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { ClusterDimension } from '@/types';
 
-type ClusterSortField = 'totalTrades' | 'winRate' | 'totalPnL' | 'avgRMultiple' | 'expectancyR';
-type ProfilerViewMode = 'table' | 'cards';
-
-interface SetupProfilerFilters {
-  selectedDimensions: ClusterDimension[];
-  minTradeCount: number;
-  sortBy: ClusterSortField;
-  sortDirection: 'asc' | 'desc';
-  showEdgesOnly: boolean;
-  showLeaksOnly: boolean;
-}
+type PatternSortField = 'totalTrades' | 'winRate' | 'totalPnL' | 'expectancyR';
 
 interface SetupProfilerState {
-  viewMode: ProfilerViewMode;
-  filters: SetupProfilerFilters;
-  expandedClusterId: string | null;
+  // Which dimension tab is selected
+  activeDimension: ClusterDimension;
+  // Sort field for pattern list
+  sortBy: PatternSortField;
+  sortDirection: 'asc' | 'desc';
+  // Filter options
+  showOnlySignificant: boolean;
+  // Expanded pattern for detail view
+  expandedPatternId: string | null;
 }
 
 const initialState: SetupProfilerState = {
-  viewMode: 'table',
-  filters: {
-    selectedDimensions: ['setup', 'strategy', 'side'],
-    minTradeCount: 5,
-    sortBy: 'totalPnL',
-    sortDirection: 'desc',
-    showEdgesOnly: false,
-    showLeaksOnly: false,
-  },
-  expandedClusterId: null,
+  activeDimension: 'setup',
+  sortBy: 'expectancyR',
+  sortDirection: 'desc',
+  showOnlySignificant: false,
+  expandedPatternId: null,
 };
 
 const setupProfilerSlice = createSlice({
   name: 'setupProfiler',
   initialState,
   reducers: {
-    setProfilerViewMode: (state, action: PayloadAction<ProfilerViewMode>) => {
-      state.viewMode = action.payload;
+    setActiveDimension: (state, action: PayloadAction<ClusterDimension>) => {
+      state.activeDimension = action.payload;
     },
-    toggleDimension: (state, action: PayloadAction<ClusterDimension>) => {
-      const dimension = action.payload;
-      const index = state.filters.selectedDimensions.indexOf(dimension);
-      if (index > -1) {
-        // Only remove if more than one dimension is selected
-        if (state.filters.selectedDimensions.length > 1) {
-          state.filters.selectedDimensions.splice(index, 1);
-        }
-      } else {
-        state.filters.selectedDimensions.push(dimension);
-      }
-    },
-    setSelectedDimensions: (state, action: PayloadAction<ClusterDimension[]>) => {
-      if (action.payload.length > 0) {
-        state.filters.selectedDimensions = action.payload;
-      }
-    },
-    setMinTradeCount: (state, action: PayloadAction<number>) => {
-      state.filters.minTradeCount = Math.max(1, action.payload);
-    },
-    setSortBy: (state, action: PayloadAction<ClusterSortField>) => {
-      state.filters.sortBy = action.payload;
+    setSortBy: (state, action: PayloadAction<PatternSortField>) => {
+      state.sortBy = action.payload;
     },
     setSortDirection: (state, action: PayloadAction<'asc' | 'desc'>) => {
-      state.filters.sortDirection = action.payload;
+      state.sortDirection = action.payload;
     },
     toggleSort: (state) => {
-      state.filters.sortDirection = state.filters.sortDirection === 'asc' ? 'desc' : 'asc';
+      state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
     },
-    setShowEdgesOnly: (state, action: PayloadAction<boolean>) => {
-      state.filters.showEdgesOnly = action.payload;
-      if (action.payload) state.filters.showLeaksOnly = false;
+    setShowOnlySignificant: (state, action: PayloadAction<boolean>) => {
+      state.showOnlySignificant = action.payload;
     },
-    setShowLeaksOnly: (state, action: PayloadAction<boolean>) => {
-      state.filters.showLeaksOnly = action.payload;
-      if (action.payload) state.filters.showEdgesOnly = false;
-    },
-    setExpandedCluster: (state, action: PayloadAction<string | null>) => {
-      state.expandedClusterId = action.payload;
+    setExpandedPattern: (state, action: PayloadAction<string | null>) => {
+      state.expandedPatternId = action.payload;
     },
     resetFilters: (state) => {
-      state.filters = initialState.filters;
+      state.sortBy = initialState.sortBy;
+      state.sortDirection = initialState.sortDirection;
+      state.showOnlySignificant = initialState.showOnlySignificant;
     },
   },
 });
 
 export const {
-  setProfilerViewMode,
-  toggleDimension,
-  setSelectedDimensions,
-  setMinTradeCount,
+  setActiveDimension,
   setSortBy,
   setSortDirection,
   toggleSort,
-  setShowEdgesOnly,
-  setShowLeaksOnly,
-  setExpandedCluster,
+  setShowOnlySignificant,
+  setExpandedPattern,
   resetFilters,
 } = setupProfilerSlice.actions;
 

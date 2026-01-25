@@ -474,15 +474,11 @@ export {
 
 // Re-export setup profiler slice actions
 export {
-  setProfilerViewMode,
-  toggleDimension,
-  setSelectedDimensions,
-  setMinTradeCount,
-  setSortBy,
-  setSortDirection,
-  toggleSort,
-  setShowEdgesOnly,
-  setShowLeaksOnly,
-  setExpandedCluster,
+  setActiveDimension,
+  setSortBy as setProfilerSortBy,
+  setSortDirection as setProfilerSortDirection,
+  toggleSort as toggleProfilerSort,
+  setShowOnlySignificant,
+  setExpandedPattern,
   resetFilters as resetProfilerFilters,
 } from './slices/setupProfilerSlice';
