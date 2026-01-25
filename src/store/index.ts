@@ -4,6 +4,7 @@ import filtersReducer from './slices/filtersSlice';
 import uiReducer from './slices/uiSlice';
 import authReducer from './slices/authSlice';
 import analyticsReducer from './slices/analyticsSlice';
+import setupProfilerReducer from './slices/setupProfilerSlice';
 import type { User } from './slices/authSlice';
 
 // RTK Query API
@@ -365,6 +366,15 @@ export const api = createApi({
       }),
     }),
 
+    // Setup Profiler
+    getSetupProfiler: builder.query({
+      query: (params) => ({
+        url: '/analytics/setup-profiler',
+        params,
+      }),
+      providesTags: ['Analytics'],
+    }),
+
   }),
 });
 
@@ -375,6 +385,7 @@ export const store = configureStore({
     ui: uiReducer,
     auth: authReducer,
     analytics: analyticsReducer,
+    setupProfiler: setupProfilerReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(api.middleware),
@@ -435,6 +446,8 @@ export const {
   useGenerateWeeklyCoachMutation,
   // Ask Journal
   useAskJournalMutation,
+  // Setup Profiler
+  useGetSetupProfilerQuery,
 } = api;
 
 // Re-export auth slice actions and types
@@ -458,3 +471,18 @@ export {
   setShowTradeFilters,
   setTradeSortModel,
 } from './slices/filtersSlice';
+
+// Re-export setup profiler slice actions
+export {
+  setProfilerViewMode,
+  toggleDimension,
+  setSelectedDimensions,
+  setMinTradeCount,
+  setSortBy,
+  setSortDirection,
+  toggleSort,
+  setShowEdgesOnly,
+  setShowLeaksOnly,
+  setExpandedCluster,
+  resetFilters as resetProfilerFilters,
+} from './slices/setupProfilerSlice';

@@ -189,3 +189,55 @@ export function formatTimeOfDay(date: Date): string {
     timeZone: 'America/New_York'
   });
 }
+
+/**
+ * Get the time group bucket for a given trade time.
+ * Groups trades into intervals (default 5 minutes) for time-based analysis.
+ *
+ * @param tradeTime - Date object or ISO string representing trade entry time
+ * @param intervalMins - Interval in minutes (default: 5)
+ * @returns String in "HH:MM-HH:MM" format representing the bucket
+ * @example
+ *   9:32 AM -> "09:30-09:35"
+ *   9:35 AM -> "09:35-09:40"
+ *   10:07 AM -> "10:05-10:10"
+ */
+export function getTimeGroup(
+  tradeTime: Date | string,
+  intervalMins: number = 5
+): string {
+  const date = typeof tradeTime === 'string' ? new Date(tradeTime) : tradeTime;
+  const timeStr = formatTimeOfDay(date);
+  const [hourStr, minuteStr] = timeStr.split(':');
+  const hour = parseInt(hourStr, 10);
+  const minute = parseInt(minuteStr, 10);
+
+  // Calculate bucket start
+  const totalMinutes = hour * 60 + minute;
+  const bucketStart = Math.floor(totalMinutes / intervalMins) * intervalMins;
+  const bucketEnd = bucketStart + intervalMins;
+
+  const startHour = Math.floor(bucketStart / 60);
+  const startMin = bucketStart % 60;
+  const endHour = Math.floor(bucketEnd / 60);
+  const endMin = bucketEnd % 60;
+
+  const startTime = `${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')}`;
+  const endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
+
+  return `${startTime}-${endTime}`;
+}
+
+/**
+ * Format a time group label for display.
+ * Converts "HH:MM-HH:MM" to a more readable format.
+ *
+ * @param timeGroup - Time group in "HH:MM-HH:MM" format
+ * @returns Formatted label like "9:30 - 9:35 AM"
+ */
+export function formatTimeGroupLabel(timeGroup: string): string {
+  const [start] = timeGroup.split('-');
+  const [startHour] = start.split(':').map(Number);
+  const period = startHour >= 12 ? 'PM' : 'AM';
+  return `${timeGroup} ${period}`;
+}

@@ -236,5 +236,104 @@ export interface CSVColumnMapping {
   execution?: string;
 }
 
+// =============================================================================
+// Setup Profiler Types
+// =============================================================================
+
+/** Clustering dimensions for the Setup Profiler feature */
+export type ClusterDimension = 'setup' | 'strategy' | 'timeGroup' | 'execution' | 'side';
+
+/** Edge/Leak/Neutral classification for clusters */
+export type ClusterClassification = 'EDGE' | 'LEAK' | 'NEUTRAL' | 'INSUFFICIENT_DATA';
+
+/** Confidence level based on sample size */
+export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+
+/** Dimension values that define a cluster */
+export interface ClusterDimensionValue {
+  name: ClusterDimension;
+  value: string;
+  displayLabel: string;
+}
+
+/** Statistics calculated for each cluster */
+export interface ClusterStats {
+  // Trade counts
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  breakEvenTrades: number;
+
+  // P&L Metrics
+  totalPnL: number;
+  grossProfit: number;
+  grossLoss: number;
+  avgPnL: number;
+
+  // Win/Loss Analysis
+  winRate: number;
+  avgWin: number;
+  avgLoss: number;
+  largestWin: number;
+  largestLoss: number;
+
+  // R-Multiple Analysis
+  avgRMultiple: number;
+  avgWinnerR: number;
+  avgLoserR: number;
+  totalRMultiple: number;
+
+  // Expectancy & Edge Metrics
+  expectancy: number;
+  expectancyR: number;
+  profitFactor: number;
+  payoffRatio: number;
+
+  // Risk & Execution
+  totalRisk: number;
+  executionRate: number;
+  passTradeWinRate: number;
+  failTradeWinRate: number;
+
+  // Time Analysis
+  avgHoldDurationMins: number;
+
+  // Sample Quality
+  confidenceLevel: ConfidenceLevel;
+}
+
+/** A cluster represents a unique combination of dimension values */
+export interface Cluster {
+  id: string;
+  dimensions: ClusterDimensionValue[];
+  displayKey: string;
+  stats: ClusterStats;
+  classification: ClusterClassification;
+  classificationScore: number;
+  tradeIds: string[];
+}
+
+/** Configuration for the Setup Profiler analysis */
+export interface SetupProfilerConfig {
+  dimensions: ClusterDimension[];
+  minSampleSize: number;
+  edgeExpectancyThreshold: number;
+  leakExpectancyThreshold: number;
+  timeGroupIntervalMins: number;
+  filters: TradeFilters;
+}
+
+/** Results from the Setup Profiler analysis */
+export interface SetupProfilerResults {
+  overallStats: ClusterStats;
+  clusters: Cluster[];
+  topEdges: Cluster[];
+  topLeaks: Cluster[];
+  tradesAnalyzed: number;
+  dateRange: { from: string; to: string } | null;
+  generatedAt: string;
+  config: SetupProfilerConfig;
+}
+
 // Re-export RAG types for convenience
 export * from './rag';

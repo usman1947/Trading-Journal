@@ -26,7 +26,7 @@ Skills: Time-series anomaly detection, sentiment, pattern rules
 User asks "compare my green days vs red days." System pulls both cohorts, extracts features (time of day, setup types, hold duration, sentiment), runs comparison, LLM narrates differences.
 Skills: Cohort segmentation, feature extraction, comparative analysis
 
-**#6 Setup Profiler**
+**#6 Setup Profiler** ✅
 Cluster trades by multiple dimensions (setup type, ticker, session, duration). Calculate stats per cluster. LLM interprets which clusters are your edge vs. leak.
 Skills: Clustering logic, multi-dimensional grouping, statistical summaries
 
