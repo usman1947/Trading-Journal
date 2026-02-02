@@ -23,6 +23,7 @@ import {
   Book as JournalIcon,
   Category as StrategiesIcon,
   Insights as ProfilerIcon,
+  Checklist as RulesIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '@/store/hooks';
 import { useGetAccountsQuery } from '@/store';
@@ -36,6 +37,7 @@ const allMenuItems = [
   { text: 'Trades', icon: <TradesIcon />, path: '/trades', showForSwing: true },
   { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics', showForSwing: false },
   { text: 'Setup Profiler', icon: <ProfilerIcon />, path: '/setup-profiler', showForSwing: false },
+  { text: 'Daily Rules', icon: <RulesIcon />, path: '/daily-rules', showForSwing: false },
   { text: 'Journal', icon: <JournalIcon />, path: '/journal', showForSwing: false },
   { text: 'Strategies', icon: <StrategiesIcon />, path: '/strategies', showForSwing: true },
 ];

@@ -135,6 +135,33 @@ export interface DailyJournal {
   updatedAt: string;
 }
 
+export interface DailyRuleAdherence {
+  id: string;
+  date: string;
+  smartSlMove: boolean;
+  goodEntry: boolean;
+  nearVwap: boolean;
+  htfSignal: boolean;
+  setupTaken: boolean;
+  notIntoLevel: boolean;
+  noTradeOnSketchCandle: boolean;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyRuleAdherenceFormData {
+  date: string;
+  smartSlMove: boolean;
+  goodEntry: boolean;
+  nearVwap: boolean;
+  htfSignal: boolean;
+  setupTaken: boolean;
+  notIntoLevel: boolean;
+  noTradeOnSketchCandle: boolean;
+  notes?: string;
+}
+
 export interface Settings {
   id: string;
   defaultRisk: number;

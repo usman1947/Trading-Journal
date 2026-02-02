@@ -11,7 +11,7 @@ import type { User } from './slices/authSlice';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts', 'User', 'WeeklyCoach'],
+  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts', 'User', 'WeeklyCoach', 'RuleAdherence'],
   endpoints: (builder) => ({
     // Accounts
     getAccounts: builder.query({
@@ -375,6 +375,30 @@ export const api = createApi({
       providesTags: ['Analytics'],
     }),
 
+    // Daily Rule Adherence
+    getRuleAdherenceEntries: builder.query({
+      query: (params) => ({
+        url: '/rule-adherence',
+        params,
+      }),
+      providesTags: ['RuleAdherence'],
+    }),
+    saveRuleAdherenceEntry: builder.mutation({
+      query: (entry) => ({
+        url: '/rule-adherence',
+        method: 'POST',
+        body: entry,
+      }),
+      invalidatesTags: ['RuleAdherence'],
+    }),
+    deleteRuleAdherenceEntry: builder.mutation({
+      query: (id) => ({
+        url: `/rule-adherence?id=${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['RuleAdherence'],
+    }),
+
   }),
 });
 
@@ -448,6 +472,10 @@ export const {
   useAskJournalMutation,
   // Setup Profiler
   useGetSetupProfilerQuery,
+  // Rule Adherence
+  useGetRuleAdherenceEntriesQuery,
+  useSaveRuleAdherenceEntryMutation,
+  useDeleteRuleAdherenceEntryMutation,
 } = api;
 
 // Re-export auth slice actions and types
