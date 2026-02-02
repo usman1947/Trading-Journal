@@ -268,20 +268,18 @@ model WeeklyCoachReport {
 
 // Daily Rule Adherence Tracking
 model DailyRuleAdherence {
-  id                   String   @id @default(cuid())
-  date                 DateTime
-  smartSlMove          Boolean  @default(false)
-  goodEntry            Boolean  @default(false)
-  nearVwap             Boolean  @default(false)
-  htfSignal            Boolean  @default(false)
-  setupTaken           Boolean  @default(false)
-  notIntoLevel         Boolean  @default(false)
-  noTradeOnSketchCandle Boolean @default(false)
-  notes                String?
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId               String
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  date               DateTime
+  smartSlMove        Boolean  @default(false)
+  goodEntry          Boolean  @default(false)
+  htfSignal          Boolean  @default(false)
+  notIntoLevel       Boolean  @default(false)
+  avoidSketchyCandle Boolean  @default(false)
+  notes              String?
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@unique([userId, date])
 }

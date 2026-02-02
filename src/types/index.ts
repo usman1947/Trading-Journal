@@ -140,11 +140,9 @@ export interface DailyRuleAdherence {
   date: string;
   smartSlMove: boolean;
   goodEntry: boolean;
-  nearVwap: boolean;
   htfSignal: boolean;
-  setupTaken: boolean;
   notIntoLevel: boolean;
-  noTradeOnSketchCandle: boolean;
+  avoidSketchyCandle: boolean;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -154,11 +152,9 @@ export interface DailyRuleAdherenceFormData {
   date: string;
   smartSlMove: boolean;
   goodEntry: boolean;
-  nearVwap: boolean;
   htfSignal: boolean;
-  setupTaken: boolean;
   notIntoLevel: boolean;
-  noTradeOnSketchCandle: boolean;
+  avoidSketchyCandle: boolean;
   notes?: string;
 }
 

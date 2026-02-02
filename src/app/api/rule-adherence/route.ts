@@ -5,38 +5,32 @@ import { handleApiError, validationError, notFoundResponse, successResponse } fr
 
 export const dynamic = 'force-dynamic';
 
-// Calculate score from boolean fields (each field = 14.29 points, total = 100)
+// Calculate score from boolean fields (each field = 20 points, total = 100)
 function calculateScore(entry: {
   smartSlMove: boolean;
   goodEntry: boolean;
-  nearVwap: boolean;
   htfSignal: boolean;
-  setupTaken: boolean;
   notIntoLevel: boolean;
-  noTradeOnSketchCandle: boolean;
+  avoidSketchyCandle: boolean;
 }): number {
   const fields = [
     entry.smartSlMove,
     entry.goodEntry,
-    entry.nearVwap,
     entry.htfSignal,
-    entry.setupTaken,
     entry.notIntoLevel,
-    entry.noTradeOnSketchCandle,
+    entry.avoidSketchyCandle,
   ];
   const checkedCount = fields.filter(Boolean).length;
-  return Math.round((checkedCount / 7) * 100);
+  return Math.round((checkedCount / 5) * 100);
 }
 
 // Add score to entry
 function withScore<T extends {
   smartSlMove: boolean;
   goodEntry: boolean;
-  nearVwap: boolean;
   htfSignal: boolean;
-  setupTaken: boolean;
   notIntoLevel: boolean;
-  noTradeOnSketchCandle: boolean;
+  avoidSketchyCandle: boolean;
 }>(entry: T): T & { score: number } {
   return { ...entry, score: calculateScore(entry) };
 }
@@ -85,11 +79,9 @@ export async function POST(request: NextRequest) {
       date,
       smartSlMove,
       goodEntry,
-      nearVwap,
       htfSignal,
-      setupTaken,
       notIntoLevel,
-      noTradeOnSketchCandle,
+      avoidSketchyCandle,
       notes,
     } = body;
 
@@ -113,11 +105,9 @@ export async function POST(request: NextRequest) {
         data: {
           smartSlMove: smartSlMove ?? false,
           goodEntry: goodEntry ?? false,
-          nearVwap: nearVwap ?? false,
           htfSignal: htfSignal ?? false,
-          setupTaken: setupTaken ?? false,
           notIntoLevel: notIntoLevel ?? false,
-          noTradeOnSketchCandle: noTradeOnSketchCandle ?? false,
+          avoidSketchyCandle: avoidSketchyCandle ?? false,
           notes: notes || null,
         },
       });
@@ -127,11 +117,9 @@ export async function POST(request: NextRequest) {
           date: dateObj,
           smartSlMove: smartSlMove ?? false,
           goodEntry: goodEntry ?? false,
-          nearVwap: nearVwap ?? false,
           htfSignal: htfSignal ?? false,
-          setupTaken: setupTaken ?? false,
           notIntoLevel: notIntoLevel ?? false,
-          noTradeOnSketchCandle: noTradeOnSketchCandle ?? false,
+          avoidSketchyCandle: avoidSketchyCandle ?? false,
           notes: notes || null,
           userId: user.id,
         },

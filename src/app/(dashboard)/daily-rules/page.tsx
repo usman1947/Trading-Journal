@@ -33,11 +33,9 @@ import type { DailyRuleAdherence } from '@/types';
 const RULES = [
   { key: 'smartSlMove', label: 'Smart SL Move' },
   { key: 'goodEntry', label: 'Good Entry' },
-  { key: 'nearVwap', label: 'Near VWAP' },
   { key: 'htfSignal', label: 'HTF Signal' },
-  { key: 'setupTaken', label: 'Setup Taken' },
   { key: 'notIntoLevel', label: 'Not Into Level' },
-  { key: 'noTradeOnSketchCandle', label: 'No Trade on Sketchy Candle' },
+  { key: 'avoidSketchyCandle', label: 'Avoid Sketchy Candle' },
 ] as const;
 
 type RuleKey = typeof RULES[number]['key'];
@@ -45,22 +43,18 @@ type RuleKey = typeof RULES[number]['key'];
 interface FormState {
   smartSlMove: boolean;
   goodEntry: boolean;
-  nearVwap: boolean;
   htfSignal: boolean;
-  setupTaken: boolean;
   notIntoLevel: boolean;
-  noTradeOnSketchCandle: boolean;
+  avoidSketchyCandle: boolean;
   notes: string;
 }
 
 const defaultFormState: FormState = {
   smartSlMove: false,
   goodEntry: false,
-  nearVwap: false,
   htfSignal: false,
-  setupTaken: false,
   notIntoLevel: false,
-  noTradeOnSketchCandle: false,
+  avoidSketchyCandle: false,
   notes: '',
 };
 
@@ -106,7 +100,7 @@ export default function DailyRulesPage() {
   // Calculate current score
   const currentScore = useMemo(() => {
     const checkedCount = RULES.filter((rule) => formState[rule.key]).length;
-    return Math.round((checkedCount / 7) * 100);
+    return Math.round((checkedCount / 5) * 100);
   }, [formState]);
 
   // Load entry data when selection changes
@@ -115,11 +109,9 @@ export default function DailyRulesPage() {
       setFormState({
         smartSlMove: selectedEntry.smartSlMove,
         goodEntry: selectedEntry.goodEntry,
-        nearVwap: selectedEntry.nearVwap,
         htfSignal: selectedEntry.htfSignal,
-        setupTaken: selectedEntry.setupTaken,
         notIntoLevel: selectedEntry.notIntoLevel,
-        noTradeOnSketchCandle: selectedEntry.noTradeOnSketchCandle,
+        avoidSketchyCandle: selectedEntry.avoidSketchyCandle,
         notes: selectedEntry.notes || '',
       });
       setHasChanges(false);
