@@ -29,6 +29,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleSidebar, toggleThemeMode } from '@/store/slices/uiSlice';
 import { clearUser, useLogoutMutation, api } from '@/store';
 import AccountSelector from './AccountSelector';
+import AccountBalance from './AccountBalance';
 
 export default function Header() {
   const dispatch = useAppDispatch();
@@ -111,7 +112,8 @@ export default function Header() {
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <Box sx={{ mr: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mr: 2 }}>
+          <AccountBalance />
           <AccountSelector />
         </Box>
 

@@ -44,7 +44,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, description, isSwingAccount } = body;
+    const { name, description, initialBalance, isSwingAccount } = body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
       return validationError('Account name is required');
@@ -64,6 +64,7 @@ export async function PUT(
       data: {
         name: name.trim(),
         description: description?.trim() || null,
+        initialBalance: typeof initialBalance === 'number' ? Math.max(0, initialBalance) : existing.initialBalance,
         isSwingAccount: isSwingAccount ?? existing.isSwingAccount,
       },
     });

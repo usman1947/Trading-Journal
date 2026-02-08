@@ -11,6 +11,7 @@ export interface Account {
   id: string;
   name: string;
   description?: string | null;
+  initialBalance: number;
   isSwingAccount: boolean;
   createdAt: string;
   updatedAt: string;

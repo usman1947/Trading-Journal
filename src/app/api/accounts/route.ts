@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
-    const { name, description, isSwingAccount } = body;
+    const { name, description, initialBalance, isSwingAccount } = body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
       return validationError('Account name is required');
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         description: description?.trim() || null,
+        initialBalance: typeof initialBalance === 'number' ? Math.max(0, initialBalance) : 0,
         isSwingAccount: isSwingAccount ?? false,
         userId: user.id,
       },

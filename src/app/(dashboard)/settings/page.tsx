@@ -29,6 +29,7 @@ import {
   Paper,
   Grid,
   Avatar,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -54,11 +55,13 @@ import {
   useUpdateProfileMutation,
 } from '@/store';
 import { Account } from '@/types';
+import { formatCurrency } from '@/utils/formatters';
 
 interface AccountDialogData {
   id?: string;
   name: string;
   description: string;
+  initialBalance: number;
   isSwingAccount: boolean;
 }
 
@@ -92,6 +95,7 @@ export default function SettingsPage() {
   const [accountDialogData, setAccountDialogData] = useState<AccountDialogData>({
     name: '',
     description: '',
+    initialBalance: 0,
     isSwingAccount: false,
   });
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
@@ -244,17 +248,18 @@ export default function SettingsPage() {
         id: account.id,
         name: account.name,
         description: account.description || '',
+        initialBalance: account.initialBalance ?? 0,
         isSwingAccount: account.isSwingAccount || false,
       });
     } else {
-      setAccountDialogData({ name: '', description: '', isSwingAccount: false });
+      setAccountDialogData({ name: '', description: '', initialBalance: 0, isSwingAccount: false });
     }
     setAccountDialogOpen(true);
   };
 
   const handleCloseAccountDialog = () => {
     setAccountDialogOpen(false);
-    setAccountDialogData({ name: '', description: '', isSwingAccount: false });
+    setAccountDialogData({ name: '', description: '', initialBalance: 0, isSwingAccount: false });
   };
 
   const handleSaveAccount = async () => {
@@ -264,6 +269,7 @@ export default function SettingsPage() {
           id: accountDialogData.id,
           name: accountDialogData.name,
           description: accountDialogData.description || null,
+          initialBalance: accountDialogData.initialBalance,
           isSwingAccount: accountDialogData.isSwingAccount,
         }).unwrap();
         dispatch(showSnackbar({ message: 'Account updated successfully', severity: 'success' }));
@@ -271,6 +277,7 @@ export default function SettingsPage() {
         await createAccount({
           name: accountDialogData.name,
           description: accountDialogData.description || null,
+          initialBalance: accountDialogData.initialBalance,
           isSwingAccount: accountDialogData.isSwingAccount,
         }).unwrap();
         dispatch(showSnackbar({ message: 'Account created successfully', severity: 'success' }));
@@ -577,7 +584,16 @@ export default function SettingsPage() {
                         <ListItem>
                           <ListItemText
                             primary={account.name}
-                            secondary={account.description || 'No description'}
+                            secondary={
+                              [
+                                account.description || 'No description',
+                                account.initialBalance > 0
+                                  ? `Starting balance: ${formatCurrency(account.initialBalance)}`
+                                  : null,
+                              ]
+                                .filter(Boolean)
+                                .join(' | ')
+                            }
                           />
                           <ListItemSecondaryAction>
                             <IconButton
@@ -629,6 +645,27 @@ export default function SettingsPage() {
               fullWidth
               multiline
               rows={2}
+            />
+            <TextField
+              label="Starting Balance"
+              type="number"
+              value={accountDialogData.initialBalance}
+              onChange={(e) =>
+                setAccountDialogData({
+                  ...accountDialogData,
+                  initialBalance: Math.max(0, Number(e.target.value)),
+                })
+              }
+              fullWidth
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">$</InputAdornment>
+                  ),
+                },
+                htmlInput: { min: 0, step: 0.01 },
+              }}
+              helperText="Set your starting balance to track running account value in the header"
             />
             <FormControlLabel
               control={
