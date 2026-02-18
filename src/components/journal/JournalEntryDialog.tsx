@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import {
   Box,
@@ -41,6 +41,50 @@ import {
 import { useAppDispatch } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import type { Mood, DailyJournal, JournalScreenshot } from '@/types';
+
+function PendingFilePreview({ file, index, onRemove }: { file: File; index: number; onRemove: (index: number) => void }) {
+  const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => {
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  return (
+    <Box
+      sx={{
+        position: 'relative',
+        width: 80,
+        height: 80,
+        borderRadius: 1,
+        overflow: 'hidden',
+        border: '2px solid',
+        borderColor: 'primary.main',
+      }}
+    >
+      <Image
+        src={previewUrl}
+        alt={file.name}
+        fill
+        style={{ objectFit: 'cover' }}
+        unoptimized
+      />
+      <IconButton
+        size="small"
+        onClick={() => onRemove(index)}
+        sx={{
+          position: 'absolute',
+          top: 2,
+          right: 2,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          color: 'white',
+          padding: '2px',
+          '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
+        }}
+      >
+        <CloseIcon sx={{ fontSize: 14 }} />
+      </IconButton>
+    </Box>
+  );
+}
 
 interface JournalEntryDialogProps {
   open: boolean;
@@ -120,13 +164,14 @@ export default function JournalEntryDialog({
         premarketPlan,
       }).unwrap();
 
-      // Upload pending files if any
-      if (pendingFiles.length > 0 && result.id) {
+      // Upload pending files if any (works for both new and editing)
+      const journalId = result.id || entry?.id;
+      if (pendingFiles.length > 0 && journalId) {
         const formData = new FormData();
         pendingFiles.forEach((file) => {
           formData.append('files', file);
         });
-        await uploadScreenshots({ journalId: result.id, formData }).unwrap();
+        await uploadScreenshots({ journalId, formData }).unwrap();
       }
 
       dispatch(showSnackbar({ message: 'Journal entry saved', severity: 'success' }));
@@ -151,26 +196,8 @@ export default function JournalEntryDialog({
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
     const newFiles = Array.from(files);
-
-    if (isEditing && entry) {
-      // Upload immediately for existing entries
-      const formData = new FormData();
-      newFiles.forEach((file) => {
-        formData.append('files', file);
-      });
-      uploadScreenshots({ journalId: entry.id, formData })
-        .unwrap()
-        .then(() => {
-          dispatch(showSnackbar({ message: 'Screenshots uploaded', severity: 'success' }));
-        })
-        .catch(() => {
-          dispatch(showSnackbar({ message: 'Failed to upload screenshots', severity: 'error' }));
-        });
-    } else {
-      // Queue files for new entries
-      setPendingFiles((prev) => [...prev, ...newFiles]);
-    }
-  }, [isEditing, entry, uploadScreenshots, dispatch]);
+    setPendingFiles((prev) => [...prev, ...newFiles]);
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -416,47 +443,15 @@ export default function JournalEntryDialog({
             )}
           </Box>
 
-          {/* Pending Files (for new entries) */}
+          {/* Pending Files Preview */}
           {pendingFiles.length > 0 && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                Files to upload ({pendingFiles.length}):
+                Ready to upload ({pendingFiles.length}):
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {pendingFiles.map((file, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      position: 'relative',
-                      width: 80,
-                      height: 80,
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Image
-                      src={URL.createObjectURL(file)}
-                      alt={file.name}
-                      fill
-                      style={{ objectFit: 'cover' }}
-                      unoptimized
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRemovePendingFile(index)}
-                      sx={{
-                        position: 'absolute',
-                        top: 2,
-                        right: 2,
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        color: 'white',
-                        padding: '2px',
-                        '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
-                      }}
-                    >
-                      <CloseIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                  </Box>
+                  <PendingFilePreview key={index} file={file} index={index} onRemove={handleRemovePendingFile} />
                 ))}
               </Box>
             </Box>

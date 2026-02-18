@@ -10,12 +10,14 @@ import {
   ImageListItem,
   ImageListItemBar,
   Dialog,
+  Button,
   CircularProgress,
 } from '@mui/material';
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  Save as SaveIcon,
 } from '@mui/icons-material';
 import { useUploadScreenshotsMutation, useDeleteScreenshotMutation } from '@/store';
 import type { Screenshot } from '@/types';
@@ -49,27 +51,23 @@ export default function ScreenshotUpload(props: ScreenshotUploadProps) {
   const [deleteScreenshot, { isLoading: deleting }] = useDeleteScreenshotMutation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [editPendingFiles, setEditPendingFiles] = useState<PendingFile[]>([]);
 
   const handleFileChange = useCallback(
-    async (files: FileList | null) => {
+    (files: FileList | null) => {
       if (!files || files.length === 0) return;
 
       if (mode === 'edit') {
-        const formData = new FormData();
-        Array.from(files).forEach((file) => {
-          formData.append('files', file);
-        });
-
-        try {
-          await uploadScreenshots({ tradeId: props.tradeId, formData }).unwrap();
-        } catch (error) {
-          console.error('Failed to upload screenshots:', error);
-        }
+        const newFiles: PendingFile[] = Array.from(files).map((file) => ({
+          file,
+          preview: URL.createObjectURL(file),
+        }));
+        setEditPendingFiles((prev) => [...prev, ...newFiles]);
       } else {
         props.onFileSelect(files);
       }
     },
-    [mode, props, uploadScreenshots]
+    [mode, props]
   );
 
   const handleDrop = useCallback(
@@ -94,6 +92,34 @@ export default function ScreenshotUpload(props: ScreenshotUploadProps) {
       props.onRemovePendingFile(index);
     }
   };
+
+  const handleRemoveEditPending = (index: number) => {
+    setEditPendingFiles((prev) => {
+      const newFiles = [...prev];
+      URL.revokeObjectURL(newFiles[index].preview);
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
+  };
+
+  const handleUploadPending = async () => {
+    if (mode !== 'edit' || editPendingFiles.length === 0) return;
+
+    const formData = new FormData();
+    editPendingFiles.forEach((pf) => {
+      formData.append('files', pf.file);
+    });
+
+    try {
+      await uploadScreenshots({ tradeId: props.tradeId, formData }).unwrap();
+      editPendingFiles.forEach((pf) => URL.revokeObjectURL(pf.preview));
+      setEditPendingFiles([]);
+    } catch (error) {
+      console.error('Failed to upload screenshots:', error);
+    }
+  };
+
+  const pendingFiles = mode === 'create' ? props.pendingFiles : editPendingFiles;
 
   return (
     <Box>
@@ -133,16 +159,10 @@ export default function ScreenshotUpload(props: ScreenshotUploadProps) {
           }
         }}
       >
-        {uploading ? (
-          <CircularProgress size={24} />
-        ) : (
-          <>
-            <UploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-            <Typography color="text.secondary">
-              Drag & drop images here or click to upload
-            </Typography>
-          </>
-        )}
+        <UploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+        <Typography color="text.secondary">
+          Drag & drop images here or click to upload
+        </Typography>
       </Box>
 
       {/* Screenshot Gallery - Edit Mode */}
@@ -187,53 +207,76 @@ export default function ScreenshotUpload(props: ScreenshotUploadProps) {
         </ImageList>
       )}
 
-      {/* Pending Files Preview - Create Mode */}
-      {mode === 'create' && props.pendingFiles.length > 0 && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {props.pendingFiles.map((pf, index) => (
-            <Box
-              key={index}
-              sx={{
-                position: 'relative',
-                width: 100,
-                height: 100,
-                borderRadius: 1,
-                overflow: 'hidden',
-                border: '1px solid',
-                borderColor: 'divider',
-                cursor: 'pointer',
-              }}
-              onClick={() => setSelectedImage(pf.preview)}
-            >
-              <Image
-                src={pf.preview}
-                alt={pf.file.name}
-                fill
-                style={{ objectFit: 'cover' }}
-                unoptimized
-              />
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemovePending(index);
-                }}
+      {/* Pending Files Preview */}
+      {pendingFiles.length > 0 && (
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+            Ready to upload ({pendingFiles.length}):
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {pendingFiles.map((pf, index) => (
+              <Box
+                key={index}
                 sx={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  backgroundColor: 'rgba(0,0,0,0.6)',
-                  color: 'white',
-                  padding: '4px',
-                  '&:hover': {
-                    backgroundColor: 'error.main',
-                  },
+                  position: 'relative',
+                  width: 100,
+                  height: 100,
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  border: '2px solid',
+                  borderColor: 'primary.main',
+                  cursor: 'pointer',
                 }}
+                onClick={() => setSelectedImage(pf.preview)}
               >
-                <DeleteIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Box>
-          ))}
+                <Image
+                  src={pf.preview}
+                  alt={pf.file.name}
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  unoptimized
+                />
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (mode === 'create') {
+                      handleRemovePending(index);
+                    } else {
+                      handleRemoveEditPending(index);
+                    }
+                  }}
+                  sx={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 2,
+                    backgroundColor: 'rgba(0,0,0,0.6)',
+                    color: 'white',
+                    padding: '4px',
+                    '&:hover': {
+                      backgroundColor: 'error.main',
+                    },
+                  }}
+                >
+                  <DeleteIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Upload button for edit mode */}
+          {mode === 'edit' && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+              onClick={handleUploadPending}
+              disabled={uploading}
+              sx={{ mt: 1.5 }}
+            >
+              {uploading ? 'Uploading...' : `Save ${editPendingFiles.length} Screenshot${editPendingFiles.length > 1 ? 's' : ''}`}
+            </Button>
+          )}
         </Box>
       )}
 

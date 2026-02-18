@@ -314,7 +314,7 @@ export default function StrategiesPage() {
   const [createStrategy] = useCreateStrategyMutation();
   const [updateStrategy] = useUpdateStrategyMutation();
   const [deleteStrategy, { isLoading: deleting }] = useDeleteStrategyMutation();
-  const [uploadScreenshots, { isLoading: uploading }] = useUploadStrategyScreenshotsMutation();
+  const [uploadScreenshots] = useUploadStrategyScreenshotsMutation();
   const [deleteScreenshot] = useDeleteStrategyScreenshotMutation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -327,6 +327,7 @@ export default function StrategiesPage() {
   const [newRule, setNewRule] = useState('');
   const [isSwingStrategy, setIsSwingStrategy] = useState(false);
   const [localScreenshots, setLocalScreenshots] = useState<StrategyScreenshot[]>([]);
+  const [pendingStrategyFiles, setPendingStrategyFiles] = useState<{ file: File; preview: string }[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [expandedStrategyId, setExpandedStrategyId] = useState<string | null>(null);
@@ -358,6 +359,7 @@ export default function StrategiesPage() {
     }
     setNewSetup('');
     setNewRule('');
+    setPendingStrategyFiles([]);
     setDialogOpen(true);
   };
 
@@ -372,6 +374,8 @@ export default function StrategiesPage() {
     setNewRule('');
     setIsSwingStrategy(false);
     setLocalScreenshots([]);
+    pendingStrategyFiles.forEach((pf) => URL.revokeObjectURL(pf.preview));
+    setPendingStrategyFiles([]);
   };
 
   const handleAddSetup = () => {
@@ -412,29 +416,28 @@ export default function StrategiesPage() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0 || !editingStrategy) return;
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
 
-    const formData = new FormData();
-    Array.from(e.target.files).forEach((file) => {
-      formData.append('files', file);
-    });
-
-    try {
-      const result = await uploadScreenshots({
-        strategyId: editingStrategy.id,
-        formData,
-      }).unwrap();
-      setLocalScreenshots([...localScreenshots, ...result]);
-      dispatch(showSnackbar({ message: 'Screenshots uploaded', severity: 'success' }));
-    } catch {
-      dispatch(showSnackbar({ message: 'Failed to upload screenshots', severity: 'error' }));
-    }
+    const newFiles = Array.from(e.target.files).map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setPendingStrategyFiles((prev) => [...prev, ...newFiles]);
 
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleRemovePendingFile = (index: number) => {
+    setPendingStrategyFiles((prev) => {
+      const newFiles = [...prev];
+      URL.revokeObjectURL(newFiles[index].preview);
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
   };
 
   const handleDeleteScreenshot = async (screenshotId: string) => {
@@ -454,13 +457,29 @@ export default function StrategiesPage() {
 
   const handleSave = async () => {
     try {
+      let strategyId: string;
       if (editingStrategy) {
         await updateStrategy({ id: editingStrategy.id, name, description, setups, rules, isSwingStrategy }).unwrap();
-        dispatch(showSnackbar({ message: 'Strategy updated', severity: 'success' }));
+        strategyId = editingStrategy.id;
       } else {
-        await createStrategy({ name, description, setups, rules, isSwingStrategy }).unwrap();
-        dispatch(showSnackbar({ message: 'Strategy created', severity: 'success' }));
+        const created = await createStrategy({ name, description, setups, rules, isSwingStrategy }).unwrap();
+        strategyId = created.id;
       }
+
+      // Upload pending screenshots if any
+      if (pendingStrategyFiles.length > 0) {
+        const formData = new FormData();
+        pendingStrategyFiles.forEach((pf) => {
+          formData.append('files', pf.file);
+        });
+        try {
+          await uploadScreenshots({ strategyId, formData }).unwrap();
+        } catch {
+          console.error('Failed to upload strategy screenshots');
+        }
+      }
+
+      dispatch(showSnackbar({ message: editingStrategy ? 'Strategy updated' : 'Strategy created', severity: 'success' }));
       handleCloseDialog();
     } catch {
       dispatch(showSnackbar({ message: 'Failed to save strategy', severity: 'error' }));
@@ -686,93 +705,148 @@ export default function StrategiesPage() {
             )}
           </Box>
 
-          {/* Example Screenshots Section - Only show when editing */}
-          {editingStrategy && (
-            <>
-              <Divider sx={{ my: 3 }} />
+          {/* Example Screenshots Section */}
+          <Divider sx={{ my: 3 }} />
 
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  <ImageIcon color="primary" fontSize="small" />
-                  <Typography variant="subtitle2">
-                    Example Screenshots
-                  </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-                  Upload example charts/screenshots for this strategy
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <ImageIcon color="primary" fontSize="small" />
+              <Typography variant="subtitle2">
+                Example Screenshots
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+              {editingStrategy
+                ? 'Upload example charts/screenshots for this strategy'
+                : 'Screenshots will be uploaded after creating the strategy'}
+            </Typography>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+            />
+
+            <Button
+              variant="outlined"
+              startIcon={<UploadIcon />}
+              onClick={() => fileInputRef.current?.click()}
+              sx={{ mb: 2 }}
+            >
+              Add Screenshots
+            </Button>
+
+            {/* Pending file previews */}
+            {pendingStrategyFiles.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                  Ready to upload ({pendingStrategyFiles.length}):
                 </Typography>
-
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*"
-                  multiple
-                  style={{ display: 'none' }}
-                />
-
-                <Button
-                  variant="outlined"
-                  startIcon={uploading ? <CircularProgress size={16} /> : <UploadIcon />}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  sx={{ mb: 2 }}
-                >
-                  {uploading ? 'Uploading...' : 'Upload Screenshots'}
-                </Button>
-
-                {localScreenshots.length > 0 && (
-                  <Grid container spacing={1}>
-                    {localScreenshots.map((screenshot) => (
-                      <Grid size={{ xs: 4 }} key={screenshot.id}>
+                <Grid container spacing={1}>
+                  {pendingStrategyFiles.map((pf, index) => (
+                    <Grid size={{ xs: 4 }} key={index}>
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          paddingTop: '75%',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                          border: '2px solid',
+                          borderColor: 'primary.main',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => setPreviewImage(pf.preview)}
+                      >
                         <Box
+                          component="img"
+                          src={pf.preview}
+                          alt={pf.file.name}
                           sx={{
-                            position: 'relative',
-                            paddingTop: '75%',
-                            borderRadius: 1,
-                            overflow: 'hidden',
-                            bgcolor: 'action.hover',
-                            cursor: 'pointer',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
                           }}
-                          onClick={() => setPreviewImage(screenshot.path)}
+                        />
+                        <IconButton
+                          size="small"
+                          sx={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 4,
+                            bgcolor: 'rgba(0,0,0,0.5)',
+                            '&:hover': { bgcolor: 'error.main' },
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemovePendingFile(index);
+                          }}
                         >
-                          <Box
-                            component="img"
-                            src={screenshot.path}
-                            alt={screenshot.filename}
-                            sx={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                            }}
-                          />
-                          <IconButton
-                            size="small"
-                            sx={{
-                              position: 'absolute',
-                              top: 4,
-                              right: 4,
-                              bgcolor: 'rgba(0,0,0,0.5)',
-                              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteScreenshot(screenshot.id);
-                            }}
-                          >
-                            <CloseIcon fontSize="small" sx={{ color: 'white' }} />
-                          </IconButton>
-                        </Box>
-                      </Grid>
-                    ))}
-                  </Grid>
-                )}
+                          <CloseIcon fontSize="small" sx={{ color: 'white' }} />
+                        </IconButton>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
               </Box>
-            </>
-          )}
+            )}
+
+            {/* Existing screenshots (edit mode) */}
+            {editingStrategy && localScreenshots.length > 0 && (
+              <Grid container spacing={1}>
+                {localScreenshots.map((screenshot) => (
+                  <Grid size={{ xs: 4 }} key={screenshot.id}>
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        paddingTop: '75%',
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        bgcolor: 'action.hover',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setPreviewImage(screenshot.path)}
+                    >
+                      <Box
+                        component="img"
+                        src={screenshot.path}
+                        alt={screenshot.filename}
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          top: 4,
+                          right: 4,
+                          bgcolor: 'rgba(0,0,0,0.5)',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteScreenshot(screenshot.id);
+                        }}
+                      >
+                        <CloseIcon fontSize="small" sx={{ color: 'white' }} />
+                      </IconButton>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
