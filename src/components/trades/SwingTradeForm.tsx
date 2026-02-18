@@ -90,9 +90,8 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
   const [partials, setPartials] = useState<(number | null)[]>(() => {
     if (trade?.partials) {
       // Handle partials as JSON string from database or as array
-      const parsed = typeof trade.partials === 'string'
-        ? JSON.parse(trade.partials)
-        : trade.partials;
+      const parsed =
+        typeof trade.partials === 'string' ? JSON.parse(trade.partials) : trade.partials;
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
       }
@@ -131,19 +130,24 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
 
   const defaultRisk = useMemo(() => settings?.defaultRisk || 100, [settings?.defaultRisk]);
 
-  const initialValues = useMemo<SwingTradeFormData>(() => ({
-    symbol: trade?.symbol || '',
-    side: trade?.side || 'LONG',
-    tradeTime: trade?.tradeTime || new Date().toISOString(),
-    exitTime: trade?.exitTime || null,
-    risk: trade?.risk ?? defaultRisk,
-    partials: trade?.partials
-      ? (typeof trade.partials === 'string' ? JSON.parse(trade.partials) : trade.partials)
-      : [],
-    notes: trade?.notes || '',
-    strategyId: trade?.strategyId || '',
-    accountId: trade?.accountId ?? selectedAccountId,
-  }), [trade, defaultRisk, selectedAccountId]);
+  const initialValues = useMemo<SwingTradeFormData>(
+    () => ({
+      symbol: trade?.symbol || '',
+      side: trade?.side || 'LONG',
+      tradeTime: trade?.tradeTime || new Date().toISOString(),
+      exitTime: trade?.exitTime || null,
+      risk: trade?.risk ?? defaultRisk,
+      partials: trade?.partials
+        ? typeof trade.partials === 'string'
+          ? JSON.parse(trade.partials)
+          : trade.partials
+        : [],
+      notes: trade?.notes || '',
+      strategyId: trade?.strategyId || '',
+      accountId: trade?.accountId ?? selectedAccountId,
+    }),
+    [trade, defaultRisk, selectedAccountId]
+  );
 
   // Calculate total result from partials
   const totalResult = useMemo(() => {
@@ -201,10 +205,14 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
             }
           }
 
-          dispatch(showSnackbar({ message: 'Swing trade created successfully', severity: 'success' }));
+          dispatch(
+            showSnackbar({ message: 'Swing trade created successfully', severity: 'success' })
+          );
         } else {
           await updateTrade({ id: trade!.id, ...tradeData }).unwrap();
-          dispatch(showSnackbar({ message: 'Swing trade updated successfully', severity: 'success' }));
+          dispatch(
+            showSnackbar({ message: 'Swing trade updated successfully', severity: 'success' })
+          );
         }
 
         router.push('/trades');
@@ -336,7 +344,14 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
                 {/* Partials Section */}
                 <Grid size={{ xs: 12 }}>
                   <Box sx={{ mt: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 2,
+                      }}
+                    >
                       <Typography variant="subtitle1" fontWeight="medium">
                         Partials
                       </Typography>
@@ -351,8 +366,13 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
                     </Box>
 
                     {partials.length === 0 ? (
-                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                        No partials added yet. Click &quot;Add Partial&quot; to record profits/losses.
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ textAlign: 'center', py: 2 }}
+                      >
+                        No partials added yet. Click &quot;Add Partial&quot; to record
+                        profits/losses.
                       </Typography>
                     ) : (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -379,7 +399,12 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
                               placeholder="Enter profit/loss"
                               sx={{
                                 '& .MuiInputBase-input': {
-                                  color: partial === null ? 'inherit' : (partial >= 0 ? 'success.main' : 'error.main'),
+                                  color:
+                                    partial === null
+                                      ? 'inherit'
+                                      : partial >= 0
+                                        ? 'success.main'
+                                        : 'error.main',
                                 },
                               }}
                             />
@@ -540,20 +565,10 @@ export default function SwingTradeForm({ trade, mode }: SwingTradeFormProps) {
           </Card>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={() => router.back()}
-              disabled={isLoading}
-            >
+            <Button variant="outlined" fullWidth onClick={() => router.back()} disabled={isLoading}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={isLoading}
-            >
+            <Button type="submit" variant="contained" fullWidth disabled={isLoading}>
               {isLoading ? 'Saving...' : mode === 'create' ? 'Create Trade' : 'Update Trade'}
             </Button>
           </Box>

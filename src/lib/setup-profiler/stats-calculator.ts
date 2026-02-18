@@ -28,18 +28,12 @@ export function calculateClusterStats(trades: ClusterableTrade[]): ClusterStats 
   const totalPnL = completedTrades.reduce((sum, t) => sum + (t.result ?? 0), 0) - totalCommissions;
 
   // Win rate (excludes BE trades)
-  const winRate = nonBETrades.length > 0
-    ? (winningTrades.length / nonBETrades.length) * 100
-    : 0;
+  const winRate = nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0;
   const lossRate = 100 - winRate;
 
   // Average win/loss
-  const avgWin = winningTrades.length > 0
-    ? grossProfit / winningTrades.length
-    : 0;
-  const avgLoss = losingTrades.length > 0
-    ? grossLoss / losingTrades.length
-    : 0;
+  const avgWin = winningTrades.length > 0 ? grossProfit / winningTrades.length : 0;
+  const avgLoss = losingTrades.length > 0 ? grossLoss / losingTrades.length : 0;
 
   // R-multiple calculations
   const avgRMultiple = calculateAverageRMultiple(nonBETrades);
@@ -47,38 +41,43 @@ export function calculateClusterStats(trades: ClusterableTrade[]): ClusterStats 
   const avgLoserR = calculateAverageRMultiple(losingTrades);
   const totalRMultiple = nonBETrades
     .filter((t) => t.risk > 0)
-    .reduce((sum, t) => sum + ((t.result ?? 0) / t.risk), 0);
+    .reduce((sum, t) => sum + (t.result ?? 0) / t.risk, 0);
 
   // Expectancy calculations
-  const expectancy = (winRate / 100 * avgWin) - (lossRate / 100 * avgLoss);
-  const expectancyR = (winRate / 100 * avgWinnerR) - (lossRate / 100 * Math.abs(avgLoserR));
+  const expectancy = (winRate / 100) * avgWin - (lossRate / 100) * avgLoss;
+  const expectancyR = (winRate / 100) * avgWinnerR - (lossRate / 100) * Math.abs(avgLoserR);
 
   // Profit factor and payoff ratio
-  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? Infinity : 0);
-  const payoffRatio = avgLoss > 0 ? avgWin / avgLoss : (avgWin > 0 ? Infinity : 0);
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+  const payoffRatio = avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? Infinity : 0;
 
   // Risk metrics
   const totalRisk = completedTrades.reduce((sum, t) => sum + (t.risk ?? 0), 0);
 
   // Execution quality
-  const executionRate = completedTrades.length > 0
-    ? (passTrades.length / completedTrades.length) * 100
-    : 0;
+  const executionRate =
+    completedTrades.length > 0 ? (passTrades.length / completedTrades.length) * 100 : 0;
 
   const passNonBE = passTrades.filter((t) => !t.isBreakEven);
   const failNonBE = failTrades.filter((t) => !t.isBreakEven);
-  const passTradeWinRate = passNonBE.length > 0
-    ? (passNonBE.filter((t) => (t.result ?? 0) > 0).length / passNonBE.length) * 100
-    : 0;
-  const failTradeWinRate = failNonBE.length > 0
-    ? (failNonBE.filter((t) => (t.result ?? 0) > 0).length / failNonBE.length) * 100
-    : 0;
+  const passTradeWinRate =
+    passNonBE.length > 0
+      ? (passNonBE.filter((t) => (t.result ?? 0) > 0).length / passNonBE.length) * 100
+      : 0;
+  const failTradeWinRate =
+    failNonBE.length > 0
+      ? (failNonBE.filter((t) => (t.result ?? 0) > 0).length / failNonBE.length) * 100
+      : 0;
 
   // Hold duration calculations
-  const tradesWithDuration = completedTrades.filter((t) => t.holdDurationMins !== null && t.holdDurationMins !== undefined);
-  const avgHoldDurationMins = tradesWithDuration.length > 0
-    ? tradesWithDuration.reduce((sum, t) => sum + (t.holdDurationMins ?? 0), 0) / tradesWithDuration.length
-    : 0;
+  const tradesWithDuration = completedTrades.filter(
+    (t) => t.holdDurationMins !== null && t.holdDurationMins !== undefined
+  );
+  const avgHoldDurationMins =
+    tradesWithDuration.length > 0
+      ? tradesWithDuration.reduce((sum, t) => sum + (t.holdDurationMins ?? 0), 0) /
+        tradesWithDuration.length
+      : 0;
 
   // Confidence level based on sample size
   const confidenceLevel = getConfidenceLevel(completedTrades.length);

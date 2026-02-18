@@ -93,15 +93,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
               root: {
                 borderRadius: 12,
                 backgroundImage: 'none', // Remove default MUI gradient
-                boxShadow: mode === 'light'
-                  ? '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)'
-                  : '0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3)',
+                boxShadow:
+                  mode === 'light'
+                    ? '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)'
+                    : '0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3)',
                 border: `1px solid ${mode === 'light' ? '#e2e8f0' : 'rgba(255, 255, 255, 0.05)'}`,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  boxShadow: mode === 'light'
-                    ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
-                    : '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
+                  boxShadow:
+                    mode === 'light'
+                      ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
+                      : '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
                   transform: 'translateY(-2px)',
                 },
               },
@@ -123,7 +125,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
               },
               outlined: {
                 '&:hover': {
-                  backgroundColor: mode === 'dark' ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.04)',
+                  backgroundColor:
+                    mode === 'dark' ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.04)',
                 },
               },
             },
@@ -228,9 +231,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             styleOverrides: {
               root: {
                 '&.Mui-focused': {
-                  boxShadow: mode === 'light'
-                    ? '0 0 0 3px rgba(245, 158, 11, 0.1)'
-                    : '0 0 0 3px rgba(245, 158, 11, 0.2)',
+                  boxShadow:
+                    mode === 'light'
+                      ? '0 0 0 3px rgba(245, 158, 11, 0.1)'
+                      : '0 0 0 3px rgba(245, 158, 11, 0.2)',
                 },
               },
             },
@@ -252,9 +256,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
               paper: {
                 borderRadius: 8,
                 marginTop: 4,
-                boxShadow: mode === 'light'
-                  ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
-                  : '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
+                boxShadow:
+                  mode === 'light'
+                    ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                    : '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
               },
             },
           },
@@ -419,12 +424,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       <MUIThemeProvider theme={theme}>
         <CssBaseline />
         <style jsx global>{`
-          [class*="MuiPickersInputBase-root"],
-          [class*="MuiPickersOutlinedInput-root"] {
+          [class*='MuiPickersInputBase-root'],
+          [class*='MuiPickersOutlinedInput-root'] {
             border-radius: 8px !important;
           }
-          [class*="MuiPickersInputBase-root"] fieldset,
-          [class*="MuiPickersOutlinedInput-root"] fieldset {
+          [class*='MuiPickersInputBase-root'] fieldset,
+          [class*='MuiPickersOutlinedInput-root'] fieldset {
             border-radius: 8px !important;
           }
         `}</style>

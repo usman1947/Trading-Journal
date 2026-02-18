@@ -1,15 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Skeleton,
-  Alert,
-  AlertTitle,
-} from '@mui/material';
+import { Box, Typography, Card, CardContent, Skeleton, Alert, AlertTitle } from '@mui/material';
 import { useAppSelector } from '@/store/hooks';
 import { useGetSetupProfilerQuery } from '@/store';
 import {
@@ -18,7 +10,11 @@ import {
   SingleDimensionBreakdown,
   DataQualityBanner,
 } from '@/components/setup-profiler';
-import type { SetupProfilerResultsV2, DimensionAnalysis, PatternInsight } from '@/lib/setup-profiler';
+import type {
+  SetupProfilerResultsV2,
+  DimensionAnalysis,
+  PatternInsight,
+} from '@/lib/setup-profiler';
 
 export default function SetupProfilerPage() {
   const activeDimension = useAppSelector((state) => state.setupProfiler.activeDimension);
@@ -28,9 +24,12 @@ export default function SetupProfilerPage() {
   const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
 
   // Build API query params
-  const queryParams = useMemo(() => ({
-    accountId: accountFilter,
-  }), [accountFilter]);
+  const queryParams = useMemo(
+    () => ({
+      accountId: accountFilter,
+    }),
+    [accountFilter]
+  );
 
   const { data, isLoading, error } = useGetSetupProfilerQuery(queryParams);
 
@@ -110,11 +109,7 @@ export default function SetupProfilerPage() {
 
       {/* Hero Insights - Most Important Finding */}
       <Box sx={{ mb: 3 }}>
-        <HeroInsightCard
-          topEdge={topEdge}
-          topLeak={topLeak}
-          isLoading={isLoading}
-        />
+        <HeroInsightCard topEdge={topEdge} topLeak={topLeak} isLoading={isLoading} />
       </Box>
 
       {/* Dimension Analysis Section */}
@@ -125,10 +120,7 @@ export default function SetupProfilerPage() {
 
           {/* Active Dimension Breakdown */}
           <Box sx={{ p: 3 }}>
-            <SingleDimensionBreakdown
-              analysis={activeAnalysis}
-              isLoading={isLoading}
-            />
+            <SingleDimensionBreakdown analysis={activeAnalysis} isLoading={isLoading} />
           </Box>
         </CardContent>
       </Card>
@@ -138,7 +130,11 @@ export default function SetupProfilerPage() {
         <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
           Analyzed {profilerData.summary.tradesAnalyzed} trades
           {profilerData.summary.dateRange && (
-            <> from {new Date(profilerData.summary.dateRange.from).toLocaleDateString()} to {new Date(profilerData.summary.dateRange.to).toLocaleDateString()}</>
+            <>
+              {' '}
+              from {new Date(profilerData.summary.dateRange.from).toLocaleDateString()} to{' '}
+              {new Date(profilerData.summary.dateRange.to).toLocaleDateString()}
+            </>
           )}
         </Typography>
       )}

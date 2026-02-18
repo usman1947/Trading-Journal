@@ -5,6 +5,7 @@ import { handleApiError, validationError } from '@/lib/api-helpers';
 import { applyAccountFilter } from '@/lib/query-helpers';
 import { STRATEGY_WITH_RULES_INCLUDE } from '@/lib/prisma-includes';
 import { deserializeSetups, serializeSetups } from '@/utils/trade-calculations';
+import { createStrategySchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,11 +59,11 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
-    const { name, description, setups, rules, isSwingStrategy } = body;
-
-    if (!name) {
-      return validationError('Name is required');
+    const parsed = createStrategySchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
     }
+    const { name, description, setups, rules, isSwingStrategy } = parsed.data;
 
     const strategy = await prisma.strategy.create({
       data: {
@@ -71,14 +72,15 @@ export async function POST(request: NextRequest) {
         setups: serializeSetups(setups),
         isSwingStrategy: isSwingStrategy ?? false,
         userId: user.id,
-        rules: rules && rules.length > 0
-          ? {
-              create: rules.map((text: string, index: number) => ({
-                text,
-                order: index,
-              })),
-            }
-          : undefined,
+        rules:
+          rules && rules.length > 0
+            ? {
+                create: rules.map((text: string, index: number) => ({
+                  text,
+                  order: index,
+                })),
+              }
+            : undefined,
       },
       include: STRATEGY_WITH_RULES_INCLUDE,
     });

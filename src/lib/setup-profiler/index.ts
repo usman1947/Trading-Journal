@@ -68,24 +68,21 @@ export async function runSetupProfiler(
   clusters.sort((a, b) => b.classificationScore - a.classificationScore);
 
   // Extract top edges and leaks
-  const topEdges = clusters
-    .filter((c) => c.classification === 'EDGE')
-    .slice(0, 5);
+  const topEdges = clusters.filter((c) => c.classification === 'EDGE').slice(0, 5);
 
-  const topLeaks = clusters
-    .filter((c) => c.classification === 'LEAK')
-    .slice(0, 5);
+  const topLeaks = clusters.filter((c) => c.classification === 'LEAK').slice(0, 5);
 
   // Determine date range
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.tradeTime).getTime() - new Date(b.tradeTime).getTime()
   );
-  const dateRange = trades.length > 0
-    ? {
-        from: new Date(sortedTrades[0].tradeTime).toISOString(),
-        to: new Date(sortedTrades[sortedTrades.length - 1].tradeTime).toISOString(),
-      }
-    : null;
+  const dateRange =
+    trades.length > 0
+      ? {
+          from: new Date(sortedTrades[0].tradeTime).toISOString(),
+          to: new Date(sortedTrades[sortedTrades.length - 1].tradeTime).toISOString(),
+        }
+      : null;
 
   return {
     overallStats,
@@ -103,10 +100,7 @@ export async function runSetupProfiler(
  * Fetch trades from database with filters applied.
  * Respects account filtering (null accountId = paper account).
  */
-async function fetchTrades(
-  userId: string,
-  filters: TradeFilters
-): Promise<ClusterableTrade[]> {
+async function fetchTrades(userId: string, filters: TradeFilters): Promise<ClusterableTrade[]> {
   const where: Record<string, unknown> = {
     result: { not: null }, // Only completed trades
   };
@@ -144,11 +138,7 @@ async function fetchTrades(
   });
 
   // Apply time-of-day filter if specified
-  const filteredTrades = filterByTimeOfDay(
-    allTrades,
-    filters.timeAfter,
-    filters.timeBefore
-  );
+  const filteredTrades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // Map to ClusterableTrade type
   return filteredTrades.map((t) => ({
@@ -170,20 +160,13 @@ async function fetchTrades(
 /**
  * Generate clusters for the selected dimensions.
  */
-function generateClusters(
-  trades: ClusterableTrade[],
-  config: SetupProfilerConfig
-): Cluster[] {
+function generateClusters(trades: ClusterableTrade[], config: SetupProfilerConfig): Cluster[] {
   const clusters: Cluster[] = [];
   const { dimensions, timeGroupIntervalMins, minSampleSize } = config;
 
   if (dimensions.length === 1) {
     // Single dimension clustering
-    const groups = groupTradesByDimension(
-      trades,
-      dimensions[0],
-      timeGroupIntervalMins
-    );
+    const groups = groupTradesByDimension(trades, dimensions[0], timeGroupIntervalMins);
 
     for (const [value, groupTrades] of Array.from(groups.entries())) {
       if (groupTrades.length < minSampleSize) continue;
@@ -206,11 +189,7 @@ function generateClusters(
     }
   } else {
     // Multi-dimensional clustering
-    const groups = groupTradesByMultipleDimensions(
-      trades,
-      dimensions,
-      timeGroupIntervalMins
-    );
+    const groups = groupTradesByMultipleDimensions(trades, dimensions, timeGroupIntervalMins);
 
     for (const [, group] of Array.from(groups.entries())) {
       if (group.trades.length < minSampleSize) continue;
@@ -272,12 +251,13 @@ export async function runSetupProfilerV2(
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.tradeTime).getTime() - new Date(b.tradeTime).getTime()
   );
-  const dateRange = trades.length > 0
-    ? {
-        from: new Date(sortedTrades[0].tradeTime).toISOString(),
-        to: new Date(sortedTrades[sortedTrades.length - 1].tradeTime).toISOString(),
-      }
-    : null;
+  const dateRange =
+    trades.length > 0
+      ? {
+          from: new Date(sortedTrades[0].tradeTime).toISOString(),
+          to: new Date(sortedTrades[sortedTrades.length - 1].tradeTime).toISOString(),
+        }
+      : null;
 
   // If insufficient data, return early
   if (trades.length < 3) {
@@ -331,4 +311,10 @@ export { calculateClusterStats } from './stats-calculator';
 export { classifyCluster, DEFAULT_CLASSIFICATION_CONFIG } from './classifier';
 export { getDisplayLabel, generateClusterId, generateDisplayKey } from './clustering';
 export type { ClusterableTrade } from './clustering';
-export type { SetupProfilerResultsV2, DimensionAnalysis, PatternInsight, AnalyzedSegment, PatternClassification } from './dimension-analyzer';
+export type {
+  SetupProfilerResultsV2,
+  DimensionAnalysis,
+  PatternInsight,
+  AnalyzedSegment,
+  PatternClassification,
+} from './dimension-analyzer';

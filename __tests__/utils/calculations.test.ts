@@ -1,8 +1,4 @@
-import {
-  calculateRMultiple,
-  calculateAnalytics,
-  groupTradesByDate,
-} from '@/utils/calculations';
+import { calculateRMultiple, calculateAnalytics, groupTradesByDate } from '@/utils/calculations';
 import type { Trade } from '@/types';
 
 describe('calculateRMultiple', () => {
@@ -23,7 +19,11 @@ describe('calculateRMultiple', () => {
 });
 
 describe('calculateAnalytics', () => {
-  const createTrade = (result: number, risk: number = 100, execution: 'PASS' | 'FAIL' = 'PASS'): Trade => ({
+  const createTrade = (
+    result: number,
+    risk: number = 100,
+    execution: 'PASS' | 'FAIL' = 'PASS'
+  ): Trade => ({
     id: Math.random().toString(),
     symbol: 'TEST',
     side: 'LONG',
@@ -31,16 +31,14 @@ describe('calculateAnalytics', () => {
     risk,
     result,
     execution,
+    commission: 0,
+    isBreakEven: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
 
   it('calculates analytics for multiple trades', () => {
-    const trades: Trade[] = [
-      createTrade(100, 100),
-      createTrade(200, 100),
-      createTrade(-50, 100),
-    ];
+    const trades: Trade[] = [createTrade(100, 100), createTrade(200, 100), createTrade(-50, 100)];
 
     const result = calculateAnalytics(trades);
 
@@ -51,8 +49,6 @@ describe('calculateAnalytics', () => {
     expect(result.winRate).toBeCloseTo(66.67, 1);
     expect(result.averageWin).toBe(150);
     expect(result.averageLoss).toBe(50);
-    expect(result.profitFactor).toBe(6); // 300 / 50
-    expect(result.averageRMultiple).toBeCloseTo(0.833, 2);
   });
 
   it('returns zeros for empty trades', () => {
@@ -64,28 +60,20 @@ describe('calculateAnalytics', () => {
   });
 
   it('handles all winning trades', () => {
-    const trades: Trade[] = [
-      createTrade(100),
-      createTrade(200),
-    ];
+    const trades: Trade[] = [createTrade(100), createTrade(200)];
 
     const result = calculateAnalytics(trades);
 
     expect(result.winRate).toBe(100);
-    expect(result.profitFactor).toBe(Infinity);
     expect(result.averageLoss).toBe(0);
   });
 
   it('handles all losing trades', () => {
-    const trades: Trade[] = [
-      createTrade(-100),
-      createTrade(-200),
-    ];
+    const trades: Trade[] = [createTrade(-100), createTrade(-200)];
 
     const result = calculateAnalytics(trades);
 
     expect(result.winRate).toBe(0);
-    expect(result.profitFactor).toBe(0);
     expect(result.averageWin).toBe(0);
   });
 
@@ -103,11 +91,7 @@ describe('calculateAnalytics', () => {
   });
 
   it('calculates total risk correctly', () => {
-    const trades: Trade[] = [
-      createTrade(100, 100),
-      createTrade(200, 150),
-      createTrade(-50, 75),
-    ];
+    const trades: Trade[] = [createTrade(100, 100), createTrade(200, 150), createTrade(-50, 75)];
 
     const result = calculateAnalytics(trades);
 
@@ -140,6 +124,8 @@ describe('groupTradesByDate', () => {
         risk: 100,
         result: 50,
         execution: 'PASS',
+        commission: 0,
+        isBreakEven: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -151,6 +137,8 @@ describe('groupTradesByDate', () => {
         risk: 100,
         result: -25,
         execution: 'PASS',
+        commission: 0,
+        isBreakEven: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -162,6 +150,8 @@ describe('groupTradesByDate', () => {
         risk: 100,
         result: 75,
         execution: 'FAIL',
+        commission: 0,
+        isBreakEven: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

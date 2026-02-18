@@ -10,10 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { syncEmbeddings } from '@/lib/rag';
-import {
-  validateEmbeddingSyncRequest,
-  formatZodError,
-} from '@/lib/rag-schemas';
+import { validateEmbeddingSyncRequest, formatZodError } from '@/lib/rag-schemas';
 import prisma from '@/lib/prisma';
 import type { EmbeddingSyncAPIResponse, DocumentSourceType } from '@/types/rag';
 
@@ -52,9 +49,7 @@ export const maxDuration = 300;
  * }
  * ```
  */
-export async function POST(
-  request: NextRequest
-): Promise<NextResponse<EmbeddingSyncAPIResponse>> {
+export async function POST(request: NextRequest): Promise<NextResponse<EmbeddingSyncAPIResponse>> {
   try {
     // Authenticate user
     const user = await getAuthUser();
@@ -141,11 +136,7 @@ export async function GET(): Promise<NextResponse> {
     }
 
     // Get counts for trades
-    const [
-      totalTrades,
-      tradesWithEmbeddings,
-      tradesWithContent,
-    ] = await Promise.all([
+    const [totalTrades, tradesWithEmbeddings, tradesWithContent] = await Promise.all([
       prisma.trade.count({ where: { userId: user.id } }),
       prisma.tradeEmbedding.count({
         where: { trade: { userId: user.id } },
@@ -153,10 +144,7 @@ export async function GET(): Promise<NextResponse> {
       prisma.trade.count({
         where: {
           userId: user.id,
-          OR: [
-            { notes: { not: null } },
-            { setup: { not: null } },
-          ],
+          OR: [{ notes: { not: null } }, { setup: { not: null } }],
         },
       }),
     ]);
@@ -181,17 +169,17 @@ export async function GET(): Promise<NextResponse> {
           withContent: tradesWithContent,
           withEmbeddings: tradesWithEmbeddings,
           pending: Math.max(0, tradesPending),
-          coverage: tradesWithContent > 0
-            ? Math.round((tradesWithEmbeddings / tradesWithContent) * 100)
-            : 100,
+          coverage:
+            tradesWithContent > 0
+              ? Math.round((tradesWithEmbeddings / tradesWithContent) * 100)
+              : 100,
         },
         journals: {
           total: totalJournals,
           withEmbeddings: journalsWithEmbeddings,
           pending: Math.max(0, journalsPending),
-          coverage: totalJournals > 0
-            ? Math.round((journalsWithEmbeddings / totalJournals) * 100)
-            : 100,
+          coverage:
+            totalJournals > 0 ? Math.round((journalsWithEmbeddings / totalJournals) * 100) : 100,
         },
         overall: {
           totalDocuments: tradesWithContent + totalJournals,

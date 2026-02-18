@@ -104,7 +104,11 @@ export default function PnLChart({ data, loading }: PnLChartProps) {
           dataKey="cumulativePnl"
           stroke={chartData[chartData.length - 1]?.cumulativePnl >= 0 ? '#4caf50' : '#f44336'}
           strokeWidth={2}
-          fill={chartData[chartData.length - 1]?.cumulativePnl >= 0 ? 'url(#colorPnl)' : 'url(#colorPnlNeg)'}
+          fill={
+            chartData[chartData.length - 1]?.cumulativePnl >= 0
+              ? 'url(#colorPnl)'
+              : 'url(#colorPnlNeg)'
+          }
         />
       </AreaChart>
     </ResponsiveContainer>

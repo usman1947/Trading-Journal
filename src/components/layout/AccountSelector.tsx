@@ -9,9 +9,7 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
-import {
-  AccountBalance as AccountIcon,
-} from '@mui/icons-material';
+import { AccountBalance as AccountIcon } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSelectedAccountId } from '@/store/slices/uiSlice';
 import { useGetAccountsQuery } from '@/store';

@@ -76,11 +76,7 @@ function StatCard({ title, value, icon, color }: StatCardProps) {
   );
 }
 
-export default function StrategyDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function StrategyDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const router = useRouter();
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
@@ -101,9 +97,15 @@ export default function StrategyDetailPage({
 
       try {
         const [tradeTime, pnlDist, timeDay] = await Promise.all([
-          fetch(`/api/analytics/trade-time?strategyId=${id}&accountId=${accountFilter}`).then(r => r.json()),
-          fetch(`/api/analytics/pnl-distribution?strategyId=${id}&accountId=${accountFilter}`).then(r => r.json()),
-          fetch(`/api/analytics/time-day?strategyId=${id}&accountId=${accountFilter}`).then(r => r.json()),
+          fetch(`/api/analytics/trade-time?strategyId=${id}&accountId=${accountFilter}`).then((r) =>
+            r.json()
+          ),
+          fetch(`/api/analytics/pnl-distribution?strategyId=${id}&accountId=${accountFilter}`).then(
+            (r) => r.json()
+          ),
+          fetch(`/api/analytics/time-day?strategyId=${id}&accountId=${accountFilter}`).then((r) =>
+            r.json()
+          ),
         ]);
 
         setTradeTimeData(tradeTime);
@@ -163,9 +165,7 @@ export default function StrategyDetailPage({
       headerName: 'Risk',
       width: 100,
       renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Typography color="warning.main">
-          {formatCurrency(params.value as number)}
-        </Typography>
+        <Typography color="warning.main">{formatCurrency(params.value as number)}</Typography>
       ),
     },
     {
@@ -177,10 +177,7 @@ export default function StrategyDetailPage({
           return <Typography color="text.secondary">Open</Typography>;
         }
         return (
-          <Typography
-            color={params.value >= 0 ? 'success.main' : 'error.main'}
-            fontWeight="medium"
-          >
+          <Typography color={params.value >= 0 ? 'success.main' : 'error.main'} fontWeight="medium">
             {params.value >= 0 ? '+' : ''}
             {formatCurrency(params.value)}
           </Typography>
@@ -200,7 +197,8 @@ export default function StrategyDetailPage({
         const r = result / risk;
         return (
           <Typography color={r >= 0 ? 'success.main' : 'error.main'}>
-            {r >= 0 ? '+' : ''}{r.toFixed(1)}R
+            {r >= 0 ? '+' : ''}
+            {r.toFixed(1)}R
           </Typography>
         );
       },
@@ -245,9 +243,7 @@ export default function StrategyDetailPage({
         <IconButton onClick={() => router.back()} sx={{ mb: 2 }}>
           <BackIcon />
         </IconButton>
-        <Alert severity="error">
-          Failed to load strategy details. The strategy may not exist.
-        </Alert>
+        <Alert severity="error">Failed to load strategy details. The strategy may not exist.</Alert>
       </Box>
     );
   }
@@ -288,7 +284,8 @@ export default function StrategyDetailPage({
       )}
 
       {/* Rules & Example Screenshots */}
-      {((strategy.rules && strategy.rules.length > 0) || (strategy.screenshots && strategy.screenshots.length > 0)) && (
+      {((strategy.rules && strategy.rules.length > 0) ||
+        (strategy.screenshots && strategy.screenshots.length > 0)) && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Grid container spacing={3}>
@@ -440,11 +437,7 @@ export default function StrategyDetailPage({
       {/* Stats */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <StatCard
-            title="Total Trades"
-            value={stats.totalTrades}
-            icon={<TradesIcon />}
-          />
+          <StatCard title="Total Trades" value={stats.totalTrades} icon={<TradesIcon />} />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
           <StatCard
@@ -465,7 +458,13 @@ export default function StrategyDetailPage({
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
           <StatCard
             title="Profit Factor"
-            value={stats.profitFactor === null || stats.profitFactor === undefined ? '-' : stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2)}
+            value={
+              stats.profitFactor === null || stats.profitFactor === undefined
+                ? '-'
+                : stats.profitFactor === Infinity
+                  ? '∞'
+                  : stats.profitFactor.toFixed(2)
+            }
             icon={<ProfitFactorIcon />}
             color={stats.profitFactor && stats.profitFactor >= 1 ? 'success.main' : 'error.main'}
           />

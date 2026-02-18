@@ -153,16 +153,13 @@ export default function ScreenshotUpload(props: ScreenshotUploadProps) {
             input.type = 'file';
             input.multiple = true;
             input.accept = 'image/*';
-            input.onchange = (e) =>
-              handleFileChange((e.target as HTMLInputElement).files);
+            input.onchange = (e) => handleFileChange((e.target as HTMLInputElement).files);
             input.click();
           }
         }}
       >
         <UploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-        <Typography color="text.secondary">
-          Drag & drop images here or click to upload
-        </Typography>
+        <Typography color="text.secondary">Drag & drop images here or click to upload</Typography>
       </Box>
 
       {/* Screenshot Gallery - Edit Mode */}
@@ -274,18 +271,16 @@ export default function ScreenshotUpload(props: ScreenshotUploadProps) {
               disabled={uploading}
               sx={{ mt: 1.5 }}
             >
-              {uploading ? 'Uploading...' : `Save ${editPendingFiles.length} Screenshot${editPendingFiles.length > 1 ? 's' : ''}`}
+              {uploading
+                ? 'Uploading...'
+                : `Save ${editPendingFiles.length} Screenshot${editPendingFiles.length > 1 ? 's' : ''}`}
             </Button>
           )}
         </Box>
       )}
 
       {/* Image Preview Dialog */}
-      <Dialog
-        open={!!selectedImage}
-        onClose={() => setSelectedImage(null)}
-        maxWidth="lg"
-      >
+      <Dialog open={!!selectedImage} onClose={() => setSelectedImage(null)} maxWidth="lg">
         <IconButton
           onClick={() => setSelectedImage(null)}
           sx={{

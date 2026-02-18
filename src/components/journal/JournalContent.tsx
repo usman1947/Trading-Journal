@@ -65,7 +65,17 @@ interface PendingFile {
   preview: string;
 }
 
-function PendingFilePreview({ pf, index, onRemove, onPreview }: { pf: PendingFile; index: number; onRemove: (i: number) => void; onPreview: (url: string) => void }) {
+function PendingFilePreview({
+  pf,
+  index,
+  onRemove,
+  onPreview,
+}: {
+  pf: PendingFile;
+  index: number;
+  onRemove: (i: number) => void;
+  onPreview: (url: string) => void;
+}) {
   return (
     <Box
       sx={{
@@ -80,13 +90,7 @@ function PendingFilePreview({ pf, index, onRemove, onPreview }: { pf: PendingFil
       }}
       onClick={() => onPreview(pf.preview)}
     >
-      <Image
-        src={pf.preview}
-        alt={pf.file.name}
-        fill
-        style={{ objectFit: 'cover' }}
-        unoptimized
-      />
+      <Image src={pf.preview} alt={pf.file.name} fill style={{ objectFit: 'cover' }} unoptimized />
       <IconButton
         size="small"
         onClick={(e) => {
@@ -113,7 +117,8 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
   const dispatch = useAppDispatch();
   const [deleteEntry, { isLoading: deleting }] = useDeleteJournalEntryMutation();
   const [uploadScreenshots, { isLoading: uploading }] = useUploadJournalScreenshotsMutation();
-  const [deleteScreenshot, { isLoading: deletingScreenshot }] = useDeleteJournalScreenshotMutation();
+  const [deleteScreenshot, { isLoading: deletingScreenshot }] =
+    useDeleteJournalScreenshotMutation();
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -134,17 +139,14 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
     }
   };
 
-  const handleFileSelect = useCallback(
-    (files: FileList | null) => {
-      if (!files || files.length === 0) return;
-      const newFiles: PendingFile[] = Array.from(files).map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-      }));
-      setPendingFiles((prev) => [...prev, ...newFiles]);
-    },
-    []
-  );
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const newFiles: PendingFile[] = Array.from(files).map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setPendingFiles((prev) => [...prev, ...newFiles]);
+  }, []);
 
   const handleRemovePending = (index: number) => {
     setPendingFiles((prev) => {
@@ -226,7 +228,9 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
       )}
 
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}
+      >
         <Box>
           <Typography variant="h5" fontWeight="bold">
             {format(entryDate, 'EEEE, MMMM d, yyyy')}
@@ -243,12 +247,7 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
               size="small"
             />
           )}
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<EditIcon />}
-            onClick={onEdit}
-          >
+          <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={onEdit}>
             Edit
           </Button>
           <Tooltip title="Delete">
@@ -340,7 +339,9 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
               onClick={handleUploadPending}
               disabled={uploading}
             >
-              {uploading ? 'Uploading...' : `Save ${pendingFiles.length} Screenshot${pendingFiles.length > 1 ? 's' : ''}`}
+              {uploading
+                ? 'Uploading...'
+                : `Save ${pendingFiles.length} Screenshot${pendingFiles.length > 1 ? 's' : ''}`}
             </Button>
           </Box>
         )}
@@ -409,9 +410,7 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
             }}
           >
             <UploadIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
-            <Typography variant="body2">
-              Drag & drop images here or click to add
-            </Typography>
+            <Typography variant="body2">Drag & drop images here or click to add</Typography>
           </Box>
         ) : null}
       </Box>
@@ -421,8 +420,8 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
         <DialogTitle>Delete Journal Entry?</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete the entry from {format(entryDate, 'MMMM d, yyyy')}?
-            This action cannot be undone.
+            Are you sure you want to delete the entry from {format(entryDate, 'MMMM d, yyyy')}? This
+            action cannot be undone.
             {screenshots.length > 0 && (
               <> All {screenshots.length} screenshot(s) will also be deleted.</>
             )}
@@ -437,11 +436,7 @@ export default function JournalContent({ entry, onEdit, onDeleted }: JournalCont
       </Dialog>
 
       {/* Image Preview Dialog */}
-      <Dialog
-        open={!!selectedImage}
-        onClose={() => setSelectedImage(null)}
-        maxWidth="lg"
-      >
+      <Dialog open={!!selectedImage} onClose={() => setSelectedImage(null)} maxWidth="lg">
         <IconButton
           onClick={() => setSelectedImage(null)}
           sx={{

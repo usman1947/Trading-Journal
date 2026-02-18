@@ -12,7 +12,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { queryRAG, syncEmbeddings } from '@/lib/rag';
-import { isAnalyticsQuestion, runAnalyticsQuery, classifyQuestionWithLLM } from '@/lib/journal-analytics';
+import {
+  isAnalyticsQuestion,
+  runAnalyticsQuery,
+  classifyQuestionWithLLM,
+} from '@/lib/journal-analytics';
 import { getGroqClient } from '@/lib/groq-client';
 import type {
   AskJournalRequest,
@@ -39,8 +43,10 @@ async function generateGracefulDecline(
     const client = getGroqClient();
 
     const reasonContext = {
-      no_data: 'The user has not logged enough trades or journal entries with notes to answer this question.',
-      not_supported: 'This type of question cannot be answered with the available trading journal data.',
+      no_data:
+        'The user has not logged enough trades or journal entries with notes to answer this question.',
+      not_supported:
+        'This type of question cannot be answered with the available trading journal data.',
       error: 'There was a technical issue processing this question.',
     };
 
@@ -86,16 +92,14 @@ function getDefaultDeclineMessage(reason: 'no_data' | 'not_supported' | 'error')
     case 'not_supported':
       return "I'm not quite sure how to answer that one. Try asking about your trading patterns, performance by time or symbol, or insights from your journal notes.";
     case 'error':
-      return "I ran into a small hiccup trying to answer that. Could you try rephrasing your question or asking something else?";
+      return 'I ran into a small hiccup trying to answer that. Could you try rephrasing your question or asking something else?';
   }
 }
 
 /**
  * Convert RAG citations to AskJournal sources format.
  */
-function convertCitationsToSources(
-  citations: readonly SourceCitation[]
-): AskJournalSource[] {
+function convertCitationsToSources(citations: readonly SourceCitation[]): AskJournalSource[] {
   return citations.map((citation) => {
     const base = {
       id: citation.sourceId,
@@ -205,7 +209,9 @@ export async function POST(
       const classification = await classifyQuestionWithLLM(trimmedQuestion);
       questionType = classification.type;
       isAnalytics = classification.type === 'analytics';
-      console.log(`[Ask Journal] LLM classified as: ${classification.type}${classification.analyticsType ? ` (${classification.analyticsType})` : ''}`);
+      console.log(
+        `[Ask Journal] LLM classified as: ${classification.type}${classification.analyticsType ? ` (${classification.analyticsType})` : ''}`
+      );
     }
 
     // Handle unsupported questions gracefully
@@ -265,14 +271,11 @@ export async function POST(
       // Add account filter if provided
       accountId,
       // Add date range filter if provided
-      dateRange: (dateFrom || dateTo) ? { from: dateFrom, to: dateTo } : undefined,
+      dateRange: dateFrom || dateTo ? { from: dateFrom, to: dateTo } : undefined,
     };
 
     // Execute RAG query
-    const result = await queryRAG(
-      { query: trimmedQuestion, options: ragOptions },
-      user.id
-    );
+    const result = await queryRAG({ query: trimmedQuestion, options: ragOptions }, user.id);
 
     if (!result.success) {
       console.log(`[Ask Journal] RAG failed with code: ${result.error.code}`);
@@ -288,7 +291,8 @@ export async function POST(
           friendlyMessage = await generateGracefulDecline(trimmedQuestion, 'not_supported');
           break;
         case 'RATE_LIMIT_EXCEEDED':
-          friendlyMessage = "I'm getting a lot of questions right now! Give me a moment to catch my breath, then try again.";
+          friendlyMessage =
+            "I'm getting a lot of questions right now! Give me a moment to catch my breath, then try again.";
           break;
         default:
           friendlyMessage = await generateGracefulDecline(trimmedQuestion, 'error');

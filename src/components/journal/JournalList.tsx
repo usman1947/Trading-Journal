@@ -22,7 +22,7 @@ interface JournalListProps {
 
 export default function JournalList({ selectedId, onSelectEntry }: JournalListProps) {
   const { data: entries = [], isLoading } = useGetJournalEntriesQuery({});
-  
+
   // Group entries by month/year
   const groupedEntries = useMemo(() => {
     const groups: Record<string, DailyJournal[]> = {};

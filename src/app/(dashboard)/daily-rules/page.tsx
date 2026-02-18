@@ -38,7 +38,7 @@ const RULES = [
   { key: 'avoidSketchyCandle', label: 'Avoid Sketchy Candle' },
 ] as const;
 
-type RuleKey = typeof RULES[number]['key'];
+type RuleKey = (typeof RULES)[number]['key'];
 
 interface FormState {
   smartSlMove: boolean;
@@ -269,7 +269,9 @@ export default function DailyRulesPage() {
         {/* Content Area - Quick Entry Form */}
         <Paper sx={{ flexGrow: 1, overflow: 'auto', p: 3 }}>
           {/* Date & Score Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}
+          >
             <Box>
               <Typography variant="h5">
                 {selectedDate === getTodayString() ? 'Today' : formatDate(selectedDate)}
@@ -369,9 +371,7 @@ export default function DailyRulesPage() {
                         }}
                       />
                     )}
-                    <Typography fontWeight={isChecked ? 'bold' : 'normal'}>
-                      {rule.label}
-                    </Typography>
+                    <Typography fontWeight={isChecked ? 'bold' : 'normal'}>{rule.label}</Typography>
                   </Box>
                 </Paper>
               );
@@ -395,11 +395,7 @@ export default function DailyRulesPage() {
             {selectedEntry && !isEditing ? (
               <>
                 <Tooltip title="Delete entry">
-                  <IconButton
-                    color="error"
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                  >
+                  <IconButton color="error" onClick={handleDelete} disabled={isDeleting}>
                     <DeleteIcon />
                   </IconButton>
                 </Tooltip>
@@ -416,18 +412,16 @@ export default function DailyRulesPage() {
             ) : (
               <>
                 {selectedEntry && (
-                  <Button
-                    variant="outlined"
-                    onClick={() => setIsEditing(false)}
-                    size="large"
-                  >
+                  <Button variant="outlined" onClick={() => setIsEditing(false)} size="large">
                     Cancel
                   </Button>
                 )}
                 <Button
                   variant="contained"
                   color="primary"
-                  startIcon={isSaving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                  startIcon={
+                    isSaving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />
+                  }
                   onClick={handleSave}
                   disabled={isSaving || (!hasChanges && isEditing)}
                   size="large"

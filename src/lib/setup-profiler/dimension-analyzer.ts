@@ -31,21 +31,21 @@ export interface AnalyzedSegment {
  * Classification for patterns (more intuitive than EDGE/LEAK).
  */
 export type PatternClassification =
-  | 'STRONG_EDGE'      // Clear winner
-  | 'POTENTIAL_EDGE'   // Promising, needs more data
-  | 'NEUTRAL'          // Average performance
-  | 'POTENTIAL_LEAK'   // Concerning, needs more data
-  | 'STRONG_LEAK'      // Clear loser
-  | 'INSUFFICIENT';    // Not enough trades
+  | 'STRONG_EDGE' // Clear winner
+  | 'POTENTIAL_EDGE' // Promising, needs more data
+  | 'NEUTRAL' // Average performance
+  | 'POTENTIAL_LEAK' // Concerning, needs more data
+  | 'STRONG_LEAK' // Clear loser
+  | 'INSUFFICIENT'; // Not enough trades
 
 /**
  * How a segment compares to overall baseline.
  */
 export interface BaselineComparison {
-  winRateDelta: number;       // +5 means 5% better than baseline
-  expectancyDelta: number;    // +0.3R means 0.3R better
-  pnlDelta: number;           // Dollar difference from average
-  isSignificant: boolean;     // Statistically meaningful?
+  winRateDelta: number; // +5 means 5% better than baseline
+  expectancyDelta: number; // +0.3R means 0.3R better
+  pnlDelta: number; // Dollar difference from average
+  isSignificant: boolean; // Statistically meaningful?
   effectSize: 'LARGE' | 'MEDIUM' | 'SMALL' | 'NEGLIGIBLE';
 }
 
@@ -64,7 +64,7 @@ export interface PatternInsight {
   stats: ClusterStats;
   confidence: ConfidenceLevel;
   suggestedAction: string;
-  impactScore: number;  // For sorting (higher = more impactful)
+  impactScore: number; // For sorting (higher = more impactful)
 }
 
 /**
@@ -117,7 +117,7 @@ export function analyzeDimension(
       value,
       displayLabel: getDisplayLabel(dimension, value),
       stats,
-      tradeIds: groupTrades.map(t => t.id),
+      tradeIds: groupTrades.map((t) => t.id),
       classification,
       vsBaseline: comparison,
     });
@@ -135,10 +135,11 @@ export function analyzeDimension(
     displayName: getDimensionDisplayName(dimension),
     baseline,
     segments,
-    hasSignificantFindings: segments.some(s =>
-      s.classification === 'STRONG_EDGE' ||
-      s.classification === 'STRONG_LEAK' ||
-      s.vsBaseline.isSignificant
+    hasSignificantFindings: segments.some(
+      (s) =>
+        s.classification === 'STRONG_EDGE' ||
+        s.classification === 'STRONG_LEAK' ||
+        s.vsBaseline.isSignificant
     ),
     totalTradesAnalyzed: trades.length,
   };
@@ -156,12 +157,13 @@ function compareToBaseline(stats: ClusterStats, baseline: ClusterStats): Baselin
   const effectSizeValue = Math.abs(winRateDelta) / 100;
   let effectSize: 'LARGE' | 'MEDIUM' | 'SMALL' | 'NEGLIGIBLE';
   if (effectSizeValue >= 0.15) effectSize = 'LARGE';
-  else if (effectSizeValue >= 0.10) effectSize = 'MEDIUM';
+  else if (effectSizeValue >= 0.1) effectSize = 'MEDIUM';
   else if (effectSizeValue >= 0.05) effectSize = 'SMALL';
   else effectSize = 'NEGLIGIBLE';
 
   // Simple significance check (needs enough trades and meaningful difference)
-  const isSignificant = stats.totalTrades >= 5 &&
+  const isSignificant =
+    stats.totalTrades >= 5 &&
     (effectSize === 'LARGE' || effectSize === 'MEDIUM') &&
     Math.abs(expectancyDelta) >= 0.2;
 
@@ -245,16 +247,15 @@ function getImpactScore(segment: AnalyzedSegment): number {
 /**
  * Generate human-readable insights from dimension analyses.
  */
-export function generateInsights(
-  analyses: DimensionAnalysis[]
-): PatternInsight[] {
+export function generateInsights(analyses: DimensionAnalysis[]): PatternInsight[] {
   const insights: PatternInsight[] = [];
 
   for (const analysis of analyses) {
     for (const segment of analysis.segments) {
       // Skip if insufficient data or negligible effect
       if (segment.classification === 'INSUFFICIENT') continue;
-      if (segment.vsBaseline.effectSize === 'NEGLIGIBLE' && segment.classification === 'NEUTRAL') continue;
+      if (segment.vsBaseline.effectSize === 'NEGLIGIBLE' && segment.classification === 'NEUTRAL')
+        continue;
 
       const insight = createInsight(analysis.dimension, segment);
       if (insight) insights.push(insight);
@@ -316,21 +317,31 @@ function generateHeadline(
 
   if (type === 'EDGE') {
     switch (dimension) {
-      case 'setup': return `"${label}" is your most profitable setup`;
-      case 'strategy': return `${label} strategy is working well`;
-      case 'timeGroup': return `${label} is your best trading window`;
-      case 'execution': return `Good execution significantly boosts results`;
-      case 'side': return `${label} trades are consistently profitable`;
+      case 'setup':
+        return `"${label}" is your most profitable setup`;
+      case 'strategy':
+        return `${label} strategy is working well`;
+      case 'timeGroup':
+        return `${label} is your best trading window`;
+      case 'execution':
+        return `Good execution significantly boosts results`;
+      case 'side':
+        return `${label} trades are consistently profitable`;
     }
   }
 
   if (type === 'LEAK') {
     switch (dimension) {
-      case 'setup': return `"${label}" setup is losing you money`;
-      case 'strategy': return `${label} strategy is underperforming`;
-      case 'timeGroup': return `Avoid trading during ${label}`;
-      case 'execution': return `Execution mistakes are hurting your P&L`;
-      case 'side': return `${label} trades are a weak point`;
+      case 'setup':
+        return `"${label}" setup is losing you money`;
+      case 'strategy':
+        return `${label} strategy is underperforming`;
+      case 'timeGroup':
+        return `Avoid trading during ${label}`;
+      case 'execution':
+        return `Execution mistakes are hurting your P&L`;
+      case 'side':
+        return `${label} trades are a weak point`;
     }
   }
 
@@ -354,7 +365,9 @@ function generateDetail(segment: AnalyzedSegment): string {
 
   // Win rate comparison
   const winRateDir = vsBaseline.winRateDelta >= 0 ? '+' : '';
-  parts.push(`${stats.winRate.toFixed(0)}% win rate (${winRateDir}${vsBaseline.winRateDelta.toFixed(0)}% vs average)`);
+  parts.push(
+    `${stats.winRate.toFixed(0)}% win rate (${winRateDir}${vsBaseline.winRateDelta.toFixed(0)}% vs average)`
+  );
 
   // Expectancy
   const expDir = stats.expectancyR >= 0 ? '+' : '';
@@ -375,21 +388,25 @@ function generateAction(
   segment: AnalyzedSegment
 ): string {
   if (type === 'EDGE') {
-    if (dimension === 'setup') return `Keep taking "${segment.displayLabel}" trades - this is working`;
+    if (dimension === 'setup')
+      return `Keep taking "${segment.displayLabel}" trades - this is working`;
     if (dimension === 'timeGroup') return `Focus your trading during ${segment.displayLabel}`;
-    if (dimension === 'side') return `${segment.displayLabel} trades are your strength - lean into them`;
+    if (dimension === 'side')
+      return `${segment.displayLabel} trades are your strength - lean into them`;
     return 'Continue doing what works here';
   }
 
   if (type === 'LEAK') {
-    if (dimension === 'setup') return `Consider avoiding "${segment.displayLabel}" or review your process`;
+    if (dimension === 'setup')
+      return `Consider avoiding "${segment.displayLabel}" or review your process`;
     if (dimension === 'timeGroup') return `Consider stopping before ${segment.displayLabel}`;
-    if (dimension === 'side') return `Review your ${segment.displayLabel.toLowerCase()} trade process`;
+    if (dimension === 'side')
+      return `Review your ${segment.displayLabel.toLowerCase()} trade process`;
     return 'Review and consider reducing exposure here';
   }
 
   if (type === 'OPPORTUNITY') {
-    return `Track ${segment.stats.totalTrades < 10 ? (10 - segment.stats.totalTrades) + ' more' : 'more'} trades to confirm this edge`;
+    return `Track ${segment.stats.totalTrades < 10 ? 10 - segment.stats.totalTrades + ' more' : 'more'} trades to confirm this edge`;
   }
 
   if (type === 'WARNING') {

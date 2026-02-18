@@ -125,12 +125,7 @@ export default function WeeklyCoachCard() {
         label={`${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`}
         variant="outlined"
       />
-      <IconButton
-        size="small"
-        onClick={handleNextWeek}
-        disabled={isLatestWeek}
-        title="Next week"
-      >
+      <IconButton size="small" onClick={handleNextWeek} disabled={isLatestWeek} title="Next week">
         <ChevronRightIcon fontSize="small" />
       </IconButton>
     </Box>
@@ -141,7 +136,9 @@ export default function WeeklyCoachCard() {
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PsychologyIcon color="primary" />
               <Typography variant="h6" fontWeight={600}>
@@ -156,11 +153,7 @@ export default function WeeklyCoachCard() {
           <Button
             variant="contained"
             startIcon={
-              isGenerating ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <PsychologyIcon />
-              )
+              isGenerating ? <CircularProgress size={20} color="inherit" /> : <PsychologyIcon />
             }
             onClick={handleGenerate}
             disabled={isGenerating}
@@ -240,9 +233,7 @@ export default function WeeklyCoachCard() {
               <Typography variant="subtitle2" fontWeight={600}>
                 Common Theme
               </Typography>
-              <Typography variant="body2">
-                {report.commonTheme}
-              </Typography>
+              <Typography variant="body2">{report.commonTheme}</Typography>
             </Box>
           </Box>
         )}
@@ -265,9 +256,7 @@ export default function WeeklyCoachCard() {
               <Typography variant="subtitle2" fontWeight={600}>
                 Week-over-Week Progress
               </Typography>
-              <Typography variant="body2">
-                {report.progressNotes}
-              </Typography>
+              <Typography variant="body2">{report.progressNotes}</Typography>
             </Box>
           </Box>
         )}
@@ -356,10 +345,7 @@ export default function WeeklyCoachCard() {
                     <ListItemIcon sx={{ minWidth: 28 }}>
                       <ActionIcon fontSize="small" color="primary" />
                     </ListItemIcon>
-                    <ListItemText
-                      primary={action}
-                      primaryTypographyProps={{ variant: 'body2' }}
-                    />
+                    <ListItemText primary={action} primaryTypographyProps={{ variant: 'body2' }} />
                   </ListItem>
                 ))}
               </List>

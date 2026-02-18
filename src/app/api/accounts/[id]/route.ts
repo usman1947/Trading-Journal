@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
-import { handleApiError, validationError, notFoundResponse, errorResponse, successResponse } from '@/lib/api-helpers';
+import {
+  handleApiError,
+  validationError,
+  notFoundResponse,
+  errorResponse,
+  successResponse,
+} from '@/lib/api-helpers';
+import { updateAccountSchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();
@@ -34,21 +38,18 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();
 
     const { id } = await params;
     const body = await request.json();
-    const { name, description, initialBalance, isSwingAccount } = body;
-
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      return validationError('Account name is required');
+    const parsed = updateAccountSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
     }
+    const { name, description, initialBalance, isSwingAccount } = parsed.data;
 
     // Verify ownership
     const existing = await prisma.account.findFirst({
@@ -62,9 +63,9 @@ export async function PUT(
     const account = await prisma.account.update({
       where: { id },
       data: {
-        name: name.trim(),
+        name,
         description: description?.trim() || null,
-        initialBalance: typeof initialBalance === 'number' ? Math.max(0, initialBalance) : existing.initialBalance,
+        initialBalance: initialBalance !== undefined ? initialBalance : existing.initialBalance,
         isSwingAccount: isSwingAccount ?? existing.isSwingAccount,
       },
     });
@@ -103,7 +104,9 @@ export async function DELETE(
     });
 
     if (tradeCount > 0) {
-      return errorResponse(`Cannot delete account with ${tradeCount} trades. Move or delete the trades first.`);
+      return errorResponse(
+        `Cannot delete account with ${tradeCount} trades. Move or delete the trades first.`
+      );
     }
 
     await prisma.account.delete({

@@ -2,6 +2,13 @@
 
 import { Box, Typography } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import type { RechartsTooltipProps, RechartsPieLabelProps } from '@/types/recharts';
+
+interface WinLossDataEntry {
+  name: string;
+  value: number;
+  percentage: number;
+}
 
 interface WinLossChartProps {
   winningTrades: number;
@@ -17,13 +24,20 @@ const COLORS = {
 export default function WinLossChart({ winningTrades, losingTrades, loading }: WinLossChartProps) {
   const total = winningTrades + losingTrades;
 
-  const data = [
-    { name: 'Wins', value: winningTrades, percentage: total > 0 ? (winningTrades / total) * 100 : 0 },
-    { name: 'Losses', value: losingTrades, percentage: total > 0 ? (losingTrades / total) * 100 : 0 },
+  const data: WinLossDataEntry[] = [
+    {
+      name: 'Wins',
+      value: winningTrades,
+      percentage: total > 0 ? (winningTrades / total) * 100 : 0,
+    },
+    {
+      name: 'Losses',
+      value: losingTrades,
+      percentage: total > 0 ? (losingTrades / total) * 100 : 0,
+    },
   ];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
+  const CustomTooltip = ({ active, payload }: RechartsTooltipProps<WinLossDataEntry>) => {
     if (active && payload && payload.length) {
       return (
         <Box
@@ -68,14 +82,16 @@ export default function WinLossChart({ winningTrades, losingTrades, loading }: W
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <PieChart height='50%'>
+      <PieChart height="50%">
         <Pie
-          data={data}
+          data={data as (WinLossDataEntry & Record<string, unknown>)[]}
           cx="50%"
           cy="50%"
           labelLine={false}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          label={(props: any) => `${props.value} (${props.payload.percentage.toFixed(0)}%)`}
+          label={
+            ((props: RechartsPieLabelProps & { payload: WinLossDataEntry }) =>
+              `${props.value} (${props.payload.percentage.toFixed(0)}%)`) as never
+          }
           outerRadius={80}
           innerRadius={50}
           fill="#8884d8"

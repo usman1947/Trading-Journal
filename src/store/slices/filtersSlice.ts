@@ -48,5 +48,11 @@ const filtersSlice = createSlice({
   },
 });
 
-export const { setTradeFilters, updateTradeFilter, clearTradeFilters, setShowTradeFilters, setTradeSortModel } = filtersSlice.actions;
+export const {
+  setTradeFilters,
+  updateTradeFilter,
+  clearTradeFilters,
+  setShowTradeFilters,
+  setTradeSortModel,
+} = filtersSlice.actions;
 export default filtersSlice.reducer;

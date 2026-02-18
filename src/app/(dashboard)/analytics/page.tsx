@@ -21,10 +21,7 @@ import {
 import Grid from '@mui/material/Grid';
 import { DatePicker } from '@mui/x-date-pickers';
 import { DataGrid, GridColDef, GridRenderCellParams, GridSortModel } from '@mui/x-data-grid';
-import {
-  TableChart as TableIcon,
-  PieChart as ChartIcon,
-} from '@mui/icons-material';
+import { TableChart as TableIcon, PieChart as ChartIcon } from '@mui/icons-material';
 import {
   useGetAnalyticsQuery,
   useGetTradesQuery,
@@ -37,15 +34,28 @@ import {
 } from '@/store';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setAnalyticsSortModel } from '@/store/slices/analyticsSlice';
+import dynamic from 'next/dynamic';
 import StatsCards from '@/components/analytics/StatsCards';
 import StrategyBreakdown from '@/components/analytics/StrategyBreakdown';
-import StrategyDistributionChart from '@/components/analytics/StrategyDistributionChart';
-import TradeTimeChart from '@/components/analytics/TradeTimeChart';
-import PnLDistributionChart from '@/components/analytics/PnLDistributionChart';
-import TimeDayProfitability from '@/components/analytics/TimeDayProfitability';
-import AvgTradeTimeChart from '@/components/analytics/AvgTradeTimeChart';
 import { formatCurrency, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
 import type { Trade, TradeFilters, Account } from '@/types';
+
+const StrategyDistributionChart = dynamic(
+  () => import('@/components/analytics/StrategyDistributionChart'),
+  { loading: () => <Skeleton variant="rounded" height={400} sx={{ borderRadius: 3 }} /> }
+);
+const TradeTimeChart = dynamic(() => import('@/components/analytics/TradeTimeChart'), {
+  loading: () => <Skeleton variant="rounded" height={400} sx={{ borderRadius: 3 }} />,
+});
+const PnLDistributionChart = dynamic(() => import('@/components/analytics/PnLDistributionChart'), {
+  loading: () => <Skeleton variant="rounded" height={400} sx={{ borderRadius: 3 }} />,
+});
+const TimeDayProfitability = dynamic(() => import('@/components/analytics/TimeDayProfitability'), {
+  loading: () => <Skeleton variant="rounded" height={400} sx={{ borderRadius: 3 }} />,
+});
+const AvgTradeTimeChart = dynamic(() => import('@/components/analytics/AvgTradeTimeChart'), {
+  loading: () => <Skeleton variant="rounded" height={400} sx={{ borderRadius: 3 }} />,
+});
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -53,14 +63,27 @@ export default function AnalyticsPage() {
   const viewMode = useAppSelector((state) => state.analytics.viewMode);
   const filters = useAppSelector((state) => state.analytics.filters);
   const sortModel = useAppSelector((state) => state.analytics.sortModel);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [strategyDistribution, setStrategyDistribution] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [tradeTimeData, setTradeTimeData] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pnlDistribution, setPnlDistribution] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [timeDayData, setTimeDayData] = useState<any>({ hourly: [], daily: [] });
+  const [strategyDistribution, setStrategyDistribution] = useState<
+    { name: string; trades: number; percentage: number }[]
+  >([]);
+  const [tradeTimeData, setTradeTimeData] = useState<
+    {
+      id: string;
+      time: string;
+      date: string;
+      hour: number;
+      minute: number;
+      result: number | null;
+      symbol: string;
+    }[]
+  >([]);
+  const [pnlDistribution, setPnlDistribution] = useState<
+    { id: string; symbol: string; result: number; rMultiple: number; date: string }[]
+  >([]);
+  const [timeDayData, setTimeDayData] = useState<{
+    hourly: { interval: string; totalPnL: number; trades: number; winRate: number }[];
+    daily: { day: string; totalPnL: number; trades: number; winRate: number }[];
+  }>({ hourly: [], daily: [] });
 
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
   const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
@@ -78,9 +101,13 @@ export default function AnalyticsPage() {
   // Filter strategies based on account type (swing vs day trading)
   const strategies = useMemo(() => {
     if (isSwingAccount) {
-      return allStrategies.filter((s: { id: string; name: string; isSwingStrategy?: boolean }) => s.isSwingStrategy);
+      return allStrategies.filter(
+        (s: { id: string; name: string; isSwingStrategy?: boolean }) => s.isSwingStrategy
+      );
     }
-    return allStrategies.filter((s: { id: string; name: string; isSwingStrategy?: boolean }) => !s.isSwingStrategy);
+    return allStrategies.filter(
+      (s: { id: string; name: string; isSwingStrategy?: boolean }) => !s.isSwingStrategy
+    );
   }, [allStrategies, isSwingAccount]);
   const { data: existingSetups = [] } = useGetSetupsQuery({});
   const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery(
@@ -114,10 +141,10 @@ export default function AnalyticsPage() {
 
       try {
         const [stratDist, tradeTime, pnlDist, timeDay] = await Promise.all([
-          fetch(`/api/analytics/strategy-distribution?${queryString}`).then(r => r.json()),
-          fetch(`/api/analytics/trade-time?${queryString}`).then(r => r.json()),
-          fetch(`/api/analytics/pnl-distribution?${queryString}`).then(r => r.json()),
-          fetch(`/api/analytics/time-day?${queryString}`).then(r => r.json()),
+          fetch(`/api/analytics/strategy-distribution?${queryString}`).then((r) => r.json()),
+          fetch(`/api/analytics/trade-time?${queryString}`).then((r) => r.json()),
+          fetch(`/api/analytics/pnl-distribution?${queryString}`).then((r) => r.json()),
+          fetch(`/api/analytics/time-day?${queryString}`).then((r) => r.json()),
         ]);
 
         setStrategyDistribution(stratDist);
@@ -213,9 +240,7 @@ export default function AnalyticsPage() {
       headerAlign: 'center',
       align: 'center',
       renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Typography color="warning.main">
-          {formatCurrency(params.value as number)}
-        </Typography>
+        <Typography color="warning.main">{formatCurrency(params.value as number)}</Typography>
       ),
     },
     {
@@ -225,10 +250,7 @@ export default function AnalyticsPage() {
       headerAlign: 'center',
       align: 'center',
       renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Typography
-          color={params.value >= 0 ? 'success.main' : 'error.main'}
-          fontWeight="medium"
-        >
+        <Typography color={params.value >= 0 ? 'success.main' : 'error.main'} fontWeight="medium">
           {params.value >= 0 ? '+' : ''}
           {formatCurrency(params.value)}
         </Typography>
@@ -249,7 +271,8 @@ export default function AnalyticsPage() {
         const r = result / risk;
         return (
           <Typography color={r >= 0 ? 'success.main' : 'error.main'}>
-            {r >= 0 ? '+' : ''}{r.toFixed(1)}R
+            {r >= 0 ? '+' : ''}
+            {r.toFixed(1)}R
           </Typography>
         );
       },
@@ -469,7 +492,15 @@ export default function AnalyticsPage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <Card sx={{ height: 453 }}>
                   <CardContent sx={{ height: '100%', p: 0 }}>
-                    <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Box
+                      sx={{
+                        px: 3,
+                        pt: 3,
+                        pb: 2,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                    >
                       <Typography variant="h6" fontWeight={600}>
                         Avg Time in Trade
                       </Typography>
@@ -516,7 +547,15 @@ export default function AnalyticsPage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <Card sx={{ height: 453 }}>
                   <CardContent sx={{ height: '100%', p: 0 }}>
-                    <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Box
+                      sx={{
+                        px: 3,
+                        pt: 3,
+                        pb: 2,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                    >
                       <Typography variant="h6" fontWeight={600}>
                         Avg Time in Trade
                       </Typography>

@@ -40,7 +40,11 @@ export default function DateTimePickerGroup({
           onChange={(date) => {
             if (date) {
               const currentTime = new Date(entryDateTime);
-              date.setHours(currentTime.getHours(), currentTime.getMinutes(), currentTime.getSeconds());
+              date.setHours(
+                currentTime.getHours(),
+                currentTime.getMinutes(),
+                currentTime.getSeconds()
+              );
               onEntryDateChange(date);
             }
           }}

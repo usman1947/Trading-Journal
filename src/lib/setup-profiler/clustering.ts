@@ -44,10 +44,7 @@ export function getDimensionValue(
 /**
  * Get human-readable display label for a dimension value.
  */
-export function getDisplayLabel(
-  dimension: ClusterDimension,
-  value: string
-): string {
+export function getDisplayLabel(dimension: ClusterDimension, value: string): string {
   switch (dimension) {
     case 'side':
       return value === 'LONG' ? 'Long' : 'Short';
@@ -107,7 +104,10 @@ export function groupTradesByMultipleDimensions(
   dimensions: ClusterDimension[],
   intervalMins: number = 5
 ): Map<string, { dimensions: ClusterDimensionValue[]; trades: ClusterableTrade[] }> {
-  const groups = new Map<string, { dimensions: ClusterDimensionValue[]; trades: ClusterableTrade[] }>();
+  const groups = new Map<
+    string,
+    { dimensions: ClusterDimensionValue[]; trades: ClusterableTrade[] }
+  >();
 
   for (const trade of trades) {
     const dims: ClusterDimensionValue[] = dimensions.map((dim) => ({

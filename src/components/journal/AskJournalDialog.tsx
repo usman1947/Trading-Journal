@@ -41,11 +41,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useAskJournalMutation } from '@/store';
 import { showSnackbar } from '@/store/slices/uiSlice';
-import type {
-  AskJournalSource,
-  AskJournalResponse,
-  ExampleQuestion,
-} from '@/types/ask-journal';
+import type { AskJournalSource, AskJournalResponse, ExampleQuestion } from '@/types/ask-journal';
 import { EXAMPLE_QUESTIONS } from '@/types/ask-journal';
 
 interface AskJournalDialogProps {
@@ -104,92 +100,102 @@ export default function AskJournalDialog({ open, onClose }: AskJournalDialogProp
     }, 300);
   }, [onClose]);
 
-  const handleSubmit = useCallback(async (questionText: string) => {
-    if (!questionText.trim()) return;
+  const handleSubmit = useCallback(
+    async (questionText: string) => {
+      if (!questionText.trim()) return;
 
-    const entryId = crypto.randomUUID();
+      const entryId = crypto.randomUUID();
 
-    // Add loading entry to conversation
-    setConversation((prev) => [
-      ...prev,
-      {
-        id: entryId,
-        question: questionText,
-        answer: null,
-        sources: [],
-        isLoading: true,
-        error: null,
-        timestamp: new Date(),
-      },
-    ]);
+      // Add loading entry to conversation
+      setConversation((prev) => [
+        ...prev,
+        {
+          id: entryId,
+          question: questionText,
+          answer: null,
+          sources: [],
+          isLoading: true,
+          error: null,
+          timestamp: new Date(),
+        },
+      ]);
 
-    setQuestion('');
+      setQuestion('');
 
-    try {
-      const result = await askJournal({
-        question: questionText,
-        accountId: selectedAccountId,
-      }).unwrap();
+      try {
+        const result = await askJournal({
+          question: questionText,
+          accountId: selectedAccountId,
+        }).unwrap();
 
-      if ('error' in result && !result.success) {
-        setConversation((prev) =>
-          prev.map((entry) =>
-            entry.id === entryId
-              ? { ...entry, isLoading: false, error: result.error }
-              : entry
-          )
-        );
-      } else {
-        const response = result as AskJournalResponse;
+        if ('error' in result && !result.success) {
+          setConversation((prev) =>
+            prev.map((entry) =>
+              entry.id === entryId ? { ...entry, isLoading: false, error: result.error } : entry
+            )
+          );
+        } else {
+          const response = result as AskJournalResponse;
+          setConversation((prev) =>
+            prev.map((entry) =>
+              entry.id === entryId
+                ? {
+                    ...entry,
+                    isLoading: false,
+                    answer: response.answer,
+                    sources: response.sources,
+                  }
+                : entry
+            )
+          );
+        }
+      } catch {
         setConversation((prev) =>
           prev.map((entry) =>
             entry.id === entryId
               ? {
                   ...entry,
                   isLoading: false,
-                  answer: response.answer,
-                  sources: response.sources,
+                  error: 'Failed to get response. Please try again.',
                 }
               : entry
           )
         );
       }
-    } catch {
-      setConversation((prev) =>
-        prev.map((entry) =>
-          entry.id === entryId
-            ? {
-                ...entry,
-                isLoading: false,
-                error: 'Failed to get response. Please try again.',
-              }
-            : entry
-        )
-      );
-    }
-  }, [askJournal, selectedAccountId]);
+    },
+    [askJournal, selectedAccountId]
+  );
 
-  const handleExampleClick = useCallback((exampleQuestion: ExampleQuestion) => {
-    handleSubmit(exampleQuestion);
-  }, [handleSubmit]);
+  const handleExampleClick = useCallback(
+    (exampleQuestion: ExampleQuestion) => {
+      handleSubmit(exampleQuestion);
+    },
+    [handleSubmit]
+  );
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(question);
-    }
-  }, [handleSubmit, question]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit(question);
+      }
+    },
+    [handleSubmit, question]
+  );
 
-  const handleCopyResponse = useCallback(async (entryId: string, answer: string) => {
-    try {
-      await navigator.clipboard.writeText(answer);
-      setCopiedId(entryId);
-      dispatch(showSnackbar({ message: 'Response copied to clipboard', severity: 'success' }));
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      dispatch(showSnackbar({ message: 'Failed to copy', severity: 'error' }));
-    }
-  }, [dispatch]);
+  const handleCopyResponse = useCallback(
+    async (entryId: string, answer: string) => {
+      try {
+        await navigator.clipboard.writeText(answer);
+        setCopiedId(entryId);
+        dispatch(showSnackbar({ message: 'Response copied to clipboard', severity: 'success' }));
+        setTimeout(() => setCopiedId(null), 2000);
+      } catch {
+        dispatch(showSnackbar({ message: 'Failed to copy', severity: 'error' }));
+      }
+    },
+    [dispatch]
+  );
 
   const toggleSourcesExpanded = useCallback((entryId: string) => {
     setExpandedSources((prev) => ({
@@ -198,9 +204,12 @@ export default function AskJournalDialog({ open, onClose }: AskJournalDialogProp
     }));
   }, []);
 
-  const handleRetry = useCallback((questionText: string) => {
-    handleSubmit(questionText);
-  }, [handleSubmit]);
+  const handleRetry = useCallback(
+    (questionText: string) => {
+      handleSubmit(questionText);
+    },
+    [handleSubmit]
+  );
 
   const renderSource = (source: AskJournalSource) => {
     const isTrade = source.type === 'trade';
@@ -456,11 +465,7 @@ export default function AskJournalDialog({ open, onClose }: AskJournalDialogProp
             Ask Your Journal
           </Typography>
         </Box>
-        <IconButton
-          onClick={handleClose}
-          size="small"
-          aria-label="Close dialog"
-        >
+        <IconButton onClick={handleClose} size="small" aria-label="Close dialog">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -496,19 +501,13 @@ export default function AskJournalDialog({ open, onClose }: AskJournalDialogProp
                 px: 2,
               }}
             >
-              <SparkleIcon
-                sx={{ fontSize: 48, color: 'primary.main', mb: 2, opacity: 0.8 }}
-              />
+              <SparkleIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, opacity: 0.8 }} />
               <Typography variant="h6" gutterBottom>
                 Ask questions about your trading
               </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 3, maxWidth: 400 }}
-              >
-                Get AI-powered insights from your trades and journal entries.
-                Click an example or type your own question.
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
+                Get AI-powered insights from your trades and journal entries. Click an example or
+                type your own question.
               </Typography>
 
               <Typography

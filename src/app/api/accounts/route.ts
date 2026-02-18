@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { handleApiError, validationError } from '@/lib/api-helpers';
+import { createAccountSchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,18 +28,18 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
-    const { name, description, initialBalance, isSwingAccount } = body;
-
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      return validationError('Account name is required');
+    const parsed = createAccountSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
     }
+    const { name, description, initialBalance, isSwingAccount } = parsed.data;
 
     const account = await prisma.account.create({
       data: {
-        name: name.trim(),
+        name,
         description: description?.trim() || null,
-        initialBalance: typeof initialBalance === 'number' ? Math.max(0, initialBalance) : 0,
-        isSwingAccount: isSwingAccount ?? false,
+        initialBalance,
+        isSwingAccount,
         userId: user.id,
       },
     });

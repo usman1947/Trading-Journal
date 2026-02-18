@@ -117,15 +117,13 @@ class EmbeddingService {
       try {
         // Dynamic import to avoid bundling issues
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { pipeline } = await import('@xenova/transformers') as any;
+        const { pipeline } = (await import('@xenova/transformers')) as any;
 
         const pipelineFactory = pipeline as PipelineFactory;
 
-        this.pipeline = await pipelineFactory(
-          'feature-extraction',
-          DEFAULT_MODEL_CONFIG.model,
-          { quantized: DEFAULT_MODEL_CONFIG.quantized }
-        );
+        this.pipeline = await pipelineFactory('feature-extraction', DEFAULT_MODEL_CONFIG.model, {
+          quantized: DEFAULT_MODEL_CONFIG.quantized,
+        });
 
         const loadTimeMs = Date.now() - this.loadStartTime;
 
@@ -135,13 +133,10 @@ class EmbeddingService {
           loadTimeMs,
         };
 
-        console.log(
-          `[Embeddings] Model loaded: ${DEFAULT_MODEL_CONFIG.model} in ${loadTimeMs}ms`
-        );
+        console.log(`[Embeddings] Model loaded: ${DEFAULT_MODEL_CONFIG.model} in ${loadTimeMs}ms`);
       } catch (error) {
         this.loadPromise = null;
-        const message =
-          error instanceof Error ? error.message : 'Unknown error';
+        const message = error instanceof Error ? error.message : 'Unknown error';
         throw new Error(`Failed to load embedding model: ${message}`);
       }
     })();
@@ -205,9 +200,7 @@ class EmbeddingService {
    * @param texts - Array of texts to embed
    * @returns Array of embedding vectors
    */
-  public async generateEmbeddings(
-    texts: string[]
-  ): Promise<RAGResult<EmbeddingVector[]>> {
+  public async generateEmbeddings(texts: string[]): Promise<RAGResult<EmbeddingVector[]>> {
     try {
       const pipeline = await this.ensurePipeline();
 
@@ -340,15 +333,8 @@ class EmbeddingService {
  * @param config - Chunking configuration
  * @returns Array of text chunks
  */
-export function chunkText(
-  text: string,
-  config: ChunkingConfig = {}
-): TextChunk[] {
-  const {
-    maxTokens = 512,
-    overlapTokens = 50,
-    separator = 'sentence',
-  } = config;
+export function chunkText(text: string, config: ChunkingConfig = {}): TextChunk[] {
+  const { maxTokens = 512, overlapTokens = 50, separator = 'sentence' } = config;
 
   // Approximate: 4 characters per token
   const maxChars = maxTokens * 4;
@@ -490,9 +476,7 @@ export function cosineSimilarity(
   b: EmbeddingVector | number[]
 ): number {
   if (a.length !== b.length) {
-    throw new Error(
-      `Vector dimensions must match: ${a.length} vs ${b.length}`
-    );
+    throw new Error(`Vector dimensions must match: ${a.length} vs ${b.length}`);
   }
 
   let dotProduct = 0;
@@ -528,9 +512,7 @@ export function euclideanDistance(
   b: EmbeddingVector | number[]
 ): number {
   if (a.length !== b.length) {
-    throw new Error(
-      `Vector dimensions must match: ${a.length} vs ${b.length}`
-    );
+    throw new Error(`Vector dimensions must match: ${a.length} vs ${b.length}`);
   }
 
   let sum = 0;
@@ -605,9 +587,7 @@ export function getEmbeddingService(): EmbeddingService {
  * @param text - The text to embed
  * @returns The embedding vector or error
  */
-export async function generateEmbedding(
-  text: string
-): Promise<RAGResult<EmbeddingVector>> {
+export async function generateEmbedding(text: string): Promise<RAGResult<EmbeddingVector>> {
   return getEmbeddingService().generateEmbedding(text);
 }
 
@@ -617,8 +597,6 @@ export async function generateEmbedding(
  * @param texts - Array of texts to embed
  * @returns Array of embedding vectors or error
  */
-export async function generateEmbeddings(
-  texts: string[]
-): Promise<RAGResult<EmbeddingVector[]>> {
+export async function generateEmbeddings(texts: string[]): Promise<RAGResult<EmbeddingVector[]>> {
   return getEmbeddingService().generateEmbeddings(texts);
 }

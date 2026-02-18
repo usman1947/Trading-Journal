@@ -105,10 +105,7 @@ export default function JournalPage() {
               Entries ({entries.length})
             </Typography>
           </Box>
-          <JournalList
-            selectedId={selectedEntry?.id || null}
-            onSelectEntry={setSelectedEntry}
-          />
+          <JournalList selectedId={selectedEntry?.id || null} onSelectEntry={setSelectedEntry} />
         </Paper>
 
         {/* Content Area */}
@@ -150,17 +147,10 @@ export default function JournalPage() {
       </Box>
 
       {/* Dialog for creating/editing */}
-      <JournalEntryDialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        entry={editingEntry}
-      />
+      <JournalEntryDialog open={dialogOpen} onClose={handleCloseDialog} entry={editingEntry} />
 
       {/* Ask Journal Dialog */}
-      <AskJournalDialog
-        open={askDialogOpen}
-        onClose={() => setAskDialogOpen(false)}
-      />
+      <AskJournalDialog open={askDialogOpen} onClose={() => setAskDialogOpen(false)} />
     </Box>
   );
 }

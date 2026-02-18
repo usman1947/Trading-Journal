@@ -56,318 +56,330 @@ export default function TradeList() {
     }
   };
 
-  const handleEdit = useCallback((e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    router.push(`/trades/${id}/edit`);
-  }, [router]);
+  const handleEdit = useCallback(
+    (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      router.push(`/trades/${id}/edit`);
+    },
+    [router]
+  );
 
   const handleDeleteClick = useCallback((e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     setDeleteId(id);
   }, []);
 
-  const handleSortModelChange = useCallback((newSortModel: GridSortModel) => {
-    dispatch(setTradeSortModel([...newSortModel]));
-  }, [dispatch]);
+  const handleSortModelChange = useCallback(
+    (newSortModel: GridSortModel) => {
+      dispatch(setTradeSortModel([...newSortModel]));
+    },
+    [dispatch]
+  );
 
   // Helper to calculate strategy score
-  const calculateScore = useCallback((strategy: Trade['strategy'], ruleChecks: Trade['ruleChecks']) => {
-    if (!strategy?.rules || strategy.rules.length === 0) return null;
-    const ruleChecksMap = new Map(
-      ruleChecks?.map((rc: { ruleId: string; checked: boolean }) => [rc.ruleId, rc.checked]) || []
-    );
-    const checkedCount = strategy.rules.filter(
-      (rule: { id: string }) => ruleChecksMap.get(rule.id) === true
-    ).length;
-    return { score: Math.round((checkedCount / strategy.rules.length) * 100), checkedCount, total: strategy.rules.length };
-  }, []);
+  const calculateScore = useCallback(
+    (strategy: Trade['strategy'], ruleChecks: Trade['ruleChecks']) => {
+      if (!strategy?.rules || strategy.rules.length === 0) return null;
+      const ruleChecksMap = new Map(
+        ruleChecks?.map((rc: { ruleId: string; checked: boolean }) => [rc.ruleId, rc.checked]) || []
+      );
+      const checkedCount = strategy.rules.filter(
+        (rule: { id: string }) => ruleChecksMap.get(rule.id) === true
+      ).length;
+      return {
+        score: Math.round((checkedCount / strategy.rules.length) * 100),
+        checkedCount,
+        total: strategy.rules.length,
+      };
+    },
+    []
+  );
 
   // Swing account columns: Symbol, Entry Date, Exit Date, Days in Trade, Strategy, Risk, Result, R, Actions
-  const swingColumns: GridColDef[] = useMemo(() => [
-    {
-      field: 'symbol',
-      headerName: 'Symbol',
-      width: 110,
-      renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {params.row.side === 'LONG' ? (
-            <LongIcon fontSize="small" color="success" />
-          ) : (
-            <ShortIcon fontSize="small" color="error" />
-          )}
-          <Typography fontWeight="medium">{params.value}</Typography>
-        </Box>
-      ),
-    },
-    {
-      field: 'entryDate',
-      headerName: 'Entry Date',
-      width: 110,
-      valueGetter: (_, row) => row.tradeTime,
-      valueFormatter: (value) => formatDateOnly(value),
-    },
-    {
-      field: 'exitDate',
-      headerName: 'Exit Date',
-      width: 110,
-      valueGetter: (_, row) => row.exitTime,
-      valueFormatter: (value) => value ? formatDateOnly(value) : '-',
-    },
-    {
-      field: 'daysInTrade',
-      headerName: 'Days',
-      width: 70,
-      valueGetter: (_, row) => {
-        if (!row.tradeTime) return null;
-        const entryDate = new Date(row.tradeTime);
-        const exitDate = row.exitTime ? new Date(row.exitTime) : new Date();
-        const diffTime = Math.abs(exitDate.getTime() - entryDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
+  const swingColumns: GridColDef[] = useMemo(
+    () => [
+      {
+        field: 'symbol',
+        headerName: 'Symbol',
+        width: 110,
+        renderCell: (params: GridRenderCellParams<Trade>) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {params.row.side === 'LONG' ? (
+              <LongIcon fontSize="small" color="success" />
+            ) : (
+              <ShortIcon fontSize="small" color="error" />
+            )}
+            <Typography fontWeight="medium">{params.value}</Typography>
+          </Box>
+        ),
       },
-      renderCell: (params: GridRenderCellParams<Trade>) => {
-        const days = params.value;
-        const isOpen = !params.row.exitTime;
-        return (
-          <Typography color={isOpen ? 'text.secondary' : 'text.primary'}>
-            {days}{isOpen ? '*' : ''}
-          </Typography>
-        );
+      {
+        field: 'entryDate',
+        headerName: 'Entry Date',
+        width: 110,
+        valueGetter: (_, row) => row.tradeTime,
+        valueFormatter: (value) => formatDateOnly(value),
       },
-    },
-    {
-      field: 'strategy',
-      headerName: 'Strategy',
-      width: 130,
-      valueGetter: (value: { name: string } | null) => value?.name || '-',
-    },
-    {
-      field: 'risk',
-      headerName: 'Risk $',
-      width: 90,
-      renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Typography color="warning.main">
-          {formatCurrency(params.value as number)}
-        </Typography>
-      ),
-    },
-    {
-      field: 'result',
-      headerName: 'Result $',
-      width: 110,
-      renderCell: (params: GridRenderCellParams<Trade>) => {
-        if (params.value === null || params.value === undefined) {
-          return <Typography color="text.secondary">Open</Typography>;
-        }
-        return (
-          <Typography
-            color={params.value >= 0 ? 'success.main' : 'error.main'}
-            fontWeight="medium"
-          >
-            {params.value >= 0 ? '+' : ''}
-            {formatCurrency(params.value)}
-          </Typography>
-        );
+      {
+        field: 'exitDate',
+        headerName: 'Exit Date',
+        width: 110,
+        valueGetter: (_, row) => row.exitTime,
+        valueFormatter: (value) => (value ? formatDateOnly(value) : '-'),
       },
-    },
-    {
-      field: 'rMultiple',
-      headerName: 'R',
-      width: 70,
-      renderCell: (params: GridRenderCellParams<Trade>) => {
-        const result = params.row.result;
-        const risk = params.row.risk;
-        if (result === null || result === undefined || !risk) {
-          return <Typography color="text.secondary">-</Typography>;
-        }
-        const r = result / risk;
-        return (
-          <Typography color={r >= 0 ? 'success.main' : 'error.main'}>
-            {r >= 0 ? '+' : ''}{r.toFixed(1)}R
-          </Typography>
-        );
+      {
+        field: 'daysInTrade',
+        headerName: 'Days',
+        width: 70,
+        valueGetter: (_, row) => {
+          if (!row.tradeTime) return null;
+          const entryDate = new Date(row.tradeTime);
+          const exitDate = row.exitTime ? new Date(row.exitTime) : new Date();
+          const diffTime = Math.abs(exitDate.getTime() - entryDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays;
+        },
+        renderCell: (params: GridRenderCellParams<Trade>) => {
+          const days = params.value;
+          const isOpen = !params.row.exitTime;
+          return (
+            <Typography color={isOpen ? 'text.secondary' : 'text.primary'}>
+              {days}
+              {isOpen ? '*' : ''}
+            </Typography>
+          );
+        },
       },
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 100,
-      sortable: false,
-      renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Box>
-          <IconButton
-            size="small"
-            onClick={(e) => handleEdit(e, params.row.id)}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            color="error"
-            onClick={(e) => handleDeleteClick(e, params.row.id)}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ),
-    },
-  ], [handleEdit, handleDeleteClick]);
+      {
+        field: 'strategy',
+        headerName: 'Strategy',
+        width: 130,
+        valueGetter: (value: { name: string } | null) => value?.name || '-',
+      },
+      {
+        field: 'risk',
+        headerName: 'Risk $',
+        width: 90,
+        renderCell: (params: GridRenderCellParams<Trade>) => (
+          <Typography color="warning.main">{formatCurrency(params.value as number)}</Typography>
+        ),
+      },
+      {
+        field: 'result',
+        headerName: 'Result $',
+        width: 110,
+        renderCell: (params: GridRenderCellParams<Trade>) => {
+          if (params.value === null || params.value === undefined) {
+            return <Typography color="text.secondary">Open</Typography>;
+          }
+          return (
+            <Typography
+              color={params.value >= 0 ? 'success.main' : 'error.main'}
+              fontWeight="medium"
+            >
+              {params.value >= 0 ? '+' : ''}
+              {formatCurrency(params.value)}
+            </Typography>
+          );
+        },
+      },
+      {
+        field: 'rMultiple',
+        headerName: 'R',
+        width: 70,
+        renderCell: (params: GridRenderCellParams<Trade>) => {
+          const result = params.row.result;
+          const risk = params.row.risk;
+          if (result === null || result === undefined || !risk) {
+            return <Typography color="text.secondary">-</Typography>;
+          }
+          const r = result / risk;
+          return (
+            <Typography color={r >= 0 ? 'success.main' : 'error.main'}>
+              {r >= 0 ? '+' : ''}
+              {r.toFixed(1)}R
+            </Typography>
+          );
+        },
+      },
+      {
+        field: 'actions',
+        headerName: 'Actions',
+        width: 100,
+        sortable: false,
+        renderCell: (params: GridRenderCellParams<Trade>) => (
+          <Box>
+            <IconButton size="small" onClick={(e) => handleEdit(e, params.row.id)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              color="error"
+              onClick={(e) => handleDeleteClick(e, params.row.id)}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        ),
+      },
+    ],
+    [handleEdit, handleDeleteClick]
+  );
 
   // Regular account columns
-  const regularColumns: GridColDef[] = useMemo(() => [
-    {
-      field: 'symbol',
-      headerName: 'Symbol',
-      width: 110,
-      renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {params.row.side === 'LONG' ? (
-            <LongIcon fontSize="small" color="success" />
-          ) : (
-            <ShortIcon fontSize="small" color="error" />
-          )}
-          <Typography fontWeight="medium">{params.value}</Typography>
-        </Box>
-      ),
-    },
-    {
-      field: 'tradeDate',
-      headerName: 'Date',
-      width: 110,
-      valueGetter: (_, row) => row.tradeTime,
-      valueFormatter: (value) => formatDateOnly(value),
-    },
-    {
-      field: 'tradeTime',
-      headerName: 'Time',
-      width: 90,
-      valueFormatter: (value) => formatTimeOnly(value),
-    },
-    {
-      field: 'strategy',
-      headerName: 'Strategy',
-      width: 130,
-      valueGetter: (value: { name: string } | null) => value?.name || '-',
-    },
-    {
-      field: 'strategyScore',
-      headerName: 'Score',
-      width: 100,
-      sortable: true,
-      renderCell: (params: GridRenderCellParams<Trade>) => {
-        const result = calculateScore(params.row.strategy, params.row.ruleChecks);
-        if (!result) {
-          return <Typography color="text.secondary">-</Typography>;
-        }
-        return (
-          <Tooltip title={`${result.checkedCount}/${result.total} rules satisfied`}>
-            <Chip
-              icon={<ChecklistIcon fontSize="small" />}
-              label={`${result.score}%`}
+  const regularColumns: GridColDef[] = useMemo(
+    () => [
+      {
+        field: 'symbol',
+        headerName: 'Symbol',
+        width: 110,
+        renderCell: (params: GridRenderCellParams<Trade>) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {params.row.side === 'LONG' ? (
+              <LongIcon fontSize="small" color="success" />
+            ) : (
+              <ShortIcon fontSize="small" color="error" />
+            )}
+            <Typography fontWeight="medium">{params.value}</Typography>
+          </Box>
+        ),
+      },
+      {
+        field: 'tradeDate',
+        headerName: 'Date',
+        width: 110,
+        valueGetter: (_, row) => row.tradeTime,
+        valueFormatter: (value) => formatDateOnly(value),
+      },
+      {
+        field: 'tradeTime',
+        headerName: 'Time',
+        width: 90,
+        valueFormatter: (value) => formatTimeOnly(value),
+      },
+      {
+        field: 'strategy',
+        headerName: 'Strategy',
+        width: 130,
+        valueGetter: (value: { name: string } | null) => value?.name || '-',
+      },
+      {
+        field: 'strategyScore',
+        headerName: 'Score',
+        width: 100,
+        sortable: true,
+        renderCell: (params: GridRenderCellParams<Trade>) => {
+          const result = calculateScore(params.row.strategy, params.row.ruleChecks);
+          if (!result) {
+            return <Typography color="text.secondary">-</Typography>;
+          }
+          return (
+            <Tooltip title={`${result.checkedCount}/${result.total} rules satisfied`}>
+              <Chip
+                icon={<ChecklistIcon fontSize="small" />}
+                label={`${result.score}%`}
+                size="small"
+                color={result.score >= 75 ? 'success' : result.score >= 50 ? 'warning' : 'error'}
+                variant="outlined"
+                sx={{ minWidth: 60 }}
+              />
+            </Tooltip>
+          );
+        },
+        valueGetter: (_, row) => {
+          const result = calculateScore(row.strategy, row.ruleChecks);
+          return result?.score ?? null;
+        },
+      },
+      {
+        field: 'setup',
+        headerName: 'Setup',
+        width: 150,
+        valueFormatter: (value) => value || '-',
+      },
+      {
+        field: 'risk',
+        headerName: 'Risk $',
+        width: 80,
+        renderCell: (params: GridRenderCellParams<Trade>) => (
+          <Typography color="warning.main">{formatCurrency(params.value as number)}</Typography>
+        ),
+      },
+      {
+        field: 'result',
+        headerName: 'Result $',
+        width: 110,
+        renderCell: (params: GridRenderCellParams<Trade>) => {
+          if (params.value === null || params.value === undefined) {
+            return <Typography color="text.secondary">Open</Typography>;
+          }
+          return (
+            <Typography
+              color={params.value >= 0 ? 'success.main' : 'error.main'}
+              fontWeight="medium"
+            >
+              {params.value >= 0 ? '+' : ''}
+              {formatCurrency(params.value)}
+            </Typography>
+          );
+        },
+      },
+      {
+        field: 'rMultiple',
+        headerName: 'R',
+        width: 70,
+        renderCell: (params: GridRenderCellParams<Trade>) => {
+          const result = params.row.result;
+          const risk = params.row.risk;
+          if (result === null || result === undefined || !risk) {
+            return <Typography color="text.secondary">-</Typography>;
+          }
+          const r = result / risk;
+          return (
+            <Typography color={r >= 0 ? 'success.main' : 'error.main'}>
+              {r >= 0 ? '+' : ''}
+              {r.toFixed(1)}R
+            </Typography>
+          );
+        },
+      },
+      {
+        field: 'execution',
+        headerName: 'Execution',
+        width: 110,
+        renderCell: (params: GridRenderCellParams) => (
+          <Chip
+            icon={params.value === 'PASS' ? <PassIcon /> : <FailIcon />}
+            label={params.value}
+            size="small"
+            color={params.value === 'PASS' ? 'success' : 'error'}
+            variant="outlined"
+          />
+        ),
+      },
+      {
+        field: 'actions',
+        headerName: 'Actions',
+        width: 100,
+        sortable: false,
+        renderCell: (params: GridRenderCellParams<Trade>) => (
+          <Box>
+            <IconButton size="small" onClick={(e) => handleEdit(e, params.row.id)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
               size="small"
-              color={result.score >= 75 ? 'success' : result.score >= 50 ? 'warning' : 'error'}
-              variant="outlined"
-              sx={{ minWidth: 60 }}
-            />
-          </Tooltip>
-        );
+              color="error"
+              onClick={(e) => handleDeleteClick(e, params.row.id)}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        ),
       },
-      valueGetter: (_, row) => {
-        const result = calculateScore(row.strategy, row.ruleChecks);
-        return result?.score ?? null;
-      },
-    },
-    {
-      field: 'setup',
-      headerName: 'Setup',
-      width: 150,
-      valueFormatter: (value) => value || '-',
-    },
-    {
-      field: 'risk',
-      headerName: 'Risk $',
-      width: 80,
-      renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Typography color="warning.main">
-          {formatCurrency(params.value as number)}
-        </Typography>
-      ),
-    },
-    {
-      field: 'result',
-      headerName: 'Result $',
-      width: 110,
-      renderCell: (params: GridRenderCellParams<Trade>) => {
-        if (params.value === null || params.value === undefined) {
-          return <Typography color="text.secondary">Open</Typography>;
-        }
-        return (
-          <Typography
-            color={params.value >= 0 ? 'success.main' : 'error.main'}
-            fontWeight="medium"
-          >
-            {params.value >= 0 ? '+' : ''}
-            {formatCurrency(params.value)}
-          </Typography>
-        );
-      },
-    },
-    {
-      field: 'rMultiple',
-      headerName: 'R',
-      width: 70,
-      renderCell: (params: GridRenderCellParams<Trade>) => {
-        const result = params.row.result;
-        const risk = params.row.risk;
-        if (result === null || result === undefined || !risk) {
-          return <Typography color="text.secondary">-</Typography>;
-        }
-        const r = result / risk;
-        return (
-          <Typography color={r >= 0 ? 'success.main' : 'error.main'}>
-            {r >= 0 ? '+' : ''}{r.toFixed(1)}R
-          </Typography>
-        );
-      },
-    },
-    {
-      field: 'execution',
-      headerName: 'Execution',
-      width: 110,
-      renderCell: (params: GridRenderCellParams) => (
-        <Chip
-          icon={params.value === 'PASS' ? <PassIcon /> : <FailIcon />}
-          label={params.value}
-          size="small"
-          color={params.value === 'PASS' ? 'success' : 'error'}
-          variant="outlined"
-        />
-      ),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 100,
-      sortable: false,
-      renderCell: (params: GridRenderCellParams<Trade>) => (
-        <Box>
-          <IconButton
-            size="small"
-            onClick={(e) => handleEdit(e, params.row.id)}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            color="error"
-            onClick={(e) => handleDeleteClick(e, params.row.id)}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ),
-    },
-  ], [calculateScore, handleEdit, handleDeleteClick]);
+    ],
+    [calculateScore, handleEdit, handleDeleteClick]
+  );
 
   // Select columns based on account type
   const columns = isSwingAccount ? swingColumns : regularColumns;

@@ -134,7 +134,9 @@ export default function SettingsPage() {
       return;
     }
     if (newPassword.length < 8) {
-      dispatch(showSnackbar({ message: 'Password must be at least 8 characters', severity: 'error' }));
+      dispatch(
+        showSnackbar({ message: 'Password must be at least 8 characters', severity: 'error' })
+      );
       return;
     }
     setSavingPassword(true);
@@ -145,9 +147,10 @@ export default function SettingsPage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: unknown) {
-      const message = error && typeof error === 'object' && 'data' in error
-        ? (error.data as { error?: string })?.error || 'Failed to change password'
-        : 'Failed to change password';
+      const message =
+        error && typeof error === 'object' && 'data' in error
+          ? (error.data as { error?: string })?.error || 'Failed to change password'
+          : 'Failed to change password';
       dispatch(showSnackbar({ message, severity: 'error' }));
     } finally {
       setSavingPassword(false);
@@ -284,9 +287,10 @@ export default function SettingsPage() {
       }
       handleCloseAccountDialog();
     } catch (error: unknown) {
-      const message = error && typeof error === 'object' && 'data' in error
-        ? (error.data as { error?: string })?.error || 'Failed to save account'
-        : 'Failed to save account';
+      const message =
+        error && typeof error === 'object' && 'data' in error
+          ? (error.data as { error?: string })?.error || 'Failed to save account'
+          : 'Failed to save account';
       dispatch(showSnackbar({ message, severity: 'error' }));
     }
   };
@@ -313,16 +317,19 @@ export default function SettingsPage() {
       }
       handleCloseDeleteDialog();
     } catch (error: unknown) {
-      const message = error && typeof error === 'object' && 'data' in error
-        ? (error.data as { error?: string })?.error || 'Failed to delete account'
-        : 'Failed to delete account';
+      const message =
+        error && typeof error === 'object' && 'data' in error
+          ? (error.data as { error?: string })?.error || 'Failed to delete account'
+          : 'Failed to delete account';
       dispatch(showSnackbar({ message, severity: 'error' }));
     }
   };
 
   if (settingsLoading || accountsLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -339,7 +346,11 @@ export default function SettingsPage() {
         <Grid size={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <PersonIcon />
                 Profile
               </Typography>
@@ -375,7 +386,11 @@ export default function SettingsPage() {
                       onClick={handleAvatarClick}
                       disabled={uploadingAvatar}
                     >
-                      {uploadingAvatar ? <CircularProgress size={16} /> : <CameraIcon fontSize="small" />}
+                      {uploadingAvatar ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <CameraIcon fontSize="small" />
+                      )}
                     </IconButton>
                     <input
                       type="file"
@@ -452,7 +467,11 @@ export default function SettingsPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   fullWidth
                   error={confirmPassword !== '' && newPassword !== confirmPassword}
-                  helperText={confirmPassword !== '' && newPassword !== confirmPassword ? 'Passwords do not match' : ''}
+                  helperText={
+                    confirmPassword !== '' && newPassword !== confirmPassword
+                      ? 'Passwords do not match'
+                      : ''
+                  }
                 />
                 <Button
                   variant="outlined"
@@ -471,7 +490,11 @@ export default function SettingsPage() {
         <Grid size={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 {themeMode === 'dark' ? <DarkModeIcon /> : <LightModeIcon />}
                 Appearance
               </Typography>
@@ -493,7 +516,11 @@ export default function SettingsPage() {
         <Grid size={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <MoneyIcon />
                 Trading Defaults
               </Typography>
@@ -513,7 +540,9 @@ export default function SettingsPage() {
                   <InputLabel>Default Account</InputLabel>
                   <Select
                     value={defaultAccountId ?? 'paper'}
-                    onChange={(e) => setDefaultAccountId(e.target.value === 'paper' ? null : e.target.value)}
+                    onChange={(e) =>
+                      setDefaultAccountId(e.target.value === 'paper' ? null : e.target.value)
+                    }
                     label="Default Account"
                   >
                     <MenuItem value="paper">Paper Account</MenuItem>
@@ -542,7 +571,14 @@ export default function SettingsPage() {
         <Grid size={12}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
                 <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <AccountIcon />
                   Trading Accounts
@@ -558,7 +594,8 @@ export default function SettingsPage() {
               </Box>
 
               <Alert severity="info" sx={{ mb: 2 }}>
-                The Paper Account is always available and cannot be deleted. Trades without an account are considered paper trades.
+                The Paper Account is always available and cannot be deleted. Trades without an
+                account are considered paper trades.
               </Alert>
 
               <Paper variant="outlined">
@@ -584,16 +621,14 @@ export default function SettingsPage() {
                         <ListItem>
                           <ListItemText
                             primary={account.name}
-                            secondary={
-                              [
-                                account.description || 'No description',
-                                account.initialBalance > 0
-                                  ? `Starting balance: ${formatCurrency(account.initialBalance)}`
-                                  : null,
-                              ]
-                                .filter(Boolean)
-                                .join(' | ')
-                            }
+                            secondary={[
+                              account.description || 'No description',
+                              account.initialBalance > 0
+                                ? `Starting balance: ${formatCurrency(account.initialBalance)}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' | ')}
                           />
                           <ListItemSecondaryAction>
                             <IconButton
@@ -625,9 +660,7 @@ export default function SettingsPage() {
 
       {/* Account Create/Edit Dialog */}
       <Dialog open={accountDialogOpen} onClose={handleCloseAccountDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {accountDialogData.id ? 'Edit Account' : 'Create Account'}
-        </DialogTitle>
+        <DialogTitle>{accountDialogData.id ? 'Edit Account' : 'Create Account'}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField
@@ -641,7 +674,9 @@ export default function SettingsPage() {
             <TextField
               label="Description (optional)"
               value={accountDialogData.description}
-              onChange={(e) => setAccountDialogData({ ...accountDialogData, description: e.target.value })}
+              onChange={(e) =>
+                setAccountDialogData({ ...accountDialogData, description: e.target.value })
+              }
               fullWidth
               multiline
               rows={2}
@@ -659,9 +694,7 @@ export default function SettingsPage() {
               fullWidth
               slotProps={{
                 input: {
-                  startAdornment: (
-                    <InputAdornment position="start">$</InputAdornment>
-                  ),
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
                 },
                 htmlInput: { min: 0, step: 0.01 },
               }}
@@ -671,7 +704,9 @@ export default function SettingsPage() {
               control={
                 <Switch
                   checked={accountDialogData.isSwingAccount}
-                  onChange={(e) => setAccountDialogData({ ...accountDialogData, isSwingAccount: e.target.checked })}
+                  onChange={(e) =>
+                    setAccountDialogData({ ...accountDialogData, isSwingAccount: e.target.checked })
+                  }
                   color="primary"
                 />
               }

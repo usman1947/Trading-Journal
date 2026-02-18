@@ -3,37 +3,35 @@ import prisma from '@/lib/prisma';
 import { hashPassword, createToken } from '@/lib/auth';
 import { createAuthResponse } from '@/lib/auth-helpers';
 import { handleApiError, validationError } from '@/lib/api-helpers';
+import { signupSchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, name } = body;
-
-    // Validate input
-    if (!email || !password || !name) {
-      return validationError('Email, password, and name are required');
+    const parsed = signupSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
     }
-
-    if (password.length < 6) {
-      return validationError('Password must be at least 6 characters');
-    }
+    const { email, password, name } = parsed.data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email },
     });
 
     if (existingUser) {
-      return validationError('An account with this email already exists');
+      return validationError(
+        'Unable to create account. Please try again or use a different email.'
+      );
     }
 
     // Create user
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
-        email: email.toLowerCase(),
+        email,
         passwordHash,
         name,
       },

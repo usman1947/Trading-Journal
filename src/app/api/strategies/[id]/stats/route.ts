@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { handleApiError, notFoundResponse } from '@/lib/api-helpers';
-import { applyAccountFilter, excludeBreakevenTrades, separateWinLossTrades } from '@/lib/query-helpers';
+import {
+  applyAccountFilter,
+  excludeBreakevenTrades,
+  separateWinLossTrades,
+} from '@/lib/query-helpers';
 import { calculateAverageRMultiple, deserializeSetups } from '@/utils/trade-calculations';
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +19,7 @@ type TradeWithScreenshots = {
   screenshots: unknown[];
 };
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();
@@ -60,10 +61,21 @@ export async function GET(
     const passingTrades = closedTrades.filter((t: TradeWithScreenshots) => t.execution === 'PASS');
 
     // Total PnL and risk include ALL trades (including BE)
-    const totalPnl = closedTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0);
-    const totalRisk = closedTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + t.risk, 0);
-    const totalWins = winningTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0);
-    const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0));
+    const totalPnl = closedTrades.reduce(
+      (sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0),
+      0
+    );
+    const totalRisk = closedTrades.reduce(
+      (sum: number, t: TradeWithScreenshots) => sum + t.risk,
+      0
+    );
+    const totalWins = winningTrades.reduce(
+      (sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0),
+      0
+    );
+    const totalLosses = Math.abs(
+      losingTrades.reduce((sum: number, t: TradeWithScreenshots) => sum + (t.result ?? 0), 0)
+    );
 
     // Average R-multiple uses non-BE trades only
     const averageRMultiple = calculateAverageRMultiple(nonBETrades);
@@ -97,9 +109,16 @@ export async function GET(
         averageLoss: losingTrades.length > 0 ? totalLosses / losingTrades.length : 0,
         profitFactor: totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0,
         averageRMultiple,
-        largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t: TradeWithScreenshots) => t.result ?? 0)) : 0,
-        largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t: TradeWithScreenshots) => t.result ?? 0)) : 0,
-        executionRate: closedTrades.length > 0 ? (passingTrades.length / closedTrades.length) * 100 : 0,
+        largestWin:
+          winningTrades.length > 0
+            ? Math.max(...winningTrades.map((t: TradeWithScreenshots) => t.result ?? 0))
+            : 0,
+        largestLoss:
+          losingTrades.length > 0
+            ? Math.min(...losingTrades.map((t: TradeWithScreenshots) => t.result ?? 0))
+            : 0,
+        executionRate:
+          closedTrades.length > 0 ? (passingTrades.length / closedTrades.length) * 100 : 0,
       },
     });
   } catch (error) {

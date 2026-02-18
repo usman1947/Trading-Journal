@@ -6,11 +6,11 @@ export interface AskJournalSource {
   id: string;
   type: 'trade' | 'journal';
   date: string;
-  symbol?: string;      // For trades
-  side?: 'LONG' | 'SHORT';  // For trades
-  result?: number;      // For trades (R-multiple)
-  mood?: string;        // For journal entries
-  excerpt: string;      // Relevant text excerpt
+  symbol?: string; // For trades
+  side?: 'LONG' | 'SHORT'; // For trades
+  result?: number; // For trades (R-multiple)
+  mood?: string; // For journal entries
+  excerpt: string; // Relevant text excerpt
   relevanceScore: number;
 }
 
@@ -48,4 +48,4 @@ export const EXAMPLE_QUESTIONS = [
   'How do I perform on Mondays vs Fridays?',
 ] as const;
 
-export type ExampleQuestion = typeof EXAMPLE_QUESTIONS[number];
+export type ExampleQuestion = (typeof EXAMPLE_QUESTIONS)[number];

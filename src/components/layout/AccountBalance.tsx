@@ -10,9 +10,9 @@ export default function AccountBalance() {
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
 
   const { data: accounts = [] } = useGetAccountsQuery({});
-  const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery(
-    { accountId: selectedAccountId ?? 'paper' }
-  );
+  const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery({
+    accountId: selectedAccountId ?? 'paper',
+  });
 
   // Find the selected account to get initialBalance
   const selectedAccount = accounts.find((a: Account) => a.id === selectedAccountId);

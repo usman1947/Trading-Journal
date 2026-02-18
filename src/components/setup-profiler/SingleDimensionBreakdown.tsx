@@ -22,23 +22,19 @@ export default function SingleDimensionBreakdown({
   }
 
   if (!analysis) {
-    return (
-      <Alert severity="info">
-        No data available for this dimension.
-      </Alert>
-    );
+    return <Alert severity="info">No data available for this dimension.</Alert>;
   }
 
   const { segments, baseline, displayName, totalTradesAnalyzed } = analysis;
 
   // Filter out segments with no trades
-  const validSegments = segments.filter(s => s.stats.totalTrades > 0);
+  const validSegments = segments.filter((s) => s.stats.totalTrades > 0);
 
   if (validSegments.length === 0) {
     return (
       <Alert severity="info">
-        No patterns found for {displayName.toLowerCase()}.
-        Make sure your trades have this information recorded.
+        No patterns found for {displayName.toLowerCase()}. Make sure your trades have this
+        information recorded.
       </Alert>
     );
   }
@@ -51,23 +47,20 @@ export default function SingleDimensionBreakdown({
           {displayName} Breakdown
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Baseline: {baseline.winRate.toFixed(0)}% win rate · {baseline.expectancyR >= 0 ? '+' : ''}{baseline.expectancyR.toFixed(2)}R expectancy · {totalTradesAnalyzed} trades analyzed
+          Baseline: {baseline.winRate.toFixed(0)}% win rate · {baseline.expectancyR >= 0 ? '+' : ''}
+          {baseline.expectancyR.toFixed(2)}R expectancy · {totalTradesAnalyzed} trades analyzed
         </Typography>
       </Box>
 
       {/* Pattern Cards */}
       <Stack spacing={1.5}>
         {validSegments.map((segment) => (
-          <PatternCard
-            key={segment.value}
-            segment={segment}
-            baselineWinRate={baseline.winRate}
-          />
+          <PatternCard key={segment.value} segment={segment} baselineWinRate={baseline.winRate} />
         ))}
       </Stack>
 
       {/* Explanatory note */}
-      {validSegments.some(s => s.classification === 'INSUFFICIENT') && (
+      {validSegments.some((s) => s.classification === 'INSUFFICIENT') && (
         <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
           Patterns marked &quot;Low Data&quot; need more trades for reliable analysis.
         </Typography>

@@ -23,12 +23,7 @@ export default function FormActions({
 }: FormActionsProps) {
   return (
     <Box sx={{ display: 'flex', gap: 2 }}>
-      <Button
-        variant="outlined"
-        fullWidth
-        onClick={onCancel}
-        disabled={loading || disabled}
-      >
+      <Button variant="outlined" fullWidth onClick={onCancel} disabled={loading || disabled}>
         {cancelLabel}
       </Button>
       <Button

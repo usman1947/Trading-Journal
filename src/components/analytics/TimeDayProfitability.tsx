@@ -2,25 +2,45 @@
 
 import { useMemo } from 'react';
 import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
+import type { RechartsTooltipPayloadEntry } from '@/types/recharts';
+
+interface HourlyEntry {
+  interval: string;
+  totalPnL: number;
+  trades: number;
+  winRate: number;
+}
+
+interface DailyEntry {
+  day: string;
+  totalPnL: number;
+  trades: number;
+  winRate: number;
+}
 
 interface TimeDayStats {
-  hourly: {
-    interval: string;
-    totalPnL: number;
-    trades: number;
-    winRate: number;
-  }[];
-  daily: {
-    day: string;
-    totalPnL: number;
-    trades: number;
-    winRate: number;
-  }[];
+  hourly: HourlyEntry[];
+  daily: DailyEntry[];
 }
 
 interface TimeDayProfitabilityProps {
   data: TimeDayStats;
+}
+
+interface TimeDayTooltipProps {
+  active?: boolean;
+  payload?: readonly RechartsTooltipPayloadEntry<HourlyEntry | DailyEntry>[];
+  type?: string;
 }
 
 export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps) {
@@ -35,10 +55,9 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
     [data.daily]
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomTooltip = ({ active, payload, type }: { active?: boolean; payload?: readonly any[]; type?: string }) => {
+  const CustomTooltip = ({ active, payload, type }: TimeDayTooltipProps) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const entry = payload[0].payload;
 
       // Format interval for display (e.g., "9:00" becomes "9:00 - 9:29")
       const getIntervalRange = (interval: string) => {
@@ -59,16 +78,22 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
           }}
         >
           <Typography variant="body2" fontWeight="bold">
-            {type === 'hourly' ? (data.interval ? getIntervalRange(data.interval) : '') : (data.day || '')}
+            {type === 'hourly'
+              ? 'interval' in entry && entry.interval
+                ? getIntervalRange(entry.interval)
+                : ''
+              : 'day' in entry
+                ? entry.day || ''
+                : ''}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Trades: {data.trades}
+            Trades: {entry.trades}
           </Typography>
-          <Typography variant="body2" color={data.totalPnL >= 0 ? 'success.main' : 'error.main'}>
-            P&L: ${data.totalPnL.toFixed(2)}
+          <Typography variant="body2" color={entry.totalPnL >= 0 ? 'success.main' : 'error.main'}>
+            P&L: ${entry.totalPnL.toFixed(2)}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Win Rate: {data.winRate.toFixed(1)}%
+            Win Rate: {entry.winRate.toFixed(1)}%
           </Typography>
         </Box>
       );
@@ -96,15 +121,12 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
                 </Box>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  <BarChart data={data.hourly as any} margin={{ top: 20, right: 20, bottom: 20, left: 40 }}>
+                  <BarChart
+                    data={data.hourly}
+                    margin={{ top: 20, right: 20, bottom: 20, left: 40 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="interval"
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
+                    <XAxis dataKey="interval" angle={-45} textAnchor="end" height={80} />
                     <YAxis label={{ value: 'P&L ($)', angle: -90, position: 'insideLeft' }} />
                     <Tooltip content={(props) => <CustomTooltip {...props} type="hourly" />} />
                     <Bar dataKey="totalPnL" radius={[8, 8, 0, 0]}>
@@ -138,8 +160,7 @@ export default function TimeDayProfitability({ data }: TimeDayProfitabilityProps
                 </Box>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  <BarChart data={data.daily as any} margin={{ top: 20, right: 20, bottom: 20, left: 40 }}>
+                  <BarChart data={data.daily} margin={{ top: 20, right: 20, bottom: 20, left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="day" />
                     <YAxis label={{ value: 'P&L ($)', angle: -90, position: 'insideLeft' }} />

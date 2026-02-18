@@ -11,7 +11,13 @@ interface StatCardProps {
   color?: 'success' | 'error' | 'primary' | 'secondary' | 'warning';
 }
 
-export default function StatCard({ title, value, subtitle, icon, color = 'primary' }: StatCardProps) {
+export default function StatCard({
+  title,
+  value,
+  subtitle,
+  icon,
+  color = 'primary',
+}: StatCardProps) {
   return (
     <Card
       sx={{
@@ -56,11 +62,7 @@ export default function StatCard({ title, value, subtitle, icon, color = 'primar
               {value}
             </Typography>
             {subtitle && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontSize: '0.875rem' }}
-              >
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                 {subtitle}
               </Typography>
             )}

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
-import { handleApiError, notFoundResponse, successResponse } from '@/lib/api-helpers';
+import {
+  handleApiError,
+  notFoundResponse,
+  successResponse,
+  validationError,
+} from '@/lib/api-helpers';
 import { TRADE_FULL_INCLUDE } from '@/lib/prisma-includes';
 import {
   calculateHoldDuration,
@@ -9,13 +14,11 @@ import {
   serializePartials,
   normalizeSymbol,
 } from '@/utils/trade-calculations';
+import { updateTradeSchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();
@@ -37,10 +40,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();
@@ -57,6 +57,10 @@ export async function PUT(
     }
 
     const body = await request.json();
+    const parsed = updateTradeSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
+    }
     const {
       symbol,
       side,
@@ -77,9 +81,9 @@ export async function PUT(
       postTradeMood,
       confidenceLevel,
       mistake,
-    } = body;
+    } = parsed.data;
 
-    const tradeDateTime = new Date(tradeTime);
+    const tradeDateTime = new Date(tradeTime!);
     const exitDateTime = exitTime ? new Date(exitTime) : null;
 
     // Recalculate derived fields using helper functions
@@ -89,7 +93,7 @@ export async function PUT(
     const trade = await prisma.trade.update({
       where: { id },
       data: {
-        symbol: normalizeSymbol(symbol),
+        symbol: symbol ? normalizeSymbol(symbol) : undefined,
         side,
         tradeTime: tradeDateTime,
         exitTime: exitDateTime,
@@ -102,7 +106,7 @@ export async function PUT(
         isBreakEven: isBreakEven ?? undefined,
         notes: notes || null,
         strategyId: strategyId || null,
-        accountId: accountId !== undefined ? (accountId || null) : undefined,
+        accountId: accountId !== undefined ? accountId || null : undefined,
         // AI-ready fields
         preTradeMood: preTradeMood || null,
         postTradeMood: postTradeMood || null,

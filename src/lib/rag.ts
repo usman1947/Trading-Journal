@@ -94,21 +94,17 @@ export async function retrieveDocuments(
 
     // Retrieve trade embeddings
     if (documentTypes.includes('trade')) {
-      const tradeResults = await retrieveTradeDocuments(
-        queryEmbedding,
-        userId,
-        { dateRange, symbols, accountId }
-      );
+      const tradeResults = await retrieveTradeDocuments(queryEmbedding, userId, {
+        dateRange,
+        symbols,
+        accountId,
+      });
       results.push(...tradeResults);
     }
 
     // Retrieve journal embeddings
     if (documentTypes.includes('journal')) {
-      const journalResults = await retrieveJournalDocuments(
-        queryEmbedding,
-        userId,
-        { dateRange }
-      );
+      const journalResults = await retrieveJournalDocuments(queryEmbedding, userId, { dateRange });
       results.push(...journalResults);
     }
 
@@ -136,7 +132,11 @@ export async function retrieveDocuments(
 async function retrieveTradeDocuments(
   queryEmbedding: EmbeddingVector,
   userId: string,
-  filters: { dateRange?: RAGQueryOptions['dateRange']; symbols?: readonly string[]; accountId?: string | null }
+  filters: {
+    dateRange?: RAGQueryOptions['dateRange'];
+    symbols?: readonly string[];
+    accountId?: string | null;
+  }
 ): Promise<RetrievedDocument[]> {
   // Build where clause for trades
   const tradeWhere: Record<string, unknown> = { userId };
@@ -575,11 +575,11 @@ export async function queryRAG(
     }
 
     // Retrieve relevant documents
-    const retrievalResult = await retrieveDocuments(
-      embeddingResult.data,
-      userId,
-      { ...options, topK, minSimilarity }
-    );
+    const retrievalResult = await retrieveDocuments(embeddingResult.data, userId, {
+      ...options,
+      topK,
+      minSimilarity,
+    });
 
     if (!retrievalResult.success) {
       return { success: false, error: retrievalResult.error };
@@ -591,7 +591,8 @@ export async function queryRAG(
     if (documents.length === 0) {
       const error: RAGError = {
         code: 'NO_DOCUMENTS_FOUND',
-        message: 'No relevant documents found for your query. Try syncing your embeddings or adjusting your search criteria.',
+        message:
+          'No relevant documents found for your query. Try syncing your embeddings or adjusting your search criteria.',
         retryable: false,
       };
       return { success: false, error };
@@ -934,11 +935,7 @@ export async function syncEmbeddings(
   const startTime = Date.now();
 
   try {
-    const {
-      types = ['trade', 'journal'],
-      force = false,
-      batchSize = 100,
-    } = options;
+    const { types = ['trade', 'journal'], force = false, batchSize = 100 } = options;
 
     const allResults: EmbeddingSyncResult[] = [];
 

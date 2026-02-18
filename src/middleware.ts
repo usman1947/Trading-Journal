@@ -1,13 +1,43 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { AUTH_COOKIE_NAME, verifyToken } from './lib/auth-edge';
+import { checkRateLimit } from './lib/rate-limiter';
 
 // Routes that don't require authentication
 const publicRoutes = ['/login', '/signup'];
 const publicApiRoutes = ['/api/auth/login', '/api/auth/signup'];
 
+/**
+ * Get client IP address from request headers or connection info.
+ */
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return request.ip ?? '127.0.0.1';
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const ip = getClientIp(request);
+
+  // Rate limit auth endpoints BEFORE auth check (to block brute force)
+  if (pathname === '/api/auth/login' || pathname === '/api/auth/signup') {
+    const { allowed, remaining } = checkRateLimit(`auth:${ip}`, 10, 60_000);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Remaining': String(remaining),
+          },
+        }
+      );
+    }
+  }
 
   // Allow public routes
   if (publicRoutes.includes(pathname) || publicApiRoutes.includes(pathname)) {
@@ -39,6 +69,41 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Rate limit API routes AFTER auth check
+  if (pathname.startsWith('/api/')) {
+    // Strict limits for AI endpoints (20 req/min)
+    if (pathname.startsWith('/api/ai/')) {
+      const { allowed, remaining } = checkRateLimit(`ai:${ip}`, 20, 60_000);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: 'Too many requests. Please try again later.' },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': '60',
+              'X-RateLimit-Remaining': String(remaining),
+            },
+          }
+        );
+      }
+    } else {
+      // General API rate limit (100 req/min)
+      const { allowed, remaining } = checkRateLimit(`api:${ip}`, 100, 60_000);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: 'Too many requests. Please try again later.' },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': '60',
+              'X-RateLimit-Remaining': String(remaining),
+            },
+          }
+        );
+      }
+    }
+  }
+
   // If authenticated user tries to access login/signup, redirect to dashboard
   if (publicRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL('/', request.url));
@@ -56,7 +121,7 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
     '/api/:path*',
   ],
 };

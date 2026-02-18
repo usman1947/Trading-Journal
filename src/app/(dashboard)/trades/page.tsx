@@ -13,12 +13,7 @@ export default function TradesPage() {
         <Typography variant="h4" fontWeight="bold">
           Trades
         </Typography>
-        <Button
-          component={Link}
-          href="/trades/new"
-          variant="contained"
-          startIcon={<AddIcon />}
-        >
+        <Button component={Link} href="/trades/new" variant="contained" startIcon={<AddIcon />}>
           New Trade
         </Button>
       </Box>

@@ -2,8 +2,19 @@
 
 import { useMemo, useCallback } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
+import {
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  ReferenceLine,
+} from 'recharts';
 import { useRouter } from 'next/navigation';
+import type { RechartsTooltipProps } from '@/types/recharts';
 
 interface TradeTimeData {
   id: string;
@@ -15,6 +26,16 @@ interface TradeTimeData {
   symbol: string;
 }
 
+interface TradeTimeChartEntry {
+  id: string;
+  x: number;
+  y: number;
+  result: number | null;
+  symbol: string;
+  time: string;
+  date: string;
+}
+
 interface TradeTimeChartProps {
   data: TradeTimeData[];
 }
@@ -22,27 +43,32 @@ interface TradeTimeChartProps {
 export default function TradeTimeChart({ data }: TradeTimeChartProps) {
   const router = useRouter();
 
-  const chartData = useMemo(() => data.map((trade) => ({
-    id: trade.id,
-    x: trade.hour + trade.minute / 60,
-    y: trade.result ?? 0,
-    result: trade.result,
-    symbol: trade.symbol,
-    time: trade.time,
-    date: trade.date,
-  })), [data]);
+  const chartData = useMemo(
+    () =>
+      data.map((trade) => ({
+        id: trade.id,
+        x: trade.hour + trade.minute / 60,
+        y: trade.result ?? 0,
+        result: trade.result,
+        symbol: trade.symbol,
+        time: trade.time,
+        date: trade.date,
+      })),
+    [data]
+  );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDotClick = useCallback((data: any) => {
-    if (data?.payload?.id) {
-      router.push(`/trades/${data.payload.id}`);
-    }
-  }, [router]);
+  const handleDotClick = useCallback(
+    (dotData: { payload?: TradeTimeChartEntry }) => {
+      if (dotData?.payload?.id) {
+        router.push(`/trades/${dotData.payload.id}`);
+      }
+    },
+    [router]
+  );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: RechartsTooltipProps<TradeTimeChartEntry>) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const entry = payload[0].payload;
       return (
         <Box
           sx={{
@@ -54,17 +80,17 @@ export default function TradeTimeChart({ data }: TradeTimeChartProps) {
           }}
         >
           <Typography variant="body2" fontWeight="bold">
-            {data.symbol}
+            {entry.symbol}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Date: {data.date}
+            Date: {entry.date}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Time: {data.time}
+            Time: {entry.time}
           </Typography>
-          {data.result !== null && (
-            <Typography variant="body2" color={data.result >= 0 ? 'success.main' : 'error.main'}>
-              P&L: ${data.result.toFixed(2)}
+          {entry.result !== null && (
+            <Typography variant="body2" color={entry.result >= 0 ? 'success.main' : 'error.main'}>
+              P&L: ${entry.result.toFixed(2)}
             </Typography>
           )}
         </Box>
@@ -115,7 +141,14 @@ export default function TradeTimeChart({ data }: TradeTimeChartProps) {
                 />
                 <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
                 <Tooltip content={<CustomTooltip />} />
-                <Scatter name="Trades" data={chartData} fill="#1976d2" dataKey="y" onClick={handleDotClick} style={{ cursor: 'pointer' }}>
+                <Scatter
+                  name="Trades"
+                  data={chartData}
+                  fill="#1976d2"
+                  dataKey="y"
+                  onClick={handleDotClick}
+                  style={{ cursor: 'pointer' }}
+                >
                   {chartData.map((entry, index) => {
                     let color = '#1976d2';
                     if (entry.result !== null) {

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
-import { handleApiError, validationError, notFoundResponse, successResponse } from '@/lib/api-helpers';
+import {
+  handleApiError,
+  validationError,
+  notFoundResponse,
+  successResponse,
+} from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,13 +30,15 @@ function calculateScore(entry: {
 }
 
 // Add score to entry
-function withScore<T extends {
-  smartSlMove: boolean;
-  goodEntry: boolean;
-  htfSignal: boolean;
-  notIntoLevel: boolean;
-  avoidSketchyCandle: boolean;
-}>(entry: T): T & { score: number } {
+function withScore<
+  T extends {
+    smartSlMove: boolean;
+    goodEntry: boolean;
+    htfSignal: boolean;
+    notIntoLevel: boolean;
+    avoidSketchyCandle: boolean;
+  },
+>(entry: T): T & { score: number } {
   return { ...entry, score: calculateScore(entry) };
 }
 
@@ -75,15 +82,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
-    const {
-      date,
-      smartSlMove,
-      goodEntry,
-      htfSignal,
-      notIntoLevel,
-      avoidSketchyCandle,
-      notes,
-    } = body;
+    const { date, smartSlMove, goodEntry, htfSignal, notIntoLevel, avoidSketchyCandle, notes } =
+      body;
 
     if (!date) {
       return validationError('Date is required');

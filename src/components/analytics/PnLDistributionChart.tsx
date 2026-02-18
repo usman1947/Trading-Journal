@@ -2,13 +2,32 @@
 
 import { useMemo } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
+import {
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  Cell,
+} from 'recharts';
+import type { RechartsTooltipProps } from '@/types/recharts';
 
 interface PnLDistributionData {
   id: string;
   symbol: string;
   result: number;
   rMultiple: number;
+  date: string;
+}
+
+interface PnLChartEntry {
+  x: number;
+  y: number;
+  result: number;
+  symbol: string;
   date: string;
 }
 
@@ -25,7 +44,7 @@ export default function PnLDistributionChart({ data }: PnLDistributionChartProps
       symbol: trade.symbol,
       date: trade.date,
     }));
-    const yValues = processed.length > 0 ? processed.map(d => d.y) : [0];
+    const yValues = processed.length > 0 ? processed.map((d) => d.y) : [0];
     return {
       chartData: processed,
       minY: Math.floor(Math.min(...yValues, 0)),
@@ -33,10 +52,9 @@ export default function PnLDistributionChart({ data }: PnLDistributionChartProps
     };
   }, [data]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: RechartsTooltipProps<PnLChartEntry>) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const entry = payload[0].payload;
       return (
         <Box
           sx={{
@@ -48,16 +66,16 @@ export default function PnLDistributionChart({ data }: PnLDistributionChartProps
           }}
         >
           <Typography variant="body2" fontWeight="bold">
-            {data.symbol}
+            {entry.symbol}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {data.date}
+            {entry.date}
           </Typography>
-          <Typography variant="body2" color={data.result >= 0 ? 'success.main' : 'error.main'}>
-            P&L: ${data.result.toFixed(2)}
+          <Typography variant="body2" color={entry.result >= 0 ? 'success.main' : 'error.main'}>
+            P&L: ${entry.result.toFixed(2)}
           </Typography>
-          <Typography variant="body2" color={data.y >= 0 ? 'success.main' : 'error.main'}>
-            R: {data.y.toFixed(2)}
+          <Typography variant="body2" color={entry.y >= 0 ? 'success.main' : 'error.main'}>
+            R: {entry.y.toFixed(2)}
           </Typography>
         </Box>
       );

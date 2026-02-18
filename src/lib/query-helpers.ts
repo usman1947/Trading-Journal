@@ -26,10 +26,7 @@ export function applyAccountFilter(
  * @param where - The Prisma where clause object to modify
  * @param userId - The user ID to filter by
  */
-export function applyUserFilter(
-  where: Record<string, unknown>,
-  userId: string | undefined
-): void {
+export function applyUserFilter(where: Record<string, unknown>, userId: string | undefined): void {
   if (userId) {
     where.userId = userId;
   }
@@ -49,10 +46,10 @@ export function buildDateRangeFilter(
   dateTo?: string
 ): void {
   if (dateFrom) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), gte: new Date(dateFrom) };
+    where.tradeTime = { ...((where.tradeTime as object) || {}), gte: new Date(dateFrom) };
   }
   if (dateTo) {
-    where.tradeTime = { ...(where.tradeTime as object || {}), lte: new Date(dateTo) };
+    where.tradeTime = { ...((where.tradeTime as object) || {}), lte: new Date(dateTo) };
   }
 }
 
@@ -131,7 +128,7 @@ export function filterByTimeOfDay<T extends { tradeTime: Date }>(
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
-      timeZone: 'America/New_York'
+      timeZone: 'America/New_York',
     });
 
     if (timeAfter && timeStr < timeAfter) return false;
@@ -146,9 +143,7 @@ export function filterByTimeOfDay<T extends { tradeTime: Date }>(
  * @param trades - Array of trades with isBreakEven property
  * @returns Filtered array excluding break-even trades
  */
-export function excludeBreakevenTrades<T extends { isBreakEven: boolean }>(
-  trades: T[]
-): T[] {
+export function excludeBreakevenTrades<T extends { isBreakEven: boolean }>(trades: T[]): T[] {
   return trades.filter((t) => !t.isBreakEven);
 }
 

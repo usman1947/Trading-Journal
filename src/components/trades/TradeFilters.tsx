@@ -13,12 +13,13 @@ import {
   Autocomplete,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import {
-  FilterList as FilterIcon,
-  Clear as ClearIcon,
-} from '@mui/icons-material';
+import { FilterList as FilterIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { updateTradeFilter, clearTradeFilters, setShowTradeFilters } from '@/store/slices/filtersSlice';
+import {
+  updateTradeFilter,
+  clearTradeFilters,
+  setShowTradeFilters,
+} from '@/store/slices/filtersSlice';
 import { useGetStrategiesQuery, useGetSetupsQuery } from '@/store';
 
 export default function TradeFilters() {
@@ -64,9 +65,7 @@ export default function TradeFilters() {
             label="Symbol"
             size="small"
             value={filters.symbol || ''}
-            onChange={(e) =>
-              dispatch(updateTradeFilter({ key: 'symbol', value: e.target.value }))
-            }
+            onChange={(e) => dispatch(updateTradeFilter({ key: 'symbol', value: e.target.value }))}
             sx={{ width: 150 }}
           />
 
@@ -75,9 +74,7 @@ export default function TradeFilters() {
             <Select
               value={filters.side || ''}
               label="Side"
-              onChange={(e) =>
-                dispatch(updateTradeFilter({ key: 'side', value: e.target.value }))
-              }
+              onChange={(e) => dispatch(updateTradeFilter({ key: 'side', value: e.target.value }))}
             >
               <MenuItem value="">All</MenuItem>
               <MenuItem value="LONG">Long</MenuItem>
@@ -125,9 +122,7 @@ export default function TradeFilters() {
             onChange={(_, newValue) => {
               dispatch(updateTradeFilter({ key: 'setup', value: newValue || '' }));
             }}
-            renderInput={(params) => (
-              <TextField {...params} label="Setup" />
-            )}
+            renderInput={(params) => <TextField {...params} label="Setup" />}
             sx={{ width: 180 }}
           />
 

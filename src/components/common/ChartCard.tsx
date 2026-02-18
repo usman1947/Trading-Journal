@@ -10,11 +10,7 @@ interface ChartCardProps {
   gridSize?: { xs?: number; sm?: number; md?: number; lg?: number };
 }
 
-export default function ChartCard({
-  title,
-  children,
-  height = 450,
-}: ChartCardProps) {
+export default function ChartCard({ title, children, height = 450 }: ChartCardProps) {
   return (
     <Card sx={{ height }}>
       <CardContent sx={{ height: '100%', p: 0 }}>
@@ -23,9 +19,7 @@ export default function ChartCard({
             {title}
           </Typography>
         </Box>
-        <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>
-          {children}
-        </Box>
+        <Box sx={{ height: 'calc(100% - 64px)', p: 2 }}>{children}</Box>
       </CardContent>
     </Card>
   );

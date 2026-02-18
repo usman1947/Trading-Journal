@@ -6,10 +6,7 @@ import { JOURNAL_WITH_SCREENSHOTS_INCLUDE } from '@/lib/prisma-includes';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ date: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ date: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();

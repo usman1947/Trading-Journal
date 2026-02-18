@@ -42,7 +42,15 @@ import { useAppDispatch } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import type { Mood, DailyJournal, JournalScreenshot } from '@/types';
 
-function PendingFilePreview({ file, index, onRemove }: { file: File; index: number; onRemove: (index: number) => void }) {
+function PendingFilePreview({
+  file,
+  index,
+  onRemove,
+}: {
+  file: File;
+  index: number;
+  onRemove: (index: number) => void;
+}) {
   const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
   useEffect(() => {
     return () => URL.revokeObjectURL(previewUrl);
@@ -60,13 +68,7 @@ function PendingFilePreview({ file, index, onRemove }: { file: File; index: numb
         borderColor: 'primary.main',
       }}
     >
-      <Image
-        src={previewUrl}
-        alt={file.name}
-        fill
-        style={{ objectFit: 'cover' }}
-        unoptimized
-      />
+      <Image src={previewUrl} alt={file.name} fill style={{ objectFit: 'cover' }} unoptimized />
       <IconButton
         size="small"
         onClick={() => onRemove(index)}
@@ -103,7 +105,8 @@ export default function JournalEntryDialog({
   const [saveEntry, { isLoading: saving }] = useSaveJournalEntryMutation();
   const [deleteEntry, { isLoading: deleting }] = useDeleteJournalEntryMutation();
   const [uploadScreenshots, { isLoading: uploading }] = useUploadJournalScreenshotsMutation();
-  const [deleteScreenshot, { isLoading: deletingScreenshot }] = useDeleteJournalScreenshotMutation();
+  const [deleteScreenshot, { isLoading: deletingScreenshot }] =
+    useDeleteJournalScreenshotMutation();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState('');
@@ -232,7 +235,9 @@ export default function JournalEntryDialog({
         fullWidth
         PaperProps={{ sx: { maxHeight: '90vh' } }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <Typography variant="h6">
             {isEditing ? 'Edit Journal Entry' : 'New Journal Entry'}
           </Typography>
@@ -281,11 +286,11 @@ export default function JournalEntryDialog({
               backgroundColor: 'background.paper',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
+            >
               <Box>
-                <Typography variant="subtitle2">
-                  Pre-Session State
-                </Typography>
+                <Typography variant="subtitle2">Pre-Session State</Typography>
                 <Typography variant="caption" color="text.secondary">
                   Optional - helps AI analyze performance patterns
                 </Typography>
@@ -324,7 +329,10 @@ export default function JournalEntryDialog({
                     size="small"
                     sx={{ flex: 1 }}
                   />
-                  <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}
+                  >
                     {energyLevel ?? '-'}
                   </Typography>
                 </Box>
@@ -345,7 +353,10 @@ export default function JournalEntryDialog({
                     size="small"
                     sx={{ flex: 1 }}
                   />
-                  <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}
+                  >
                     {sleepQuality ?? '-'}
                   </Typography>
                 </Box>
@@ -366,7 +377,10 @@ export default function JournalEntryDialog({
                     size="small"
                     sx={{ flex: 1 }}
                   />
-                  <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ minWidth: 24, textAlign: 'right', fontWeight: 500 }}
+                  >
                     {focusLevel ?? '-'}
                   </Typography>
                 </Box>
@@ -426,8 +440,7 @@ export default function JournalEntryDialog({
               input.type = 'file';
               input.multiple = true;
               input.accept = 'image/*';
-              input.onchange = (e) =>
-                handleFileSelect((e.target as HTMLInputElement).files);
+              input.onchange = (e) => handleFileSelect((e.target as HTMLInputElement).files);
               input.click();
             }}
           >
@@ -451,7 +464,12 @@ export default function JournalEntryDialog({
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {pendingFiles.map((file, index) => (
-                  <PendingFilePreview key={index} file={file} index={index} onRemove={handleRemovePendingFile} />
+                  <PendingFilePreview
+                    key={index}
+                    file={file}
+                    index={index}
+                    onRemove={handleRemovePendingFile}
+                  />
                 ))}
               </Box>
             </Box>
@@ -503,11 +521,7 @@ export default function JournalEntryDialog({
 
         <DialogActions sx={{ justifyContent: 'space-between', px: 3, py: 2 }}>
           {isEditing ? (
-            <Button
-              color="error"
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={deleting}
-            >
+            <Button color="error" onClick={() => setDeleteDialogOpen(true)} disabled={deleting}>
               Delete Entry
             </Button>
           ) : (
@@ -515,11 +529,7 @@ export default function JournalEntryDialog({
           )}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button onClick={onClose}>Cancel</Button>
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              disabled={saving || !notes.trim()}
-            >
+            <Button variant="contained" onClick={handleSave} disabled={saving || !notes.trim()}>
               {saving ? 'Saving...' : isEditing ? 'Update' : 'Save'}
             </Button>
           </Box>
@@ -546,11 +556,7 @@ export default function JournalEntryDialog({
       </Dialog>
 
       {/* Image Preview Dialog */}
-      <Dialog
-        open={!!selectedImage}
-        onClose={() => setSelectedImage(null)}
-        maxWidth="lg"
-      >
+      <Dialog open={!!selectedImage} onClose={() => setSelectedImage(null)} maxWidth="lg">
         <IconButton
           onClick={() => setSelectedImage(null)}
           sx={{

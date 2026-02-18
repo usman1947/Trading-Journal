@@ -74,13 +74,7 @@ export default function DimensionTabs() {
         }}
       >
         {DIMENSION_CONFIG.map((dim) => (
-          <Tab
-            key={dim.id}
-            value={dim.id}
-            label={dim.label}
-            icon={dim.icon}
-            iconPosition="start"
-          />
+          <Tab key={dim.id} value={dim.id} label={dim.label} icon={dim.icon} iconPosition="start" />
         ))}
       </Tabs>
     </Box>

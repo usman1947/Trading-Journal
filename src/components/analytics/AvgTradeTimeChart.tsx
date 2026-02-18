@@ -36,10 +36,20 @@ export default function AvgTradeTimeChart({ data, loading }: AvgTradeTimeChartPr
     );
   }
 
-  const totalCount = (data?.winnerCount || 0) + (data?.loserCount || 0) + (data?.breakevenCount || 0);
+  const totalCount =
+    (data?.winnerCount || 0) + (data?.loserCount || 0) + (data?.breakevenCount || 0);
   if (!data || totalCount === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', flexDirection: 'column', gap: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%',
+          flexDirection: 'column',
+          gap: 1,
+        }}
+      >
         <Typography color="text.secondary">No trade time data available</Typography>
         <Typography variant="caption" color="text.secondary">
           Add exit times to your trades to see this chart
@@ -67,10 +77,15 @@ export default function AvgTradeTimeChart({ data, loading }: AvgTradeTimeChartPr
       count: data.loserCount,
       color: COLORS.loser,
     },
-  ].filter(item => item.count > 0);
+  ].filter((item) => item.count > 0);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: { payload: { name: string; time: number; count: number; color: string } }[];
+  }) => {
     if (active && payload && payload.length) {
       const item = payload[0].payload;
       return (
@@ -100,12 +115,12 @@ export default function AvgTradeTimeChart({ data, loading }: AvgTradeTimeChartPr
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-        <XAxis
-          type="number"
-          tickFormatter={(value) => formatTime(value)}
-          domain={[0, 'auto']}
-        />
+      <BarChart
+        data={chartData}
+        layout="vertical"
+        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      >
+        <XAxis type="number" tickFormatter={(value) => formatTime(value)} domain={[0, 'auto']} />
         <YAxis type="category" dataKey="name" width={70} />
         <Tooltip content={<CustomTooltip />} />
         <Bar dataKey="time" radius={[0, 4, 4, 0]}>

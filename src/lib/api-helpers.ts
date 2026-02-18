@@ -16,7 +16,12 @@ export function handleApiError(
 ): NextResponse {
   console.error(`Error ${context}:`, error);
 
-  const message = error instanceof Error ? error.message : `Failed to ${context}`;
+  const message =
+    process.env.NODE_ENV === 'production'
+      ? `Failed to ${context}`
+      : error instanceof Error
+        ? error.message
+        : `Failed to ${context}`;
 
   return NextResponse.json({ error: message }, { status });
 }
@@ -29,10 +34,7 @@ export function handleApiError(
  * @param status - HTTP status code (default: 200)
  * @returns NextResponse with JSON data
  */
-export function createJsonResponse(
-  data: unknown,
-  status: number = 200
-): NextResponse {
+export function createJsonResponse(data: unknown, status: number = 200): NextResponse {
   return NextResponse.json(data, { status });
 }
 
@@ -43,10 +45,7 @@ export function createJsonResponse(
  * @param message - Optional success message
  * @returns NextResponse with success indicator
  */
-export function successResponse(
-  data?: unknown,
-  message?: string
-): NextResponse {
+export function successResponse(data?: unknown, message?: string): NextResponse {
   const response: Record<string, unknown> = { success: true };
 
   if (message) {
@@ -66,10 +65,7 @@ export function successResponse(
  * @param status - HTTP status code (default: 400)
  * @returns NextResponse with error message
  */
-export function errorResponse(
-  message: string,
-  status: number = 400
-): NextResponse {
+export function errorResponse(message: string, status: number = 400): NextResponse {
   return NextResponse.json({ error: message }, { status });
 }
 

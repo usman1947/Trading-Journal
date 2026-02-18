@@ -36,7 +36,8 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
 
   // Total result includes ALL trades (including BE), minus commissions
   const totalCommissions = completedTrades.reduce((sum, t) => sum + (t.commission ?? 0), 0);
-  const totalResult = completedTrades.reduce((sum, t) => sum + (t.result ?? 0), 0) - totalCommissions;
+  const totalResult =
+    completedTrades.reduce((sum, t) => sum + (t.result ?? 0), 0) - totalCommissions;
   const totalWins = winningTrades.reduce((sum, t) => sum + (t.result ?? 0), 0);
   const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.result ?? 0), 0));
   const totalRisk = completedTrades.reduce((sum, t) => sum + (t.risk ?? 0), 0);
@@ -47,17 +48,20 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
 
   const averageWinnerR =
     winnersWithRisk.length > 0
-      ? winnersWithRisk.reduce((sum, t) => sum + calculateRMultiple(t.result ?? 0, t.risk), 0) / winnersWithRisk.length
+      ? winnersWithRisk.reduce((sum, t) => sum + calculateRMultiple(t.result ?? 0, t.risk), 0) /
+        winnersWithRisk.length
       : 0;
 
   const averageLoserR =
     losersWithRisk.length > 0
-      ? losersWithRisk.reduce((sum, t) => sum + calculateRMultiple(t.result ?? 0, t.risk), 0) / losersWithRisk.length
+      ? losersWithRisk.reduce((sum, t) => sum + calculateRMultiple(t.result ?? 0, t.risk), 0) /
+        losersWithRisk.length
       : 0;
 
   // Calculate execution rate (% of PASS trades) - includes all completed trades
   const passTrades = completedTrades.filter((t) => t.execution === 'PASS');
-  const executionRate = completedTrades.length > 0 ? (passTrades.length / completedTrades.length) * 100 : 0;
+  const executionRate =
+    completedTrades.length > 0 ? (passTrades.length / completedTrades.length) * 100 : 0;
 
   return {
     totalResult,
@@ -79,12 +83,15 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
 }
 
 export function groupTradesByDate(trades: Trade[]): Record<string, Trade[]> {
-  return trades.reduce((acc, trade) => {
-    const date = trade.tradeTime.split('T')[0];
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(trade);
-    return acc;
-  }, {} as Record<string, Trade[]>);
+  return trades.reduce(
+    (acc, trade) => {
+      const date = trade.tradeTime.split('T')[0];
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(trade);
+      return acc;
+    },
+    {} as Record<string, Trade[]>
+  );
 }

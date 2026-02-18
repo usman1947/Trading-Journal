@@ -9,10 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { queryRAG } from '@/lib/rag';
-import {
-  validateRAGQueryRequest,
-  formatZodError,
-} from '@/lib/rag-schemas';
+import { validateRAGQueryRequest, formatZodError } from '@/lib/rag-schemas';
 import type { RAGAPIResponse, RAGQueryOptions } from '@/types/rag';
 
 export const dynamic = 'force-dynamic';
@@ -106,10 +103,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RAGAPIRes
     };
 
     // Execute RAG query
-    const result = await queryRAG(
-      { query, options: ragOptions },
-      user.id
-    );
+    const result = await queryRAG({ query, options: ragOptions }, user.id);
 
     if (!result.success) {
       // Map error codes to HTTP status codes

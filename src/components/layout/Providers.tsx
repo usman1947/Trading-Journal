@@ -15,9 +15,7 @@ export default function Providers({ children }: ProvidersProps) {
   return (
     <Provider store={store}>
       <ThemeProvider>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          {children}
-        </LocalizationProvider>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>{children}</LocalizationProvider>
       </ThemeProvider>
     </Provider>
   );

@@ -60,10 +60,7 @@ export default function AskJournalFAB({
         </Tooltip>
       </Zoom>
 
-      <AskJournalDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-      />
+      <AskJournalDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
     </>
   );
 }

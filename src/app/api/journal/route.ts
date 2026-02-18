@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { deleteFromCloudinary } from '@/lib/cloudinary';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
-import { handleApiError, validationError, notFoundResponse, successResponse } from '@/lib/api-helpers';
+import {
+  handleApiError,
+  validationError,
+  notFoundResponse,
+  successResponse,
+} from '@/lib/api-helpers';
 import { JOURNAL_WITH_SCREENSHOTS_INCLUDE } from '@/lib/prisma-includes';
+import { createJournalSchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +51,10 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
+    const parsed = createJournalSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
+    }
     const {
       date,
       notes,
@@ -55,11 +65,7 @@ export async function POST(request: NextRequest) {
       sleepQuality,
       focusLevel,
       premarketPlan,
-    } = body;
-
-    if (!date || !notes) {
-      return validationError('Date and notes are required');
-    }
+    } = parsed.data;
 
     // Parse as UTC noon to avoid timezone issues
     const [year, month, day] = date.split('-').map(Number);

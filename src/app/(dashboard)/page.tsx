@@ -11,7 +11,14 @@ import {
   AccessTime as TimeIcon,
   CalendarMonth as CalendarIcon,
 } from '@mui/icons-material';
-import { useGetAnalyticsQuery, useGetDailyStatsQuery, useGetTradeTimeStatsQuery, useGetAccountsQuery, useGetStrategyDistributionQuery, useGetTradesQuery } from '@/store';
+import {
+  useGetAnalyticsQuery,
+  useGetDailyStatsQuery,
+  useGetTradeTimeStatsQuery,
+  useGetAccountsQuery,
+  useGetStrategyDistributionQuery,
+  useGetTradesQuery,
+} from '@/store';
 import { useAppSelector } from '@/store/hooks';
 import { formatCurrency, formatPercent } from '@/utils/formatters';
 import PnLChart from '@/components/analytics/PnLChart';
@@ -24,7 +31,14 @@ import StatCard from '@/components/common/StatCard';
 import ChartCard from '@/components/common/ChartCard';
 import EmptyState from '@/components/common/EmptyState';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import type { RechartsPieLabelProps } from '@/types/recharts';
 import type { Account, Trade } from '@/types';
+
+interface StrategyDistEntry {
+  name: string;
+  trades: number;
+  percentage: number;
+}
 
 const COLORS = [
   '#1976d2',
@@ -51,10 +65,10 @@ function formatTime(minutes: number): string {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-
 export default function Dashboard() {
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
-  const accountFilter = selectedAccountId === null ? { accountId: 'paper' } : { accountId: selectedAccountId };
+  const accountFilter =
+    selectedAccountId === null ? { accountId: 'paper' } : { accountId: selectedAccountId };
   const { data: accounts = [] } = useGetAccountsQuery({});
 
   // Check if the selected account is a swing account
@@ -66,8 +80,10 @@ export default function Dashboard() {
 
   const { data: analytics, isLoading: analyticsLoading } = useGetAnalyticsQuery(accountFilter);
   const { data: dailyStats, isLoading: dailyStatsLoading } = useGetDailyStatsQuery(accountFilter);
-  const { data: tradeTimeStats, isLoading: tradeTimeLoading } = useGetTradeTimeStatsQuery(accountFilter);
-  const { data: strategyDistribution = [], isLoading: strategyDistLoading } = useGetStrategyDistributionQuery(accountFilter);
+  const { data: tradeTimeStats, isLoading: tradeTimeLoading } =
+    useGetTradeTimeStatsQuery(accountFilter);
+  const { data: strategyDistribution = [], isLoading: strategyDistLoading } =
+    useGetStrategyDistributionQuery(accountFilter);
   const { data: trades = [] } = useGetTradesQuery(accountFilter);
 
   // Calculate avg days in trade for swing accounts
@@ -94,7 +110,8 @@ export default function Dashboard() {
       }
     });
 
-    const avgWinnerDays = winners.length > 0 ? winners.reduce((a, b) => a + b, 0) / winners.length : 0;
+    const avgWinnerDays =
+      winners.length > 0 ? winners.reduce((a, b) => a + b, 0) / winners.length : 0;
     const avgLoserDays = losers.length > 0 ? losers.reduce((a, b) => a + b, 0) / losers.length : 0;
 
     return {
@@ -146,11 +163,7 @@ export default function Dashboard() {
           <Typography variant="h4" fontWeight="bold">
             Swing Trading Dashboard
           </Typography>
-          <Chip
-            label={`${stats.totalTrades} Total Trades`}
-            color="primary"
-            variant="outlined"
-          />
+          <Chip label={`${stats.totalTrades} Total Trades`} color="primary" variant="outlined" />
         </Box>
 
         <Grid container spacing={3}>
@@ -160,7 +173,13 @@ export default function Dashboard() {
               title="Total Result"
               value={formatCurrency(stats.totalResult)}
               subtitle={`In ${stats.totalTrades || 0} Trade(s)`}
-              icon={stats.totalResult >= 0 ? <TrendingUpIcon fontSize="large" /> : <TrendingDownIcon fontSize="large" />}
+              icon={
+                stats.totalResult >= 0 ? (
+                  <TrendingUpIcon fontSize="large" />
+                ) : (
+                  <TrendingDownIcon fontSize="large" />
+                )
+              }
               color={stats.totalResult >= 0 ? 'success' : 'error'}
             />
           </Grid>
@@ -180,12 +199,16 @@ export default function Dashboard() {
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <StatCard
               title="Avg Days in Trade"
-              value={avgDaysStats?.winnerCount || avgDaysStats?.loserCount
-                ? `W: ${avgDaysStats?.avgWinnerDays || 0}d`
-                : 'N/A'}
-              subtitle={avgDaysStats?.winnerCount || avgDaysStats?.loserCount
-                ? `L: ${avgDaysStats?.avgLoserDays || 0}d`
-                : 'Add exit dates to trades'}
+              value={
+                avgDaysStats?.winnerCount || avgDaysStats?.loserCount
+                  ? `W: ${avgDaysStats?.avgWinnerDays || 0}d`
+                  : 'N/A'
+              }
+              subtitle={
+                avgDaysStats?.winnerCount || avgDaysStats?.loserCount
+                  ? `L: ${avgDaysStats?.avgLoserDays || 0}d`
+                  : 'Add exit dates to trades'
+              }
               icon={<CalendarIcon fontSize="large" />}
               color="primary"
             />
@@ -202,7 +225,14 @@ export default function Dashboard() {
           <Grid size={{ xs: 12, md: 4 }}>
             <ChartCard title="Strategy Distribution">
               {strategyDistLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100%',
+                  }}
+                >
                   <Skeleton variant="circular" width={200} height={200} />
                 </Box>
               ) : strategyDistribution.length === 0 ? (
@@ -215,8 +245,10 @@ export default function Dashboard() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      label={(props: any) => `${props.percentage?.toFixed(0) || 0}%`}
+                      label={
+                        ((props: RechartsPieLabelProps & { payload: StrategyDistEntry }) =>
+                          `${props.payload.percentage?.toFixed(0) || 0}%`) as never
+                      }
                       outerRadius={100}
                       innerRadius={60}
                       fill="#8884d8"
@@ -227,9 +259,7 @@ export default function Dashboard() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={(value) => [`${value} trades`, 'Trades']}
-                    />
+                    <Tooltip formatter={(value) => [`${value} trades`, 'Trades']} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -248,11 +278,7 @@ export default function Dashboard() {
         <Typography variant="h4" fontWeight="bold">
           Dashboard
         </Typography>
-        <Chip
-          label={`${stats.totalTrades} Total Trades`}
-          color="primary"
-          variant="outlined"
-        />
+        <Chip label={`${stats.totalTrades} Total Trades`} color="primary" variant="outlined" />
       </Box>
 
       <Grid container spacing={3}>
@@ -261,7 +287,13 @@ export default function Dashboard() {
             title="Total Result"
             value={formatCurrency(stats.totalResult)}
             subtitle={`In ${stats.totalTrades || '0.00'} Trade(s)`}
-            icon={stats.totalResult >= 0 ? <TrendingUpIcon fontSize="large" /> : <TrendingDownIcon fontSize="large" />}
+            icon={
+              stats.totalResult >= 0 ? (
+                <TrendingUpIcon fontSize="large" />
+              ) : (
+                <TrendingDownIcon fontSize="large" />
+              )
+            }
             color={stats.totalResult >= 0 ? 'success' : 'error'}
           />
         </Grid>
@@ -289,12 +321,16 @@ export default function Dashboard() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Avg Time in Trade"
-            value={tradeTimeStats?.winnerCount || tradeTimeStats?.loserCount
-              ? `W: ${formatTime(tradeTimeStats?.avgWinnerTime || 0)}`
-              : 'N/A'}
-            subtitle={tradeTimeStats?.winnerCount || tradeTimeStats?.loserCount
-              ? `L: ${formatTime(tradeTimeStats?.avgLoserTime || 0)}`
-              : 'Add exit times to trades'}
+            value={
+              tradeTimeStats?.winnerCount || tradeTimeStats?.loserCount
+                ? `W: ${formatTime(tradeTimeStats?.avgWinnerTime || 0)}`
+                : 'N/A'
+            }
+            subtitle={
+              tradeTimeStats?.winnerCount || tradeTimeStats?.loserCount
+                ? `L: ${formatTime(tradeTimeStats?.avgLoserTime || 0)}`
+                : 'Add exit times to trades'
+            }
             icon={<TimeIcon fontSize="large" />}
             color="primary"
           />

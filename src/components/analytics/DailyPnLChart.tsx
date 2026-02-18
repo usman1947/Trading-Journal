@@ -165,7 +165,15 @@ export default function DailyPnLChart({ data, loading }: DailyPnLChartProps) {
     );
   }
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; payload: AggregatedData }[]; label?: string }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: { value: number; payload: AggregatedData }[];
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
@@ -181,10 +189,7 @@ export default function DailyPnLChart({ data, loading }: DailyPnLChartProps) {
           <Typography variant="body2" fontWeight="bold">
             {label}
           </Typography>
-          <Typography
-            variant="body2"
-            color={data.pnl >= 0 ? 'success.main' : 'error.main'}
-          >
+          <Typography variant="body2" color={data.pnl >= 0 ? 'success.main' : 'error.main'}>
             P&L: {formatCurrency(data.pnl)}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -228,10 +233,7 @@ export default function DailyPnLChart({ data, loading }: DailyPnLChartProps) {
       <ReferenceLine y={0} stroke="#666" strokeWidth={1} />
       <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
         {chartData.map((entry, index) => (
-          <Cell
-            key={`cell-${index}`}
-            fill={entry.pnl >= 0 ? '#4caf50' : '#f44336'}
-          />
+          <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#4caf50' : '#f44336'} />
         ))}
       </Bar>
     </BarChart>
@@ -240,12 +242,7 @@ export default function DailyPnLChart({ data, loading }: DailyPnLChartProps) {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-        <ToggleButtonGroup
-          value={mode}
-          exclusive
-          onChange={handleModeChange}
-          size="small"
-        >
+        <ToggleButtonGroup value={mode} exclusive onChange={handleModeChange} size="small">
           <ToggleButton value="daily" sx={{ px: 1.5, py: 0.5, fontSize: '0.75rem' }}>
             Daily
           </ToggleButton>

@@ -71,9 +71,10 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
     }
   };
 
-  const rMultiple = trade.result !== null && trade.result !== undefined && trade.risk
-    ? trade.result / trade.risk
-    : null;
+  const rMultiple =
+    trade.result !== null && trade.result !== undefined && trade.risk
+      ? trade.result / trade.risk
+      : null;
 
   // Calculate strategy satisfaction score
   const satisfactionData = useMemo(() => {
@@ -81,9 +82,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
       return null;
     }
 
-    const ruleChecksMap = new Map(
-      trade.ruleChecks?.map((rc) => [rc.ruleId, rc.checked]) || []
-    );
+    const ruleChecksMap = new Map(trade.ruleChecks?.map((rc) => [rc.ruleId, rc.checked]) || []);
 
     const checkedCount = trade.strategy.rules.filter(
       (rule) => ruleChecksMap.get(rule.id) === true
@@ -112,11 +111,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
             <BackIcon />
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {trade.side === 'LONG' ? (
-              <LongIcon color="success" />
-            ) : (
-              <ShortIcon color="error" />
-            )}
+            {trade.side === 'LONG' ? <LongIcon color="success" /> : <ShortIcon color="error" />}
             <Typography variant="h4" fontWeight="bold">
               {trade.symbol}
             </Typography>
@@ -220,9 +215,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                     borderRadius: 2,
                   }}
                 >
-                  <Typography color="text.secondary">
-                    No screenshots uploaded
-                  </Typography>
+                  <Typography color="text.secondary">No screenshots uploaded</Typography>
                 </Box>
               )}
 
@@ -254,14 +247,13 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                     fontWeight="bold"
                     color={trade.result >= 0 ? 'success.main' : 'error.main'}
                   >
-                    {trade.result >= 0 ? '+' : ''}{formatCurrency(trade.result)}
+                    {trade.result >= 0 ? '+' : ''}
+                    {formatCurrency(trade.result)}
                   </Typography>
                   {rMultiple !== null && (
-                    <Typography
-                      variant="h6"
-                      color={rMultiple >= 0 ? 'success.main' : 'error.main'}
-                    >
-                      {rMultiple >= 0 ? '+' : ''}{rMultiple.toFixed(2)}R
+                    <Typography variant="h6" color={rMultiple >= 0 ? 'success.main' : 'error.main'}>
+                      {rMultiple >= 0 ? '+' : ''}
+                      {rMultiple.toFixed(2)}R
                     </Typography>
                   )}
                 </>
@@ -285,9 +277,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                   <Typography variant="caption" color="text.secondary">
                     Time
                   </Typography>
-                  <Typography variant="body1">
-                    {formatDateTime(trade.tradeTime)}
-                  </Typography>
+                  <Typography variant="body1">{formatDateTime(trade.tradeTime)}</Typography>
                 </Box>
 
                 <Divider />
@@ -324,9 +314,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                       <Typography variant="caption" color="text.secondary">
                         Strategy
                       </Typography>
-                      <Typography variant="body1">
-                        {trade.strategy.name}
-                      </Typography>
+                      <Typography variant="body1">{trade.strategy.name}</Typography>
                     </Box>
                   </>
                 )}
@@ -342,7 +330,14 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                           Strategy Satisfaction
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          mb: 1,
+                        }}
+                      >
                         <Typography variant="body2">
                           {satisfactionData.checkedCount} of {satisfactionData.totalRules} rules
                         </Typography>
@@ -406,9 +401,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                       <Typography variant="caption" color="text.secondary">
                         Setup
                       </Typography>
-                      <Typography variant="body1">
-                        {trade.setup}
-                      </Typography>
+                      <Typography variant="body1">{trade.setup}</Typography>
                     </Box>
                   </>
                 )}
@@ -457,12 +450,7 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
       </Grid>
 
       {/* Image Preview Dialog */}
-      <Dialog
-        open={!!selectedImage}
-        onClose={() => setSelectedImage(null)}
-        maxWidth="xl"
-        fullWidth
-      >
+      <Dialog open={!!selectedImage} onClose={() => setSelectedImage(null)} maxWidth="xl" fullWidth>
         <IconButton
           onClick={() => setSelectedImage(null)}
           sx={{

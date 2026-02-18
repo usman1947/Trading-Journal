@@ -22,10 +22,7 @@ export async function GET(request: NextRequest) {
     const weekStart = startOfWeek(weekDate, { weekStartsOn: 1 });
 
     // Normalize accountId - paper/empty string means null (Paper Account)
-    const accountId =
-      accountIdParam === 'paper' || accountIdParam === ''
-        ? null
-        : accountIdParam;
+    const accountId = accountIdParam === 'paper' || accountIdParam === '' ? null : accountIdParam;
 
     const report = await prisma.weeklyCoachReport.findFirst({
       where: {
@@ -46,17 +43,12 @@ export async function GET(request: NextRequest) {
         strengths: JSON.parse(report.strengths),
         improvements: JSON.parse(report.improvements),
         actionItems: JSON.parse(report.actionItems),
-        moodDistribution: report.moodDistribution
-          ? JSON.parse(report.moodDistribution)
-          : null,
+        moodDistribution: report.moodDistribution ? JSON.parse(report.moodDistribution) : null,
       },
     });
   } catch (error) {
     console.error('Error fetching weekly coach report:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch report' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch report' }, { status: 500 });
   }
 }
 
@@ -74,19 +66,13 @@ export async function POST(request: NextRequest) {
     const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 });
 
     // Normalize accountId
-    const accountId =
-      accountIdParam === 'paper' || accountIdParam === ''
-        ? null
-        : accountIdParam;
+    const accountId = accountIdParam === 'paper' || accountIdParam === '' ? null : accountIdParam;
 
     // Get weekly stats
     const stats = await getWeeklyStats(user.id, accountId, targetDate);
 
     if (!stats || stats.totalTrades === 0) {
-      return NextResponse.json(
-        { error: 'No trades found for this week' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No trades found for this week' }, { status: 400 });
     }
 
     // Fetch previous week's report for context
@@ -134,10 +120,7 @@ export async function POST(request: NextRequest) {
     try {
       insights = JSON.parse(aiResponse);
     } catch {
-      return NextResponse.json(
-        { error: 'Failed to parse AI response' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
     }
 
     // Check if report already exists
@@ -200,9 +183,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error generating weekly coach report:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate coaching report' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to generate coaching report' }, { status: 500 });
   }
 }

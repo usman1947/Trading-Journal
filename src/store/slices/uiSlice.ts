@@ -43,7 +43,10 @@ const uiSlice = createSlice({
     },
     showSnackbar: (
       state,
-      action: PayloadAction<{ message: string; severity?: 'success' | 'error' | 'warning' | 'info' }>
+      action: PayloadAction<{
+        message: string;
+        severity?: 'success' | 'error' | 'warning' | 'info';
+      }>
     ) => {
       state.snackbar = {
         open: true,

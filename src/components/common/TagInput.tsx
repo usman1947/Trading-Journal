@@ -1,14 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import {
-  Autocomplete,
-  TextField,
-  Chip,
-  Box,
-  IconButton,
-  Popover,
-} from '@mui/material';
+import { Autocomplete, TextField, Chip, Box, IconButton, Popover } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useGetTagsQuery, useCreateTagMutation } from '@/store';
 import type { Tag } from '@/types';
@@ -88,10 +81,7 @@ export default function TagInput({ value, onChange, disabled }: TagInputProps) {
               endAdornment: (
                 <>
                   {inputValue && !tags.find((t: Tag) => t.name === inputValue) && (
-                    <IconButton
-                      size="small"
-                      onClick={(e) => setColorAnchor(e.currentTarget)}
-                    >
+                    <IconButton size="small" onClick={(e) => setColorAnchor(e.currentTarget)}>
                       <AddIcon fontSize="small" />
                     </IconButton>
                   )}
@@ -129,10 +119,7 @@ export default function TagInput({ value, onChange, disabled }: TagInputProps) {
         )}
         noOptionsText={
           inputValue ? (
-            <Box
-              sx={{ cursor: 'pointer' }}
-              onClick={(e) => setColorAnchor(e.currentTarget)}
-            >
+            <Box sx={{ cursor: 'pointer' }} onClick={(e) => setColorAnchor(e.currentTarget)}>
               Create &quot;{inputValue}&quot;
             </Box>
           ) : (

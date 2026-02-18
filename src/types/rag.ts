@@ -189,18 +189,14 @@ export interface RetrievedJournalDocument extends RetrievedDocument {
 /**
  * Type guard for trade documents.
  */
-export function isTradeDocument(
-  doc: RetrievedDocument
-): doc is RetrievedTradeDocument {
+export function isTradeDocument(doc: RetrievedDocument): doc is RetrievedTradeDocument {
   return doc.source.type === 'trade';
 }
 
 /**
  * Type guard for journal documents.
  */
-export function isJournalDocument(
-  doc: RetrievedDocument
-): doc is RetrievedJournalDocument {
+export function isJournalDocument(doc: RetrievedDocument): doc is RetrievedJournalDocument {
   return doc.source.type === 'journal';
 }
 

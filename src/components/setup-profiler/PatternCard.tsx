@@ -1,6 +1,15 @@
 'use client';
 
-import { Box, Card, CardContent, Typography, Chip, LinearProgress, Stack, Tooltip } from '@mui/material';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Chip,
+  LinearProgress,
+  Stack,
+  Tooltip,
+} from '@mui/material';
 import {
   TrendingUp as EdgeIcon,
   TrendingDown as LeakIcon,
@@ -17,13 +26,13 @@ interface PatternCardProps {
 // Softer, more eye-friendly colors for dark mode
 const COLORS = {
   // Softer green/teal for positive values
-  positive: '#4ade80',       // Emerald-400 equivalent
-  positiveMuted: '#22c55e',  // For borders
+  positive: '#4ade80', // Emerald-400 equivalent
+  positiveMuted: '#22c55e', // For borders
   // Softer coral/salmon for negative values
-  negative: '#f87171',       // Rose-400 equivalent
-  negativeMuted: '#ef4444',  // For borders
+  negative: '#f87171', // Rose-400 equivalent
+  negativeMuted: '#ef4444', // For borders
   // Warning orange
-  warning: '#fb923c',        // Orange-400
+  warning: '#fb923c', // Orange-400
   warningMuted: '#f97316',
 };
 
@@ -127,7 +136,8 @@ export default function PatternCard({ segment, baselineWinRate }: PatternCardPro
               Expectancy
             </Typography>
             <Typography variant="body2" fontWeight={500} sx={{ color: expectancyColor }}>
-              {stats.expectancyR >= 0 ? '+' : ''}{stats.expectancyR.toFixed(2)}R
+              {stats.expectancyR >= 0 ? '+' : ''}
+              {stats.expectancyR.toFixed(2)}R
             </Typography>
           </Box>
 
@@ -176,9 +186,15 @@ export default function PatternCard({ segment, baselineWinRate }: PatternCardPro
         {/* Comparison text */}
         {classification !== 'INSUFFICIENT' && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            {vsBaseline.winRateDelta >= 0 ? '+' : ''}{vsBaseline.winRateDelta.toFixed(0)}% vs average
+            {vsBaseline.winRateDelta >= 0 ? '+' : ''}
+            {vsBaseline.winRateDelta.toFixed(0)}% vs average
             {' · '}
-            {stats.confidenceLevel === 'HIGH' ? 'High' : stats.confidenceLevel === 'MEDIUM' ? 'Medium' : 'Low'} confidence
+            {stats.confidenceLevel === 'HIGH'
+              ? 'High'
+              : stats.confidenceLevel === 'MEDIUM'
+                ? 'Medium'
+                : 'Low'}{' '}
+            confidence
           </Typography>
         )}
       </CardContent>

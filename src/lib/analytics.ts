@@ -1,5 +1,11 @@
 import prisma from './prisma';
-import type { AnalyticsData, DailyStats, StrategyStats, TradeFilters, TradeTimeStats } from '@/types';
+import type {
+  AnalyticsData,
+  DailyStats,
+  StrategyStats,
+  TradeFilters,
+  TradeTimeStats,
+} from '@/types';
 import {
   applyAccountFilter,
   applyUserFilter,
@@ -18,6 +24,17 @@ type TradeRecord = {
   tradeTime: Date;
   exitTime: Date | null;
   isBreakEven: boolean;
+};
+
+type TradeWithStrategy = TradeRecord & {
+  id: string;
+  symbol: string;
+  strategy: { name: string } | null;
+};
+
+type TradeWithId = TradeRecord & {
+  id: string;
+  symbol: string;
 };
 
 export async function getAnalytics(filters: TradeFilters = {}): Promise<AnalyticsData> {
@@ -74,11 +91,17 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
 
   // Total result and risk include ALL trades (including BE)
   // Commissions are subtracted from total result
-  const totalCommissions = trades.reduce((sum: number, t: TradeRecord) => sum + (t.commission ?? 0), 0);
-  const totalResult = trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0) - totalCommissions;
+  const totalCommissions = trades.reduce(
+    (sum: number, t: TradeRecord) => sum + (t.commission ?? 0),
+    0
+  );
+  const totalResult =
+    trades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0) - totalCommissions;
   const totalRisk = trades.reduce((sum: number, t: TradeRecord) => sum + t.risk, 0);
   const totalWins = winningTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0);
-  const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0));
+  const totalLosses = Math.abs(
+    losingTrades.reduce((sum: number, t: TradeRecord) => sum + (t.result ?? 0), 0)
+  );
 
   // Calculate average R-multiples for winners and losers (non-BE only)
   const averageWinnerR = calculateAverageRMultiple(winningTrades);
@@ -95,8 +118,14 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
     averageLoss: losingTrades.length > 0 ? totalLosses / losingTrades.length : 0,
     averageWinnerR,
     averageLoserR,
-    largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
-    largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t: TradeRecord) => t.result ?? 0)) : 0,
+    largestWin:
+      winningTrades.length > 0
+        ? Math.max(...winningTrades.map((t: TradeRecord) => t.result ?? 0))
+        : 0,
+    largestLoss:
+      losingTrades.length > 0
+        ? Math.min(...losingTrades.map((t: TradeRecord) => t.result ?? 0))
+        : 0,
     totalRisk,
     totalCommissions,
     executionRate: trades.length > 0 ? (passingTrades.length / trades.length) * 100 : 0,
@@ -118,7 +147,10 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
   });
 
   // Track daily stats: total includes all trades, nonBETotal for winRate calculation
-  const dailyMap = new Map<string, { pnl: number; wins: number; total: number; nonBETotal: number }>();
+  const dailyMap = new Map<
+    string,
+    { pnl: number; wins: number; total: number; nonBETotal: number }
+  >();
 
   trades.forEach((trade: TradeRecord) => {
     const date = trade.tradeTime.toISOString().split('T')[0];
@@ -181,47 +213,55 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
     ruleChecks: { checked: boolean }[];
   };
 
-  return strategies.map((strategy: { id: string; name: string; trades: TradeWithRuleChecks[]; rules: { id: string }[] }) => {
-    // Filter out BE trades for win/loss analytics only (not for total counts)
-    const nonBETrades = excludeBreakevenTrades(strategy.trades);
-    const { winningTrades, losingTrades } = separateWinLossTrades(strategy.trades);
-    const tradesWithResult = nonBETrades.filter((t) => t.result !== null && t.risk > 0);
+  return strategies.map(
+    (strategy: {
+      id: string;
+      name: string;
+      trades: TradeWithRuleChecks[];
+      rules: { id: string }[];
+    }) => {
+      // Filter out BE trades for win/loss analytics only (not for total counts)
+      const nonBETrades = excludeBreakevenTrades(strategy.trades);
+      const { winningTrades, losingTrades } = separateWinLossTrades(strategy.trades);
+      const tradesWithResult = nonBETrades.filter((t) => t.result !== null && t.risk > 0);
 
-    const averageWinR = calculateAverageRMultiple(winningTrades);
-    const averageLossR = calculateAverageRMultiple(losingTrades);
+      const averageWinR = calculateAverageRMultiple(winningTrades);
+      const averageLossR = calculateAverageRMultiple(losingTrades);
 
-    // Calculate average rule satisfaction (use all trades for this)
-    const totalRules = strategy.rules.length;
-    let averageRuleSatisfaction = 0;
-    if (totalRules > 0 && strategy.trades.length > 0) {
-      const tradesWithRules = strategy.trades.filter((t) => t.ruleChecks.length > 0);
-      if (tradesWithRules.length > 0) {
-        const totalSatisfaction = tradesWithRules.reduce((sum, t) => {
-          const checkedCount = t.ruleChecks.filter((rc) => rc.checked).length;
-          const tradeRuleCount = t.ruleChecks.length;
-          return sum + (tradeRuleCount > 0 ? (checkedCount / tradeRuleCount) * 100 : 0);
-        }, 0);
-        averageRuleSatisfaction = totalSatisfaction / tradesWithRules.length;
+      // Calculate average rule satisfaction (use all trades for this)
+      const totalRules = strategy.rules.length;
+      let averageRuleSatisfaction = 0;
+      if (totalRules > 0 && strategy.trades.length > 0) {
+        const tradesWithRules = strategy.trades.filter((t) => t.ruleChecks.length > 0);
+        if (tradesWithRules.length > 0) {
+          const totalSatisfaction = tradesWithRules.reduce((sum, t) => {
+            const checkedCount = t.ruleChecks.filter((rc) => rc.checked).length;
+            const tradeRuleCount = t.ruleChecks.length;
+            return sum + (tradeRuleCount > 0 ? (checkedCount / tradeRuleCount) * 100 : 0);
+          }, 0);
+          averageRuleSatisfaction = totalSatisfaction / tradesWithRules.length;
+        }
       }
-    }
 
-    return {
-      strategyId: strategy.id,
-      strategyName: strategy.name,
-      totalTrades: strategy.trades.length, // Include BE trades in total count
-      // Win rate uses non-BE trades only to not skew the ratio
-      winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
-      // Total PnL includes all trades (BE trades have ~0 result anyway)
-      totalPnl: strategy.trades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
-      averageRMultiple:
-        tradesWithResult.length > 0
-          ? tradesWithResult.reduce((sum: number, t) => sum + ((t.result ?? 0) / t.risk), 0) / tradesWithResult.length
-          : 0,
-      averageWinR,
-      averageLossR,
-      averageRuleSatisfaction,
-    };
-  });
+      return {
+        strategyId: strategy.id,
+        strategyName: strategy.name,
+        totalTrades: strategy.trades.length, // Include BE trades in total count
+        // Win rate uses non-BE trades only to not skew the ratio
+        winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
+        // Total PnL includes all trades (BE trades have ~0 result anyway)
+        totalPnl: strategy.trades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
+        averageRMultiple:
+          tradesWithResult.length > 0
+            ? tradesWithResult.reduce((sum: number, t) => sum + (t.result ?? 0) / t.risk, 0) /
+              tradesWithResult.length
+            : 0,
+        averageWinR,
+        averageLossR,
+        averageRuleSatisfaction,
+      };
+    }
+  );
 }
 
 export async function getStrategyDistribution(filters: TradeFilters = {}) {
@@ -260,14 +300,12 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
   const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // Filter out BE trades for P&L analytics
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nonBETrades = excludeBreakevenTrades(trades as any);
+  const nonBETrades = excludeBreakevenTrades(trades as TradeWithStrategy[]);
 
   const strategyMap = new Map<string, number>();
   const totalTrades = nonBETrades.length;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  nonBETrades.forEach((trade: any) => {
+  nonBETrades.forEach((trade: TradeWithStrategy) => {
     const strategyName = trade.strategy?.name || 'No Strategy';
     strategyMap.set(strategyName, (strategyMap.get(strategyName) || 0) + 1);
   });
@@ -312,8 +350,7 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
   // Apply time of day filter
   const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return trades.map((trade: any) => {
+  return (trades as TradeWithId[]).map((trade: TradeWithId) => {
     const tradeDate = new Date(trade.tradeTime);
     const timeStr = formatTimeOfDay(tradeDate);
     const [hourStr, minuteStr] = timeStr.split(':');
@@ -322,7 +359,12 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
     return {
       id: trade.id,
       time: timeStr,
-      date: tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' }),
+      date: tradeDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'America/New_York',
+      }),
       hour,
       minute,
       result: trade.result,
@@ -365,17 +407,15 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
   const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // Filter out BE trades for P&L analytics
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nonBETrades = excludeBreakevenTrades(trades as any);
+  const nonBETrades = excludeBreakevenTrades(trades as TradeWithId[]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return nonBETrades.map((trade: any) => {
+  return nonBETrades.map((trade: TradeWithId) => {
     const date = new Date(trade.tradeTime);
     return {
       id: trade.id,
       symbol: trade.symbol,
       result: trade.result,
-      rMultiple: trade.risk > 0 ? trade.result / trade.risk : 0,
+      rMultiple: trade.risk > 0 ? (trade.result ?? 0) / trade.risk : 0,
       date: date.toLocaleDateString('en-US'),
     };
   });
@@ -415,8 +455,7 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
 
   // Filter out BE trades for P&L analytics
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nonBETrades = excludeBreakevenTrades(trades as any);
+  const nonBETrades = excludeBreakevenTrades(trades as TradeWithId[]);
 
   // 30-minute interval stats
   const intervalMap = new Map<string, { totalPnL: number; trades: number; wins: number }>();
@@ -425,14 +464,16 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
   const dailyMap = new Map<string, { totalPnL: number; trades: number; wins: number }>();
   const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  nonBETrades.forEach((trade: any) => {
+  nonBETrades.forEach((trade: TradeWithId) => {
     const date = new Date(trade.tradeTime);
     const timeStr = formatTimeOfDay(date);
     const [hourStr, minuteStr] = timeStr.split(':');
     const hour = parseInt(hourStr, 10);
     const minute = parseInt(minuteStr, 10);
-    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' });
+    const dayOfWeek = date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      timeZone: 'America/New_York',
+    });
     const result = trade.result ?? 0;
     const isWin = result > 0;
 

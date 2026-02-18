@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { handleApiError, validationError } from '@/lib/api-helpers';
+import { createTagSchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,11 +33,11 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
-    const { name, color = '#1976d2' } = body;
-
-    if (!name) {
-      return validationError('Name is required');
+    const parsed = createTagSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
     }
+    const { name, color } = parsed.data;
 
     const tag = await prisma.tag.create({
       data: {

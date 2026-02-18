@@ -58,7 +58,7 @@ export default function Sidebar() {
   // Filter menu items based on account type
   const menuItems = useMemo(() => {
     if (isSwingAccount) {
-      return allMenuItems.filter(item => item.showForSwing);
+      return allMenuItems.filter((item) => item.showForSwing);
     }
     return allMenuItems;
   }, [isSwingAccount]);
@@ -98,8 +98,8 @@ export default function Sidebar() {
       <Divider />
       <List sx={{ px: sidebarOpen ? 1 : 0.5 }}>
         {menuItems.map((item) => {
-          const isActive = pathname === item.path ||
-            (item.path !== '/' && pathname.startsWith(item.path));
+          const isActive =
+            pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
 
           const listItemButton = (
             <ListItemButton

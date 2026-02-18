@@ -5,10 +5,7 @@ import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 export const dynamic = 'force-dynamic';
 
 // Get all rule checks for a trade
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();
@@ -44,10 +41,7 @@ export async function GET(
 }
 
 // Update rule checks for a trade (bulk update)
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();

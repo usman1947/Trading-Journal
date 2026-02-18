@@ -68,10 +68,20 @@ interface StrategyCardProps {
   onToggleExpand: () => void;
 }
 
-function StrategyCard({ strategy, onEdit, onDelete, onClick, expanded, onToggleExpand }: StrategyCardProps) {
+function StrategyCard({
+  strategy,
+  onEdit,
+  onDelete,
+  onClick,
+  expanded,
+  onToggleExpand,
+}: StrategyCardProps) {
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
   const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
-  const { data: statsData } = useGetStrategyStatsQuery({ id: strategy.id, accountId: accountFilter });
+  const { data: statsData } = useGetStrategyStatsQuery({
+    id: strategy.id,
+    accountId: accountFilter,
+  });
 
   const stats = statsData?.stats;
 
@@ -79,16 +89,18 @@ function StrategyCard({ strategy, onEdit, onDelete, onClick, expanded, onToggleE
     <Card
       sx={{
         position: 'relative',
-        '&::before': expanded ? {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '4px',
-          height: '100%',
-          backgroundColor: 'primary.main',
-          borderRadius: '12px 0 0 12px',
-        } : undefined,
+        '&::before': expanded
+          ? {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '4px',
+              height: '100%',
+              backgroundColor: 'primary.main',
+              borderRadius: '12px 0 0 12px',
+            }
+          : undefined,
       }}
     >
       <CardContent sx={{ p: 0 }}>
@@ -172,12 +184,7 @@ function StrategyCard({ strategy, onEdit, onDelete, onClick, expanded, onToggleE
             {strategy.setups && strategy.setups.length > 0 ? (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {strategy.setups.map((setup) => (
-                  <Chip
-                    key={setup}
-                    label={setup}
-                    variant="outlined"
-                    color="primary"
-                  />
+                  <Chip key={setup} label={setup} variant="outlined" color="primary" />
                 ))}
               </Box>
             ) : (
@@ -239,7 +246,9 @@ function StrategyCard({ strategy, onEdit, onDelete, onClick, expanded, onToggleE
                     fontWeight={600}
                     color={stats && stats.totalPnl >= 0 ? 'success.main' : 'error.main'}
                   >
-                    {stats ? (stats.totalPnl >= 0 ? '+' : '') + formatCurrency(stats.totalPnl) : '$0'}
+                    {stats
+                      ? (stats.totalPnl >= 0 ? '+' : '') + formatCurrency(stats.totalPnl)
+                      : '$0'}
                   </Typography>
                 </Box>
               </Grid>
@@ -294,7 +303,9 @@ export default function StrategiesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedAccountId = useAppSelector((state) => state.ui.selectedAccountId);
   const accountFilter = selectedAccountId === null ? 'paper' : selectedAccountId;
-  const { data: allStrategies = [], isLoading } = useGetStrategiesQuery({ accountId: accountFilter });
+  const { data: allStrategies = [], isLoading } = useGetStrategiesQuery({
+    accountId: accountFilter,
+  });
   const { data: accounts = [] } = useGetAccountsQuery({});
 
   // Check if the selected account is a swing account
@@ -327,7 +338,9 @@ export default function StrategiesPage() {
   const [newRule, setNewRule] = useState('');
   const [isSwingStrategy, setIsSwingStrategy] = useState(false);
   const [localScreenshots, setLocalScreenshots] = useState<StrategyScreenshot[]>([]);
-  const [pendingStrategyFiles, setPendingStrategyFiles] = useState<{ file: File; preview: string }[]>([]);
+  const [pendingStrategyFiles, setPendingStrategyFiles] = useState<
+    { file: File; preview: string }[]
+  >([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [expandedStrategyId, setExpandedStrategyId] = useState<string | null>(null);
@@ -459,10 +472,23 @@ export default function StrategiesPage() {
     try {
       let strategyId: string;
       if (editingStrategy) {
-        await updateStrategy({ id: editingStrategy.id, name, description, setups, rules, isSwingStrategy }).unwrap();
+        await updateStrategy({
+          id: editingStrategy.id,
+          name,
+          description,
+          setups,
+          rules,
+          isSwingStrategy,
+        }).unwrap();
         strategyId = editingStrategy.id;
       } else {
-        const created = await createStrategy({ name, description, setups, rules, isSwingStrategy }).unwrap();
+        const created = await createStrategy({
+          name,
+          description,
+          setups,
+          rules,
+          isSwingStrategy,
+        }).unwrap();
         strategyId = created.id;
       }
 
@@ -479,7 +505,12 @@ export default function StrategiesPage() {
         }
       }
 
-      dispatch(showSnackbar({ message: editingStrategy ? 'Strategy updated' : 'Strategy created', severity: 'success' }));
+      dispatch(
+        showSnackbar({
+          message: editingStrategy ? 'Strategy updated' : 'Strategy created',
+          severity: 'success',
+        })
+      );
       handleCloseDialog();
     } catch {
       dispatch(showSnackbar({ message: 'Failed to save strategy', severity: 'error' }));
@@ -503,17 +534,14 @@ export default function StrategiesPage() {
         <Typography variant="h4" fontWeight="bold">
           Strategies
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
           New Strategy
         </Button>
       </Box>
 
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Create and manage your trading strategies (playbooks). Tag trades with strategies to track performance by setup.
+        Create and manage your trading strategies (playbooks). Tag trades with strategies to track
+        performance by setup.
       </Typography>
 
       {isLoading ? (
@@ -526,11 +554,7 @@ export default function StrategiesPage() {
             <Typography color="text.secondary" gutterBottom>
               No strategies yet
             </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-            >
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
               Create Your First Strategy
             </Button>
           </CardContent>
@@ -545,16 +569,16 @@ export default function StrategiesPage() {
               onDelete={(id) => setDeleteId(id)}
               onClick={() => router.push(`/strategies/${strategy.id}`)}
               expanded={expandedStrategyId === strategy.id}
-              onToggleExpand={() => setExpandedStrategyId(expandedStrategyId === strategy.id ? null : strategy.id)}
+              onToggleExpand={() =>
+                setExpandedStrategyId(expandedStrategyId === strategy.id ? null : strategy.id)
+              }
             />
           ))}
         </Box>
       )}
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {editingStrategy ? 'Edit Strategy' : 'New Strategy'}
-        </DialogTitle>
+        <DialogTitle>{editingStrategy ? 'Edit Strategy' : 'New Strategy'}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -587,7 +611,11 @@ export default function StrategiesPage() {
             label="Swing Strategy"
             sx={{ mt: 2 }}
           />
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 4, mt: -0.5 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', ml: 4, mt: -0.5 }}
+          >
             Enable this for strategies used with swing trading accounts
           </Typography>
 
@@ -610,11 +638,7 @@ export default function StrategiesPage() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <Button
-                      size="small"
-                      onClick={handleAddSetup}
-                      disabled={!newSetup.trim()}
-                    >
+                    <Button size="small" onClick={handleAddSetup} disabled={!newSetup.trim()}>
                       Add
                     </Button>
                   </InputAdornment>
@@ -644,9 +668,7 @@ export default function StrategiesPage() {
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <ChecklistIcon color="primary" fontSize="small" />
-              <Typography variant="subtitle2">
-                Checklist Rules
-              </Typography>
+              <Typography variant="subtitle2">Checklist Rules</Typography>
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
               Add rules that should be checked before taking a trade with this strategy
@@ -662,11 +684,7 @@ export default function StrategiesPage() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <Button
-                      size="small"
-                      onClick={handleAddRule}
-                      disabled={!newRule.trim()}
-                    >
+                    <Button size="small" onClick={handleAddRule} disabled={!newRule.trim()}>
                       Add
                     </Button>
                   </InputAdornment>
@@ -693,10 +711,7 @@ export default function StrategiesPage() {
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {index + 1}. {rule}
                     </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRemoveRule(rule)}
-                    >
+                    <IconButton size="small" onClick={() => handleRemoveRule(rule)}>
                       <CloseIcon fontSize="small" />
                     </IconButton>
                   </Box>
@@ -711,9 +726,7 @@ export default function StrategiesPage() {
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <ImageIcon color="primary" fontSize="small" />
-              <Typography variant="subtitle2">
-                Example Screenshots
-              </Typography>
+              <Typography variant="subtitle2">Example Screenshots</Typography>
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
               {editingStrategy
@@ -742,7 +755,11 @@ export default function StrategiesPage() {
             {/* Pending file previews */}
             {pendingStrategyFiles.length > 0 && (
               <Box sx={{ mb: 2 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1, display: 'block' }}
+                >
                   Ready to upload ({pendingStrategyFiles.length}):
                 </Typography>
                 <Grid container spacing={1}>
@@ -857,12 +874,7 @@ export default function StrategiesPage() {
       </Dialog>
 
       {/* Image Preview Dialog */}
-      <Dialog
-        open={!!previewImage}
-        onClose={() => setPreviewImage(null)}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog open={!!previewImage} onClose={() => setPreviewImage(null)} maxWidth="lg" fullWidth>
         <DialogContent sx={{ p: 0, display: 'flex', justifyContent: 'center', bgcolor: 'black' }}>
           {previewImage && (
             <Box

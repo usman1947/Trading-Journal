@@ -3,22 +3,22 @@ import prisma from '@/lib/prisma';
 import { verifyPassword, createToken } from '@/lib/auth';
 import { createAuthResponse } from '@/lib/auth-helpers';
 import { handleApiError, validationError, errorResponse } from '@/lib/api-helpers';
+import { loginSchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
-
-    // Validate input
-    if (!email || !password) {
-      return validationError('Email and password are required');
+    const parsed = loginSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
     }
+    const { email, password } = parsed.data;
 
     // Find user
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email },
     });
 
     if (!user) {

@@ -2,6 +2,7 @@
 
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import type { RechartsTooltipProps, RechartsPieLabelProps } from '@/types/recharts';
 
 interface StrategyDistributionData {
   name: string;
@@ -27,8 +28,7 @@ const COLORS = [
 ];
 
 export default function StrategyDistributionChart({ data }: StrategyDistributionChartProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
+  const CustomTooltip = ({ active, payload }: RechartsTooltipProps<StrategyDistributionData>) => {
     if (active && payload && payload.length) {
       return (
         <Box
@@ -72,13 +72,14 @@ export default function StrategyDistributionChart({ data }: StrategyDistribution
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  data={data as any}
+                  data={data as (StrategyDistributionData & Record<string, unknown>)[]}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  label={(props: any) => `${props.percentage.toFixed(1)}%`}
+                  label={
+                    ((props: RechartsPieLabelProps & { payload: StrategyDistributionData }) =>
+                      `${props.payload.percentage.toFixed(1)}%`) as never
+                  }
                   outerRadius={100}
                   innerRadius={60}
                   fill="#8884d8"

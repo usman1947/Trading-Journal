@@ -7,10 +7,7 @@ import prisma from '@/lib/prisma';
  * @param exitTime - Trade exit time (null if trade is still open)
  * @returns Hold duration in minutes, or null if exitTime is null
  */
-export function calculateHoldDuration(
-  entryTime: Date,
-  exitTime: Date | null
-): number | null {
+export function calculateHoldDuration(entryTime: Date, exitTime: Date | null): number | null {
   if (!exitTime) return null;
 
   return Math.round((exitTime.getTime() - entryTime.getTime()) / 60000);
@@ -23,9 +20,7 @@ export function calculateHoldDuration(
  * @param partials - Array of partial results
  * @returns Sum of all partials, or null if array is empty/null
  */
-export function calculateResultFromPartials(
-  partials: number[] | null | undefined
-): number | null {
+export function calculateResultFromPartials(partials: number[] | null | undefined): number | null {
   if (!partials || !Array.isArray(partials) || partials.length === 0) {
     return null;
   }
@@ -41,10 +36,7 @@ export function calculateResultFromPartials(
  * @param tradeTime - Trade time to determine the date
  * @returns The sequence number (1-based) for this trade in the session
  */
-export async function calculateSequenceInSession(
-  userId: string,
-  tradeTime: Date
-): Promise<number> {
+export async function calculateSequenceInSession(userId: string, tradeTime: Date): Promise<number> {
   const startOfDay = new Date(tradeTime);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(tradeTime);
@@ -70,9 +62,7 @@ export async function calculateSequenceInSession(
  * @param partials - Array of partial results
  * @returns JSON string or null
  */
-export function serializePartials(
-  partials: number[] | null | undefined
-): string | null {
+export function serializePartials(partials: number[] | null | undefined): string | null {
   if (!partials || !Array.isArray(partials) || partials.length === 0) {
     return null;
   }
@@ -86,9 +76,7 @@ export function serializePartials(
  * @param partials - JSON string or already-parsed array
  * @returns Array of numbers or empty array
  */
-export function deserializePartials(
-  partials: string | number[] | null | undefined
-): number[] {
+export function deserializePartials(partials: string | number[] | null | undefined): number[] {
   if (!partials) return [];
 
   if (typeof partials === 'string') {
@@ -109,9 +97,7 @@ export function deserializePartials(
  * @param setups - Array of setup strings
  * @returns JSON string or null
  */
-export function serializeSetups(
-  setups: string[] | null | undefined
-): string | null {
+export function serializeSetups(setups: string[] | null | undefined): string | null {
   if (!setups || !Array.isArray(setups) || setups.length === 0) {
     return null;
   }
@@ -125,9 +111,7 @@ export function serializeSetups(
  * @param setups - JSON string or already-parsed array
  * @returns Array of strings or empty array
  */
-export function deserializeSetups(
-  setups: string | string[] | null | undefined
-): string[] {
+export function deserializeSetups(setups: string | string[] | null | undefined): string[] {
   if (!setups) return [];
 
   if (typeof setups === 'string') {
@@ -166,10 +150,7 @@ export function calculateAverageRMultiple<T extends { result: number | null; ris
 
   if (tradesWithRisk.length === 0) return 0;
 
-  const totalR = tradesWithRisk.reduce(
-    (sum, t) => sum + ((t.result ?? 0) / t.risk),
-    0
-  );
+  const totalR = tradesWithRisk.reduce((sum, t) => sum + (t.result ?? 0) / t.risk, 0);
 
   return totalR / tradesWithRisk.length;
 }
@@ -186,7 +167,7 @@ export function formatTimeOfDay(date: Date): string {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-    timeZone: 'America/New_York'
+    timeZone: 'America/New_York',
   });
 }
 
@@ -202,10 +183,7 @@ export function formatTimeOfDay(date: Date): string {
  *   9:35 AM -> "09:35-09:40"
  *   10:07 AM -> "10:05-10:10"
  */
-export function getTimeGroup(
-  tradeTime: Date | string,
-  intervalMins: number = 5
-): string {
+export function getTimeGroup(tradeTime: Date | string, intervalMins: number = 5): string {
   const date = typeof tradeTime === 'string' ? new Date(tradeTime) : tradeTime;
   const timeStr = formatTimeOfDay(date);
   const [hourStr, minuteStr] = timeStr.split(':');

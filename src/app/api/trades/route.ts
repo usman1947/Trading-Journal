@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
-import { handleApiError } from '@/lib/api-helpers';
+import { handleApiError, validationError } from '@/lib/api-helpers';
 import { applyAccountFilter, buildDateRangeFilter, filterByTimeOfDay } from '@/lib/query-helpers';
 import { TRADE_FULL_INCLUDE } from '@/lib/prisma-includes';
 import {
@@ -11,6 +11,7 @@ import {
   serializePartials,
   normalizeSymbol,
 } from '@/utils/trade-calculations';
+import { createTradeSchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,6 +75,10 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const body = await request.json();
+    const parsed = createTradeSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
+    }
     const {
       symbol,
       side,
@@ -94,7 +99,7 @@ export async function POST(request: NextRequest) {
       postTradeMood,
       confidenceLevel,
       mistake,
-    } = body;
+    } = parsed.data;
 
     const tradeDateTime = new Date(tradeTime);
     const exitDateTime = exitTime ? new Date(exitTime) : null;

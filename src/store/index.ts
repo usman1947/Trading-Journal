@@ -11,7 +11,19 @@ import type { User } from './slices/authSlice';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts', 'User', 'WeeklyCoach', 'RuleAdherence'],
+  tagTypes: [
+    'Trades',
+    'Trade',
+    'Strategies',
+    'Tags',
+    'Journal',
+    'Analytics',
+    'Settings',
+    'Accounts',
+    'User',
+    'WeeklyCoach',
+    'RuleAdherence',
+  ],
   endpoints: (builder) => ({
     // Accounts
     getAccounts: builder.query({
@@ -72,11 +84,7 @@ export const api = createApi({
         method: 'PUT',
         body: trade,
       }),
-      invalidatesTags: (_result, _error, { id }) => [
-        'Trades',
-        { type: 'Trade', id },
-        'Analytics',
-      ],
+      invalidatesTags: (_result, _error, { id }) => ['Trades', { type: 'Trade', id }, 'Analytics'],
     }),
     deleteTrade: builder.mutation({
       query: (id) => ({
@@ -293,10 +301,7 @@ export const api = createApi({
         method: 'PUT',
         body: { ruleChecks },
       }),
-      invalidatesTags: (_result, _error, { tradeId }) => [
-        { type: 'Trade', id: tradeId },
-        'Trades',
-      ],
+      invalidatesTags: (_result, _error, { tradeId }) => [{ type: 'Trade', id: tradeId }, 'Trades'],
     }),
 
     // Auth
@@ -321,13 +326,26 @@ export const api = createApi({
         url: '/auth/logout',
         method: 'POST',
       }),
-      invalidatesTags: ['User', 'Trades', 'Trade', 'Strategies', 'Tags', 'Journal', 'Analytics', 'Settings', 'Accounts'],
+      invalidatesTags: [
+        'User',
+        'Trades',
+        'Trade',
+        'Strategies',
+        'Tags',
+        'Journal',
+        'Analytics',
+        'Settings',
+        'Accounts',
+      ],
     }),
     getMe: builder.query<User, void>({
       query: () => '/auth/me',
       providesTags: ['User'],
     }),
-    updateProfile: builder.mutation<User, { name?: string; avatarUrl?: string; currentPassword?: string; newPassword?: string }>({
+    updateProfile: builder.mutation<
+      User,
+      { name?: string; avatarUrl?: string; currentPassword?: string; newPassword?: string }
+    >({
       query: (updates) => ({
         url: '/auth/update-profile',
         method: 'PUT',
@@ -398,7 +416,6 @@ export const api = createApi({
       }),
       invalidatesTags: ['RuleAdherence'],
     }),
-
   }),
 });
 
@@ -411,8 +428,7 @@ export const store = configureStore({
     analytics: analyticsReducer,
     setupProfiler: setupProfilerReducer,
   },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(api.middleware),
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(api.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

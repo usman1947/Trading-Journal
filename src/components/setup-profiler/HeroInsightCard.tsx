@@ -4,7 +4,7 @@ import { Box, Card, CardContent, Typography, Chip, Stack } from '@mui/material';
 import {
   TrendingUp as EdgeIcon,
   TrendingDown as LeakIcon,
-  Lightbulb as OpportunityIcon
+  Lightbulb as OpportunityIcon,
 } from '@mui/icons-material';
 import type { PatternInsight } from '@/lib/setup-profiler';
 import { formatCurrency } from '@/utils/formatters';
@@ -18,31 +18,25 @@ interface HeroInsightCardProps {
 // Softer, more eye-friendly colors for dark mode
 const COLORS = {
   edge: {
-    bg: 'rgba(74, 222, 128, 0.08)',      // Soft green background
-    border: 'rgba(74, 222, 128, 0.3)',    // Soft green border
-    icon: '#4ade80',                       // Emerald-400
-    text: '#86efac',                       // Lighter for titles
+    bg: 'rgba(74, 222, 128, 0.08)', // Soft green background
+    border: 'rgba(74, 222, 128, 0.3)', // Soft green border
+    icon: '#4ade80', // Emerald-400
+    text: '#86efac', // Lighter for titles
   },
   leak: {
-    bg: 'rgba(248, 113, 113, 0.08)',      // Soft red background
-    border: 'rgba(248, 113, 113, 0.3)',    // Soft red border
-    icon: '#f87171',                       // Rose-400
-    text: '#fca5a5',                       // Lighter for titles
+    bg: 'rgba(248, 113, 113, 0.08)', // Soft red background
+    border: 'rgba(248, 113, 113, 0.3)', // Soft red border
+    icon: '#f87171', // Rose-400
+    text: '#fca5a5', // Lighter for titles
   },
   info: {
-    bg: 'rgba(96, 165, 250, 0.08)',       // Soft blue background
+    bg: 'rgba(96, 165, 250, 0.08)', // Soft blue background
     border: 'rgba(96, 165, 250, 0.3)',
     icon: '#60a5fa',
   },
 };
 
-function InsightCard({
-  insight,
-  type,
-}: {
-  insight: PatternInsight;
-  type: 'edge' | 'leak';
-}) {
+function InsightCard({ insight, type }: { insight: PatternInsight; type: 'edge' | 'leak' }) {
   const isEdge = type === 'edge';
   const Icon = isEdge ? EdgeIcon : LeakIcon;
   const colors = isEdge ? COLORS.edge : COLORS.leak;
@@ -134,24 +128,22 @@ function NoInsightsCard() {
           </Typography>
         </Box>
         <Typography variant="body2" color="text.secondary">
-          We need more trades to identify clear patterns. Keep logging your trades
-          and check back soon.
+          We need more trades to identify clear patterns. Keep logging your trades and check back
+          soon.
         </Typography>
       </CardContent>
     </Card>
   );
 }
 
-export default function HeroInsightCard({
-  topLeak,
-  topEdge,
-  isLoading,
-}: HeroInsightCardProps) {
+export default function HeroInsightCard({ topLeak, topEdge, isLoading }: HeroInsightCardProps) {
   if (isLoading) {
     return (
       <Card sx={{ bgcolor: 'action.hover', boxShadow: 'none' }}>
         <CardContent>
-          <Box sx={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box
+            sx={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
             <Typography color="text.secondary">Analyzing your patterns...</Typography>
           </Box>
         </CardContent>

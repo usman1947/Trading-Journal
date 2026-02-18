@@ -155,7 +155,7 @@ const ANALYTICS_PATTERNS = [
  * Uses pattern matching first (fast), then LLM classification for ambiguous cases
  */
 export function isAnalyticsQuestion(question: string): boolean {
-  return ANALYTICS_PATTERNS.some(pattern => pattern.test(question));
+  return ANALYTICS_PATTERNS.some((pattern) => pattern.test(question));
 }
 
 /**
@@ -222,8 +222,10 @@ Respond with: {"type": "analytics"|"rag"|"unsupported", "analyticsType": "time_a
 export function detectAnalyticsType(question: string): string {
   const q = question.toLowerCase();
 
-  if (/time|hour|window|period|morning|afternoon|evening/.test(q) &&
-      /profitable|best|worst|performance/.test(q)) {
+  if (
+    /time|hour|window|period|morning|afternoon|evening/.test(q) &&
+    /profitable|best|worst|performance/.test(q)
+  ) {
     return 'time_analysis';
   }
 
@@ -263,7 +265,7 @@ export function detectAnalyticsType(question: string): string {
     return 'setup_analysis';
   }
 
-  if (/rule|adherence|compliance/.test(q) || /follow|break/.test(q) && /rule/.test(q)) {
+  if (/rule|adherence|compliance/.test(q) || (/follow|break/.test(q) && /rule/.test(q))) {
     return 'rule_analysis';
   }
 
@@ -310,7 +312,10 @@ function getMarketTime(date: Date): { hour: number; minute: number } {
 /**
  * Get hourly trading performance (in market timezone)
  */
-export async function getHourlyPerformance(userId: string, accountId?: string | null): Promise<HourlyStats[]> {
+export async function getHourlyPerformance(
+  userId: string,
+  accountId?: string | null
+): Promise<HourlyStats[]> {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
@@ -376,7 +381,9 @@ export async function getTimeWindowPerformance(
     const { hour, minute } = getMarketTime(new Date(trade.tradeTime));
     const totalMinutes = hour * 60 + minute;
     const windowStart = Math.floor(totalMinutes / windowMinutes) * windowMinutes;
-    const windowKey = `${Math.floor(windowStart / 60).toString().padStart(2, '0')}:${(windowStart % 60).toString().padStart(2, '0')}`;
+    const windowKey = `${Math.floor(windowStart / 60)
+      .toString()
+      .padStart(2, '0')}:${(windowStart % 60).toString().padStart(2, '0')}`;
 
     const existing = windowMap.get(windowKey) || { pnl: 0, count: 0, wins: 0 };
     existing.pnl += trade.result || 0;
@@ -388,9 +395,12 @@ export async function getTimeWindowPerformance(
 
   // Convert to array
   const stats: TimeWindowStats[] = Array.from(windowMap.entries()).map(([windowStart, data]) => {
-    const startMinutes = parseInt(windowStart.split(':')[0]) * 60 + parseInt(windowStart.split(':')[1]);
+    const startMinutes =
+      parseInt(windowStart.split(':')[0]) * 60 + parseInt(windowStart.split(':')[1]);
     const endMinutes = startMinutes + windowMinutes;
-    const windowEnd = `${Math.floor(endMinutes / 60).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`;
+    const windowEnd = `${Math.floor(endMinutes / 60)
+      .toString()
+      .padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`;
 
     return {
       windowStart,
@@ -461,8 +471,8 @@ export async function getOverallStats(userId: string, accountId?: string | null)
   });
 
   const totalTrades = trades.length;
-  const winners = trades.filter(t => (t.result || 0) > 0);
-  const losers = trades.filter(t => (t.result || 0) < 0);
+  const winners = trades.filter((t) => (t.result || 0) > 0);
+  const losers = trades.filter((t) => (t.result || 0) < 0);
   const totalPnL = trades.reduce((sum, t) => sum + (t.result || 0), 0);
 
   return {
@@ -472,8 +482,12 @@ export async function getOverallStats(userId: string, accountId?: string | null)
     winRate: totalTrades > 0 ? (winners.length / totalTrades) * 100 : 0,
     totalPnL,
     avgPnL: totalTrades > 0 ? totalPnL / totalTrades : 0,
-    avgWin: winners.length > 0 ? winners.reduce((sum, t) => sum + (t.result || 0), 0) / winners.length : 0,
-    avgLoss: losers.length > 0 ? losers.reduce((sum, t) => sum + (t.result || 0), 0) / losers.length : 0,
+    avgWin:
+      winners.length > 0
+        ? winners.reduce((sum, t) => sum + (t.result || 0), 0) / winners.length
+        : 0,
+    avgLoss:
+      losers.length > 0 ? losers.reduce((sum, t) => sum + (t.result || 0), 0) / losers.length : 0,
   };
 }
 
@@ -526,7 +540,13 @@ function getMarketDayOfWeek(date: Date): number {
     timeZone: MARKET_TIMEZONE,
   });
   const dayMap: Record<string, number> = {
-    'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
   };
   return dayMap[dayStr] ?? 0;
 }
@@ -700,20 +720,23 @@ export async function getRuleAdherence(userId: string, accountId?: string | null
   let tradesWithBrokenRules = 0;
 
   // Per-rule stats
-  const ruleMap = new Map<string, {
-    text: string;
-    timesChecked: number;
-    timesFollowed: number;
-    pnlWhenFollowed: number;
-    pnlWhenBroken: number;
-    tradesWhenFollowed: number;
-    tradesWhenBroken: number;
-  }>();
+  const ruleMap = new Map<
+    string,
+    {
+      text: string;
+      timesChecked: number;
+      timesFollowed: number;
+      pnlWhenFollowed: number;
+      pnlWhenBroken: number;
+      tradesWhenFollowed: number;
+      tradesWhenBroken: number;
+    }
+  >();
 
   for (const trade of trades) {
     if (trade.ruleChecks.length === 0) continue;
 
-    const allFollowed = trade.ruleChecks.every(rc => rc.checked);
+    const allFollowed = trade.ruleChecks.every((rc) => rc.checked);
     const result = trade.result || 0;
 
     if (allFollowed) {
@@ -757,11 +780,14 @@ export async function getRuleAdherence(userId: string, accountId?: string | null
     ruleText: data.text,
     timesChecked: data.timesChecked,
     adherenceRate: data.timesChecked > 0 ? (data.timesFollowed / data.timesChecked) * 100 : 0,
-    avgPnLWhenFollowed: data.tradesWhenFollowed > 0 ? data.pnlWhenFollowed / data.tradesWhenFollowed : 0,
+    avgPnLWhenFollowed:
+      data.tradesWhenFollowed > 0 ? data.pnlWhenFollowed / data.tradesWhenFollowed : 0,
     avgPnLWhenBroken: data.tradesWhenBroken > 0 ? data.pnlWhenBroken / data.tradesWhenBroken : 0,
-    costOfBreaking: data.tradesWhenBroken > 0
-      ? (data.tradesWhenFollowed > 0 ? data.pnlWhenFollowed / data.tradesWhenFollowed : 0) - (data.pnlWhenBroken / data.tradesWhenBroken)
-      : 0,
+    costOfBreaking:
+      data.tradesWhenBroken > 0
+        ? (data.tradesWhenFollowed > 0 ? data.pnlWhenFollowed / data.tradesWhenFollowed : 0) -
+          data.pnlWhenBroken / data.tradesWhenBroken
+        : 0,
   }));
 
   return {
@@ -770,8 +796,10 @@ export async function getRuleAdherence(userId: string, accountId?: string | null
       overallAdherenceRate: totalRuleChecks > 0 ? (followedRules / totalRuleChecks) * 100 : 0,
       tradesWithPerfectAdherence,
       tradesWithBrokenRules,
-      avgPnLWithPerfectAdherence: tradesWithPerfectAdherence > 0 ? pnlWithPerfectAdherence / tradesWithPerfectAdherence : 0,
-      avgPnLWithBrokenRules: tradesWithBrokenRules > 0 ? pnlWithBrokenRules / tradesWithBrokenRules : 0,
+      avgPnLWithPerfectAdherence:
+        tradesWithPerfectAdherence > 0 ? pnlWithPerfectAdherence / tradesWithPerfectAdherence : 0,
+      avgPnLWithBrokenRules:
+        tradesWithBrokenRules > 0 ? pnlWithBrokenRules / tradesWithBrokenRules : 0,
     },
     byRule: ruleStats.sort((a, b) => a.adherenceRate - b.adherenceRate), // Worst adherence first
     mostBroken: ruleStats.sort((a, b) => a.adherenceRate - b.adherenceRate).slice(0, 5),
@@ -829,9 +857,11 @@ export async function getExecutionAnalytics(userId: string, accountId?: string |
       winRate: failStats.count > 0 ? (failStats.wins / failStats.count) * 100 : 0,
       avgPnL: failStats.count > 0 ? failStats.pnl / failStats.count : 0,
     },
-    costOfPoorExecution: failStats.count > 0
-      ? (passStats.count > 0 ? passStats.pnl / passStats.count : 0) - (failStats.pnl / failStats.count)
-      : 0,
+    costOfPoorExecution:
+      failStats.count > 0
+        ? (passStats.count > 0 ? passStats.pnl / passStats.count : 0) -
+          failStats.pnl / failStats.count
+        : 0,
   };
 }
 
@@ -872,13 +902,19 @@ export async function runAnalyticsQuery(
       context = `Time Analysis Data:
 
 Hourly Performance:
-${hourly.map(h => `- ${h.hour}:00: ${h.tradeCount} trades, $${h.totalPnL.toFixed(2)} PnL, ${h.winRate.toFixed(1)}% win rate`).join('\n')}
+${hourly.map((h) => `- ${h.hour}:00: ${h.tradeCount} trades, $${h.totalPnL.toFixed(2)} PnL, ${h.winRate.toFixed(1)}% win rate`).join('\n')}
 
 Best Hour: ${bestHour?.hour}:00 with $${bestHour?.totalPnL.toFixed(2)} total PnL
 Worst Hour: ${worstHour?.hour}:00 with $${worstHour?.totalPnL.toFixed(2)} total PnL
 
 ${windowMinutes}-Minute Window Performance:
-${windows.slice(0, 10).map(w => `- ${w.windowStart}-${w.windowEnd}: ${w.tradeCount} trades, $${w.totalPnL.toFixed(2)} PnL`).join('\n')}
+${windows
+  .slice(0, 10)
+  .map(
+    (w) =>
+      `- ${w.windowStart}-${w.windowEnd}: ${w.tradeCount} trades, $${w.totalPnL.toFixed(2)} PnL`
+  )
+  .join('\n')}
 
 Best ${windowMinutes}-min Window: ${bestWindow?.windowStart}-${bestWindow?.windowEnd} with $${bestWindow?.totalPnL.toFixed(2)} total PnL
 Worst ${windowMinutes}-min Window: ${worstWindow?.windowStart}-${worstWindow?.windowEnd} with $${worstWindow?.totalPnL.toFixed(2)} total PnL`;
@@ -891,13 +927,17 @@ Worst ${windowMinutes}-min Window: ${worstWindow?.windowStart}-${worstWindow?.wi
 
       context = `Extreme Trades:
 
-Biggest Winner: ${extremes.biggestWinner
-  ? `${extremes.biggestWinner.symbol} ${extremes.biggestWinner.side} on ${new Date(extremes.biggestWinner.tradeTime).toLocaleDateString()} - $${extremes.biggestWinner.result?.toFixed(2)} profit${extremes.biggestWinner.notes ? `\nNotes: ${extremes.biggestWinner.notes}` : ''}`
-  : 'No winning trades found'}
+Biggest Winner: ${
+        extremes.biggestWinner
+          ? `${extremes.biggestWinner.symbol} ${extremes.biggestWinner.side} on ${new Date(extremes.biggestWinner.tradeTime).toLocaleDateString()} - $${extremes.biggestWinner.result?.toFixed(2)} profit${extremes.biggestWinner.notes ? `\nNotes: ${extremes.biggestWinner.notes}` : ''}`
+          : 'No winning trades found'
+      }
 
-Biggest Loser: ${extremes.biggestLoser
-  ? `${extremes.biggestLoser.symbol} ${extremes.biggestLoser.side} on ${new Date(extremes.biggestLoser.tradeTime).toLocaleDateString()} - $${Math.abs(extremes.biggestLoser.result || 0).toFixed(2)} loss${extremes.biggestLoser.notes ? `\nNotes: ${extremes.biggestLoser.notes}` : ''}`
-  : 'No losing trades found'}`;
+Biggest Loser: ${
+        extremes.biggestLoser
+          ? `${extremes.biggestLoser.symbol} ${extremes.biggestLoser.side} on ${new Date(extremes.biggestLoser.tradeTime).toLocaleDateString()} - $${Math.abs(extremes.biggestLoser.result || 0).toFixed(2)} loss${extremes.biggestLoser.notes ? `\nNotes: ${extremes.biggestLoser.notes}` : ''}`
+          : 'No losing trades found'
+      }`;
       break;
     }
 
@@ -917,7 +957,10 @@ Bottom 5 by PnL:
 ${bottom5.map((s, i) => `${i + 1}. ${s.symbol}: $${s.totalPnL.toFixed(2)} (${s.tradeCount} trades, ${s.winRate.toFixed(1)}% win rate)`).join('\n')}
 
 Most Traded:
-${symbols.byCount.slice(0, 5).map((s, i) => `${i + 1}. ${s.symbol}: ${s.tradeCount} trades`).join('\n')}`;
+${symbols.byCount
+  .slice(0, 5)
+  .map((s, i) => `${i + 1}. ${s.symbol}: ${s.tradeCount} trades`)
+  .join('\n')}`;
       break;
     }
 
@@ -930,7 +973,7 @@ ${symbols.byCount.slice(0, 5).map((s, i) => `${i + 1}. ${s.symbol}: ${s.tradeCou
 
       context = `Day of Week Performance:
 
-${days.map(d => `- ${d.day}: ${d.tradeCount} trades, $${d.totalPnL.toFixed(2)} PnL, ${d.winRate.toFixed(1)}% win rate`).join('\n')}
+${days.map((d) => `- ${d.day}: ${d.tradeCount} trades, $${d.totalPnL.toFixed(2)} PnL, ${d.winRate.toFixed(1)}% win rate`).join('\n')}
 
 Best Day: ${bestDay?.day} with $${bestDay?.totalPnL.toFixed(2)} total PnL
 Worst Day: ${worstDay?.day} with $${worstDay?.totalPnL.toFixed(2)} total PnL`;
@@ -946,11 +989,15 @@ Worst Day: ${worstDay?.day} with $${worstDay?.totalPnL.toFixed(2)} total PnL`;
 
       context = `Strategy Performance:
 
-${strategies.byPnL.length > 0 ? `By PnL:
+${
+  strategies.byPnL.length > 0
+    ? `By PnL:
 ${strategies.byPnL.map((s, i) => `${i + 1}. ${s.strategyName}: $${s.totalPnL.toFixed(2)} (${s.tradeCount} trades, ${s.winRate.toFixed(1)}% win rate)`).join('\n')}
 
 Best Strategy: ${bestStrategy?.strategyName} with $${bestStrategy?.totalPnL.toFixed(2)} total PnL and ${bestStrategy?.winRate.toFixed(1)}% win rate
-Worst Strategy: ${worstStrategy?.strategyName} with $${worstStrategy?.totalPnL.toFixed(2)} total PnL` : 'No trades with strategies found'}`;
+Worst Strategy: ${worstStrategy?.strategyName} with $${worstStrategy?.totalPnL.toFixed(2)} total PnL`
+    : 'No trades with strategies found'
+}`;
       break;
     }
 
@@ -963,11 +1010,15 @@ Worst Strategy: ${worstStrategy?.strategyName} with $${worstStrategy?.totalPnL.t
 
       context = `Setup Performance:
 
-${setups.byPnL.length > 0 ? `By PnL:
+${
+  setups.byPnL.length > 0
+    ? `By PnL:
 ${setups.byPnL.map((s, i) => `${i + 1}. "${s.setup}": $${s.totalPnL.toFixed(2)} (${s.tradeCount} trades, ${s.winRate.toFixed(1)}% win rate)`).join('\n')}
 
 Best Setup: "${bestSetup?.setup}" with $${bestSetup?.totalPnL.toFixed(2)} total PnL and ${bestSetup?.winRate.toFixed(1)}% win rate
-Worst Setup: "${worstSetup?.setup}" with $${worstSetup?.totalPnL.toFixed(2)} total PnL` : 'No trades with setups found'}`;
+Worst Setup: "${worstSetup?.setup}" with $${worstSetup?.totalPnL.toFixed(2)} total PnL`
+    : 'No trades with setups found'
+}`;
       break;
     }
 
@@ -984,11 +1035,19 @@ Overall:
 - Avg PnL when Following All Rules: $${ruleData.overall.avgPnLWithPerfectAdherence.toFixed(2)}
 - Avg PnL when Breaking Rules: $${ruleData.overall.avgPnLWithBrokenRules.toFixed(2)}
 
-${ruleData.mostBroken.length > 0 ? `Most Frequently Broken Rules:
-${ruleData.mostBroken.map((r, i) => `${i + 1}. "${r.ruleText}" - ${r.adherenceRate.toFixed(1)}% adherence (Avg PnL when followed: $${r.avgPnLWhenFollowed.toFixed(2)}, when broken: $${r.avgPnLWhenBroken.toFixed(2)})`).join('\n')}` : 'No rule data found'}
+${
+  ruleData.mostBroken.length > 0
+    ? `Most Frequently Broken Rules:
+${ruleData.mostBroken.map((r, i) => `${i + 1}. "${r.ruleText}" - ${r.adherenceRate.toFixed(1)}% adherence (Avg PnL when followed: $${r.avgPnLWhenFollowed.toFixed(2)}, when broken: $${r.avgPnLWhenBroken.toFixed(2)})`).join('\n')}`
+    : 'No rule data found'
+}
 
-${ruleData.mostCostly.length > 0 ? `Most Costly Rules to Break:
-${ruleData.mostCostly.map((r, i) => `${i + 1}. "${r.ruleText}" - Breaking costs avg $${r.costOfBreaking.toFixed(2)} per trade`).join('\n')}` : ''}`;
+${
+  ruleData.mostCostly.length > 0
+    ? `Most Costly Rules to Break:
+${ruleData.mostCostly.map((r, i) => `${i + 1}. "${r.ruleText}" - Breaking costs avg $${r.costOfBreaking.toFixed(2)} per trade`).join('\n')}`
+    : ''
+}`;
       break;
     }
 

@@ -45,8 +45,14 @@ export default function CalendarView({ data, loading }: CalendarViewProps) {
     };
   }, [currentMonth]);
 
-  const handlePrevMonth = useCallback(() => setCurrentMonth(subMonths(currentMonth, 1)), [currentMonth]);
-  const handleNextMonth = useCallback(() => setCurrentMonth(addMonths(currentMonth, 1)), [currentMonth]);
+  const handlePrevMonth = useCallback(
+    () => setCurrentMonth(subMonths(currentMonth, 1)),
+    [currentMonth]
+  );
+  const handleNextMonth = useCallback(
+    () => setCurrentMonth(addMonths(currentMonth, 1)),
+    [currentMonth]
+  );
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

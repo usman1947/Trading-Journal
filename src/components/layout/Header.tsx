@@ -136,20 +136,13 @@ export default function Header() {
           </Tooltip>
 
           <Tooltip title={`Switch to ${themeMode === 'light' ? 'dark' : 'light'} mode`}>
-            <IconButton
-              color="inherit"
-              onClick={() => dispatch(toggleThemeMode())}
-            >
+            <IconButton color="inherit" onClick={() => dispatch(toggleThemeMode())}>
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>
           </Tooltip>
 
           <Tooltip title="Account">
-            <IconButton
-              onClick={handleMenuOpen}
-              size="small"
-              sx={{ ml: 1 }}
-            >
+            <IconButton onClick={handleMenuOpen} size="small" sx={{ ml: 1 }}>
               <Avatar
                 src={user?.avatarUrl || undefined}
                 sx={{

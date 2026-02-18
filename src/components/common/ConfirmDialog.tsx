@@ -40,12 +40,7 @@ export default function ConfirmDialog({
         <Button onClick={onCancel} disabled={loading}>
           {cancelText}
         </Button>
-        <Button
-          onClick={onConfirm}
-          color="error"
-          variant="contained"
-          disabled={loading}
-        >
+        <Button onClick={onConfirm} color="error" variant="contained" disabled={loading}>
           {loading ? 'Loading...' : confirmText}
         </Button>
       </DialogActions>

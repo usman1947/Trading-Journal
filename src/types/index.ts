@@ -5,7 +5,17 @@ export type Mood = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'TRENDING' | 'CHOPPY' | '
 // AI-ready types
 export type PreTradeMood = 'CONFIDENT' | 'ANXIOUS' | 'FOMO' | 'REVENGE' | 'CALM' | 'NEUTRAL';
 export type PostTradeMood = 'SATISFIED' | 'FRUSTRATED' | 'RELIEVED' | 'REGRETFUL' | 'NEUTRAL';
-export type TradeMistake = 'FOMO' | 'CHASING' | 'EARLY_EXIT' | 'OVERSIZE' | 'REVENGE' | 'NO_PLAN' | 'IGNORED_STOP' | 'MOVED_STOP' | 'NO_STOP' | 'OVERTRADING';
+export type TradeMistake =
+  | 'FOMO'
+  | 'CHASING'
+  | 'EARLY_EXIT'
+  | 'OVERSIZE'
+  | 'REVENGE'
+  | 'NO_PLAN'
+  | 'IGNORED_STOP'
+  | 'MOVED_STOP'
+  | 'NO_STOP'
+  | 'OVERTRADING';
 
 export interface Account {
   id: string;
@@ -36,9 +46,9 @@ export interface Trade {
   postTradeMood?: PostTradeMood | null;
   confidenceLevel?: number | null;
   mistake?: TradeMistake | null;
-  sentimentScore?: number | null;      // AI-computed (-1 to 1)
-  sequenceInSession?: number | null;   // Calculated programmatically
-  holdDurationMins?: number | null;    // Calculated from exit - entry
+  sentimentScore?: number | null; // AI-computed (-1 to 1)
+  sequenceInSession?: number | null; // Calculated programmatically
+  holdDurationMins?: number | null; // Calculated from exit - entry
   strategyId?: string | null;
   strategy?: Strategy | null;
   accountId?: string | null;
@@ -126,11 +136,11 @@ export interface DailyJournal {
   mood?: Mood | null;
   lessons?: string | null;
   // AI-ready fields
-  energyLevel?: number | null;      // 1-10
-  sleepQuality?: number | null;     // 1-10
-  focusLevel?: number | null;       // 1-10
-  premarketPlan?: boolean;          // Did user have a plan?
-  sentimentScore?: number | null;   // AI-computed (-1 to 1)
+  energyLevel?: number | null; // 1-10
+  sleepQuality?: number | null; // 1-10
+  focusLevel?: number | null; // 1-10
+  premarketPlan?: boolean; // Did user have a plan?
+  sentimentScore?: number | null; // AI-computed (-1 to 1)
   screenshots?: JournalScreenshot[];
   createdAt: string;
   updatedAt: string;
@@ -193,7 +203,7 @@ export interface TradeFilters {
   dateFrom?: string;
   dateTo?: string;
   timeBefore?: string; // HH:mm format, e.g., "09:35"
-  timeAfter?: string;  // HH:mm format, e.g., "10:00"
+  timeAfter?: string; // HH:mm format, e.g., "10:00"
   symbol?: string;
   side?: TradeSide;
   execution?: Execution;

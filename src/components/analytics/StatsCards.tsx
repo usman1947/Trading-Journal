@@ -101,7 +101,9 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
         <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={stat.title}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
+              >
                 <Box>
                   <Typography
                     variant="body2"

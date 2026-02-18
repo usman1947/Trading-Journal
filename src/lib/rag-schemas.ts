@@ -75,27 +75,13 @@ export const symbolsArraySchema = z.array(symbolSchema).optional();
  */
 export const ragQueryOptionsSchema = z.object({
   /** Maximum number of documents to retrieve */
-  topK: z
-    .number()
-    .int()
-    .min(1)
-    .max(20)
-    .optional()
-    .default(5),
+  topK: z.number().int().min(1).max(20).optional().default(5),
 
   /** Minimum similarity threshold (0 to 1) */
-  minSimilarity: z
-    .number()
-    .min(0)
-    .max(1)
-    .optional()
-    .default(0.5),
+  minSimilarity: z.number().min(0).max(1).optional().default(0.5),
 
   /** Filter by document types */
-  documentTypes: z
-    .array(documentSourceTypeSchema)
-    .optional()
-    .default(['trade', 'journal']),
+  documentTypes: z.array(documentSourceTypeSchema).optional().default(['trade', 'journal']),
 
   /** Filter by date range */
   dateRange: dateRangeSchema,
@@ -107,13 +93,7 @@ export const ragQueryOptionsSchema = z.object({
   includeCitations: z.boolean().optional().default(true),
 
   /** Maximum tokens for context */
-  maxContextTokens: z
-    .number()
-    .int()
-    .min(500)
-    .max(8000)
-    .optional()
-    .default(4000),
+  maxContextTokens: z.number().int().min(500).max(8000).optional().default(4000),
 });
 
 /**
@@ -145,30 +125,19 @@ export type ValidatedRAGQueryRequest = z.infer<typeof ragQueryRequestSchema>;
  */
 export const embeddingSyncRequestSchema = z.object({
   /** Types to sync */
-  types: z
-    .array(documentSourceTypeSchema)
-    .optional()
-    .default(['trade', 'journal']),
+  types: z.array(documentSourceTypeSchema).optional().default(['trade', 'journal']),
 
   /** Force re-sync even if embeddings exist */
   force: z.boolean().optional().default(false),
 
   /** Maximum documents to process */
-  batchSize: z
-    .number()
-    .int()
-    .min(1)
-    .max(500)
-    .optional()
-    .default(100),
+  batchSize: z.number().int().min(1).max(500).optional().default(100),
 });
 
 /**
  * Inferred type from the embedding sync request schema.
  */
-export type ValidatedEmbeddingSyncRequest = z.infer<
-  typeof embeddingSyncRequestSchema
->;
+export type ValidatedEmbeddingSyncRequest = z.infer<typeof embeddingSyncRequestSchema>;
 
 // =============================================================================
 // Response Schemas (for validation/documentation)
@@ -253,9 +222,7 @@ export const embeddingSyncResponseSchema = z.object({
 /**
  * Success API response schema.
  */
-export const apiSuccessResponseSchema = <T extends z.ZodTypeAny>(
-  dataSchema: T
-) =>
+export const apiSuccessResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
   z.object({
     success: z.literal(true),
     data: dataSchema,
@@ -294,9 +261,7 @@ export type ValidationResult<T> =
  * @param data - The request data to validate
  * @returns Validation result with typed data or error
  */
-export function validateRAGQueryRequest(
-  data: unknown
-): ValidationResult<ValidatedRAGQueryRequest> {
+export function validateRAGQueryRequest(data: unknown): ValidationResult<ValidatedRAGQueryRequest> {
   const result = ragQueryRequestSchema.safeParse(data);
 
   if (result.success) {
@@ -361,9 +326,7 @@ export function createValidationErrorResponse(error: z.ZodError<unknown>) {
 /**
  * Type guard for document source type.
  */
-export function isDocumentSourceType(
-  value: unknown
-): value is DocumentSourceType {
+export function isDocumentSourceType(value: unknown): value is DocumentSourceType {
   return value === 'trade' || value === 'journal';
 }
 

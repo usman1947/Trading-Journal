@@ -43,7 +43,8 @@ export default function StrategyBreakdown() {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography color="text.secondary">
-          No strategy data available. Create strategies and tag your trades to see performance breakdown.
+          No strategy data available. Create strategies and tag your trades to see performance
+          breakdown.
         </Typography>
       </Box>
     );
@@ -92,9 +93,7 @@ export default function StrategyBreakdown() {
                 </Typography>
               </TableCell>
               <TableCell align="right">
-                <Typography color="error.main">
-                  {formatRMultiple(strategy.averageLossR)}
-                </Typography>
+                <Typography color="error.main">{formatRMultiple(strategy.averageLossR)}</Typography>
               </TableCell>
               <TableCell align="right">
                 <Typography
@@ -102,8 +101,8 @@ export default function StrategyBreakdown() {
                     strategy.averageRuleSatisfaction >= 80
                       ? 'success.main'
                       : strategy.averageRuleSatisfaction >= 50
-                      ? 'warning.main'
-                      : 'error.main'
+                        ? 'warning.main'
+                        : 'error.main'
                   }
                 >
                   {strategy.averageRuleSatisfaction > 0

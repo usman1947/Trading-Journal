@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
-import { handleApiError, notFoundResponse, successResponse } from '@/lib/api-helpers';
+import {
+  handleApiError,
+  notFoundResponse,
+  successResponse,
+  validationError,
+} from '@/lib/api-helpers';
 import { deserializeSetups, serializeSetups } from '@/utils/trade-calculations';
 import { STRATEGY_WITH_RULES_INCLUDE } from '@/lib/prisma-includes';
+import { updateStrategySchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();
@@ -43,10 +46,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) return unauthorizedResponse();
@@ -63,7 +63,11 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, setups, rules, isSwingStrategy } = body;
+    const parsed = updateStrategySchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(formatZodError(parsed.error));
+    }
+    const { name, description, setups, rules, isSwingStrategy } = parsed.data;
 
     // Update strategy with rules in a transaction
     const strategy = await prisma.$transaction(async (tx) => {

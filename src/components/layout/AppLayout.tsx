@@ -6,7 +6,12 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import { useAppDispatch } from '@/store/hooks';
 import { useAppSelector } from '@/store/hooks';
-import { hideSnackbar, setSelectedAccountId, setThemeMode, setSidebarOpen } from '@/store/slices/uiSlice';
+import {
+  hideSnackbar,
+  setSelectedAccountId,
+  setThemeMode,
+  setSidebarOpen,
+} from '@/store/slices/uiSlice';
 import { setUser, setLoading } from '@/store/slices/authSlice';
 import { useGetSettingsQuery, useGetMeQuery } from '@/store';
 

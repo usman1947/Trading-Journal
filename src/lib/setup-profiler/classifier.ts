@@ -12,11 +12,11 @@ import { generateClusterId, generateDisplayKey } from './clustering';
  */
 export const DEFAULT_CLASSIFICATION_CONFIG = {
   minSampleSize: 10,
-  edgeExpectancyThreshold: 0.5,    // Minimum +0.5R expected per trade
-  leakExpectancyThreshold: -0.3,   // Maximum -0.3R expected per trade
-  edgeWinRateMin: 50,              // Minimum 50% win rate for edge
-  leakWinRateMax: 40,              // Maximum 40% win rate for leak
-  edgeProfitFactorMin: 1.5,        // Minimum profit factor for edge
+  edgeExpectancyThreshold: 0.5, // Minimum +0.5R expected per trade
+  leakExpectancyThreshold: -0.3, // Maximum -0.3R expected per trade
+  edgeWinRateMin: 50, // Minimum 50% win rate for edge
+  leakWinRateMax: 40, // Maximum 40% win rate for leak
+  edgeProfitFactorMin: 1.5, // Minimum profit factor for edge
 };
 
 /**
@@ -24,10 +24,10 @@ export const DEFAULT_CLASSIFICATION_CONFIG = {
  */
 const CLASSIFICATION_WEIGHTS = {
   expectancyR: 0.35,
-  winRate: 0.20,
-  profitFactor: 0.20,
+  winRate: 0.2,
+  profitFactor: 0.2,
   payoffRatio: 0.15,
-  executionDelta: 0.10,
+  executionDelta: 0.1,
 };
 
 /**
@@ -38,8 +38,10 @@ export function classifyCluster(
   config: Partial<SetupProfilerConfig> = {}
 ): { classification: ClusterClassification; score: number } {
   const minSampleSize = config.minSampleSize ?? DEFAULT_CLASSIFICATION_CONFIG.minSampleSize;
-  const edgeThreshold = config.edgeExpectancyThreshold ?? DEFAULT_CLASSIFICATION_CONFIG.edgeExpectancyThreshold;
-  const leakThreshold = config.leakExpectancyThreshold ?? DEFAULT_CLASSIFICATION_CONFIG.leakExpectancyThreshold;
+  const edgeThreshold =
+    config.edgeExpectancyThreshold ?? DEFAULT_CLASSIFICATION_CONFIG.edgeExpectancyThreshold;
+  const leakThreshold =
+    config.leakExpectancyThreshold ?? DEFAULT_CLASSIFICATION_CONFIG.leakExpectancyThreshold;
 
   // Check for insufficient data
   if (stats.totalTrades < minSampleSize) {
@@ -74,7 +76,7 @@ function calculateClassificationScore(stats: ClusterStats): number {
   // 2. Win rate contribution (-20 to +20)
   const winRateNormalized = (stats.winRate - 50) / 10;
   const winRateContrib = Math.max(-20, Math.min(20, winRateNormalized * 10));
-  score += winRateContrib * (CLASSIFICATION_WEIGHTS.winRate / 0.20);
+  score += winRateContrib * (CLASSIFICATION_WEIGHTS.winRate / 0.2);
 
   // 3. Profit factor contribution (-20 to +20)
   let pfContrib = 0;
@@ -85,7 +87,7 @@ function calculateClassificationScore(stats: ClusterStats): number {
   } else {
     pfContrib = Math.max(-20, (stats.profitFactor - 1) * 40);
   }
-  score += pfContrib * (CLASSIFICATION_WEIGHTS.profitFactor / 0.20);
+  score += pfContrib * (CLASSIFICATION_WEIGHTS.profitFactor / 0.2);
 
   // 4. Payoff ratio contribution (-15 to +15)
   let payoffContrib = 0;
@@ -101,7 +103,7 @@ function calculateClassificationScore(stats: ClusterStats): number {
   // 5. Execution quality delta contribution (-10 to +10)
   const execDelta = stats.passTradeWinRate - stats.failTradeWinRate;
   const execContrib = Math.max(-10, Math.min(10, execDelta / 2));
-  score += execContrib * (CLASSIFICATION_WEIGHTS.executionDelta / 0.10);
+  score += execContrib * (CLASSIFICATION_WEIGHTS.executionDelta / 0.1);
 
   // Apply confidence penalty for small sample sizes
   if (stats.confidenceLevel === 'LOW') {

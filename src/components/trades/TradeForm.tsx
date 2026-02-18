@@ -23,9 +23,7 @@ import {
   Switch,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import {
-  ChecklistRtl as ChecklistIcon,
-} from '@mui/icons-material';
+import { ChecklistRtl as ChecklistIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import {
@@ -41,9 +39,18 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ScreenshotUpload, { type PendingFile } from '@/components/common/ScreenshotUpload';
 import DateTimePickerGroup from '@/components/common/DateTimePickerGroup';
-import ToggleButtonGroupField, { type ToggleOption } from '@/components/common/ToggleButtonGroupField';
+import ToggleButtonGroupField, {
+  type ToggleOption,
+} from '@/components/common/ToggleButtonGroupField';
 import SliderInput from '@/components/common/SliderInput';
-import type { Trade, TradeFormData, Strategy, PreTradeMood, PostTradeMood, TradeMistake } from '@/types';
+import type {
+  Trade,
+  TradeFormData,
+  Strategy,
+  PreTradeMood,
+  PostTradeMood,
+  TradeMistake,
+} from '@/types';
 
 // Options for psychology dropdowns
 const PRE_TRADE_MOODS: { value: PreTradeMood; label: string }[] = [
@@ -146,7 +153,6 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
     }));
   };
 
-
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -171,26 +177,29 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
   const defaultRisk = useMemo(() => settings?.defaultRisk || 100, [settings?.defaultRisk]);
 
   // Memoize initial values to prevent unnecessary reinitializations
-  const initialValues = useMemo<TradeFormData>(() => ({
-    symbol: trade?.symbol || '',
-    side: trade?.side || 'LONG',
-    tradeTime: trade?.tradeTime || new Date().toISOString(),
-    exitTime: trade?.exitTime || null,
-    setup: trade?.setup || '',
-    risk: trade?.risk ?? defaultRisk,
-    result: trade?.result ?? undefined,
-    commission: trade?.commission ?? 0,
-    execution: trade?.execution || 'PASS',
-    isBreakEven: trade?.isBreakEven || false,
-    notes: trade?.notes || '',
-    strategyId: trade?.strategyId || '',
-    accountId: trade?.accountId ?? selectedAccountId,
-    // AI-ready fields
-    preTradeMood: trade?.preTradeMood || null,
-    postTradeMood: trade?.postTradeMood || null,
-    confidenceLevel: trade?.confidenceLevel ?? null,
-    mistake: trade?.mistake || null,
-  }), [trade, defaultRisk, selectedAccountId]);
+  const initialValues = useMemo<TradeFormData>(
+    () => ({
+      symbol: trade?.symbol || '',
+      side: trade?.side || 'LONG',
+      tradeTime: trade?.tradeTime || new Date().toISOString(),
+      exitTime: trade?.exitTime || null,
+      setup: trade?.setup || '',
+      risk: trade?.risk ?? defaultRisk,
+      result: trade?.result ?? undefined,
+      commission: trade?.commission ?? 0,
+      execution: trade?.execution || 'PASS',
+      isBreakEven: trade?.isBreakEven || false,
+      notes: trade?.notes || '',
+      strategyId: trade?.strategyId || '',
+      accountId: trade?.accountId ?? selectedAccountId,
+      // AI-ready fields
+      preTradeMood: trade?.preTradeMood || null,
+      postTradeMood: trade?.postTradeMood || null,
+      confidenceLevel: trade?.confidenceLevel ?? null,
+      mistake: trade?.mistake || null,
+    }),
+    [trade, defaultRisk, selectedAccountId]
+  );
 
   const formik = useFormik<TradeFormData>({
     initialValues,
@@ -215,7 +224,9 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
           }
 
           // Save rule checks if a strategy with rules was selected
-          const newStrategy = strategies.find((s: Strategy) => s.id === values.strategyId) as Strategy | undefined;
+          const newStrategy = strategies.find((s: Strategy) => s.id === values.strategyId) as
+            | Strategy
+            | undefined;
           if (newStrategy?.rules && newStrategy.rules.length > 0) {
             const ruleChecksData = newStrategy.rules.map((rule) => ({
               ruleId: rule.id,
@@ -286,9 +297,15 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                 <DateTimePickerGroup
                   entryDateTime={formik.values.tradeTime}
                   exitDateTime={formik.values.exitTime}
-                  onEntryDateChange={(date) => formik.setFieldValue('tradeTime', date.toISOString())}
-                  onEntryTimeChange={(time) => formik.setFieldValue('tradeTime', time.toISOString())}
-                  onExitTimeChange={(time) => formik.setFieldValue('exitTime', time ? time.toISOString() : null)}
+                  onEntryDateChange={(date) =>
+                    formik.setFieldValue('tradeTime', date.toISOString())
+                  }
+                  onEntryTimeChange={(time) =>
+                    formik.setFieldValue('tradeTime', time.toISOString())
+                  }
+                  onExitTimeChange={(time) =>
+                    formik.setFieldValue('exitTime', time ? time.toISOString() : null)
+                  }
                   error={Boolean(formik.errors.tradeTime)}
                   touched={formik.touched.tradeTime}
                 />
@@ -543,10 +560,14 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
 
               {/* Strategy Rules Checklist */}
               {(() => {
-                const currentStrategy = strategies.find((s: Strategy) => s.id === formik.values.strategyId) as Strategy | undefined;
+                const currentStrategy = strategies.find(
+                  (s: Strategy) => s.id === formik.values.strategyId
+                ) as Strategy | undefined;
                 if (!currentStrategy?.rules || currentStrategy.rules.length === 0) return null;
 
-                const checkedCount = currentStrategy.rules.filter((rule) => ruleChecks[rule.id]).length;
+                const checkedCount = currentStrategy.rules.filter(
+                  (rule) => ruleChecks[rule.id]
+                ).length;
                 const score = Math.round((checkedCount / currentStrategy.rules.length) * 100);
 
                 return (
@@ -554,11 +575,13 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                     <Divider sx={{ mb: 2 }} />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                       <ChecklistIcon color="primary" fontSize="small" />
-                      <Typography variant="subtitle2">
-                        Strategy Checklist
-                      </Typography>
+                      <Typography variant="subtitle2">Strategy Checklist</Typography>
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mb: 2, display: 'block' }}
+                    >
                       Check the rules this trade satisfied
                     </Typography>
 
@@ -572,18 +595,21 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                             size="small"
                           />
                         }
-                        label={
-                          <Typography variant="body2">
-                            {rule.text}
-                          </Typography>
-                        }
+                        label={<Typography variant="body2">{rule.text}</Typography>}
                         sx={{ display: 'flex', mb: 0.5, ml: 0 }}
                       />
                     ))}
 
                     {/* Satisfaction Score */}
                     <Box sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          mb: 1,
+                        }}
+                      >
                         <Typography variant="body2" fontWeight="medium">
                           Strategy Satisfaction Score
                         </Typography>
@@ -599,7 +625,11 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                         color={score >= 75 ? 'success' : score >= 50 ? 'warning' : 'error'}
                         sx={{ height: 8, borderRadius: 1 }}
                       />
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ mt: 0.5, display: 'block' }}
+                      >
                         {checkedCount} of {currentStrategy.rules.length} rules satisfied
                       </Typography>
                     </Box>
@@ -629,20 +659,10 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
           </Card>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={() => router.back()}
-              disabled={isLoading}
-            >
+            <Button variant="outlined" fullWidth onClick={() => router.back()} disabled={isLoading}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={isLoading}
-            >
+            <Button type="submit" variant="contained" fullWidth disabled={isLoading}>
               {isLoading ? 'Saving...' : mode === 'create' ? 'Create Trade' : 'Update Trade'}
             </Button>
           </Box>
