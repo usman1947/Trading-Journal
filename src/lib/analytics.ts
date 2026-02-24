@@ -16,6 +16,16 @@ import {
 } from './query-helpers';
 import { calculateAverageRMultiple, formatTimeOfDay } from '@/utils/trade-calculations';
 
+/**
+ * Format a Date as yyyy-MM-dd in America/New_York (market timezone).
+ * This ensures trades are grouped by the calendar day they occurred in
+ * the US market timezone, not UTC.
+ */
+function toMarketDateString(date: Date): string {
+  const parts = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).split('-');
+  return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+}
+
 type TradeRecord = {
   result: number | null;
   risk: number;
@@ -153,7 +163,7 @@ export async function getDailyStats(filters: TradeFilters = {}): Promise<DailySt
   >();
 
   trades.forEach((trade: TradeRecord) => {
-    const date = trade.tradeTime.toISOString().split('T')[0];
+    const date = toMarketDateString(trade.tradeTime);
     const existing = dailyMap.get(date) || { pnl: 0, wins: 0, total: 0, nonBETotal: 0 };
     // Subtract commission from PnL
     existing.pnl += (trade.result ?? 0) - (trade.commission ?? 0);

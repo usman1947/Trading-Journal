@@ -75,8 +75,7 @@ function formatDate(dateStr: string): string {
 }
 
 function getTodayString(): string {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
 export default function DailyRulesPage() {

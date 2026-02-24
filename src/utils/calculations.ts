@@ -85,7 +85,9 @@ export function calculateAnalytics(trades: Trade[]): AnalyticsData {
 export function groupTradesByDate(trades: Trade[]): Record<string, Trade[]> {
   return trades.reduce(
     (acc, trade) => {
-      const date = trade.tradeTime.split('T')[0];
+      const date = new Date(trade.tradeTime).toLocaleDateString('en-CA', {
+        timeZone: 'America/New_York',
+      });
       if (!acc[date]) {
         acc[date] = [];
       }
