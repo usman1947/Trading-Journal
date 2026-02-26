@@ -25,7 +25,7 @@ import { useAppSelector } from '@/store/hooks';
 import { formatPnL, formatDateOnly, formatTimeOnly } from '@/utils/formatters';
 import type { Trade } from '@/types';
 
-type SortOrder = 'winners' | 'losers';
+type SortOrder = 'winners' | 'losers' | 'date';
 
 interface ScreenshotCarouselProps {
   open: boolean;
@@ -64,6 +64,9 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
   const sortedTrades = useMemo(() => {
     const sorted = [...tradesWithScreenshots];
     sorted.sort((a, b) => {
+      if (sortOrder === 'date') {
+        return new Date(b.tradeTime).getTime() - new Date(a.tradeTime).getTime();
+      }
       const aResult = a.result ?? 0;
       const bResult = b.result ?? 0;
       if (sortOrder === 'winners') {
@@ -216,6 +219,7 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
           >
             <ToggleButton value="winners">Winners First</ToggleButton>
             <ToggleButton value="losers">Losers First</ToggleButton>
+            <ToggleButton value="date">By Date</ToggleButton>
           </ToggleButtonGroup>
 
           <IconButton onClick={onClose} size="small" aria-label="Close screenshot viewer">
