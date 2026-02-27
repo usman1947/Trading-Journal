@@ -1,7 +1,13 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+  type WheelEvent as ReactWheelEvent,
+} from 'react';
 import {
   Box,
   Dialog,
@@ -19,6 +25,9 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   CameraAlt as CameraAltIcon,
+  ZoomIn as ZoomInIcon,
+  ZoomOut as ZoomOutIcon,
+  CenterFocusStrong as ResetZoomIcon,
 } from '@mui/icons-material';
 import { useGetTradesQuery } from '@/store';
 import { useAppSelector } from '@/store/hooks';
@@ -50,6 +59,55 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
   const [fadeIn, setFadeIn] = useState(true);
   const [imageLoading, setImageLoading] = useState(true);
   const touchStartX = useRef<number | null>(null);
+
+  // Zoom state
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0 });
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 5;
+
+  const resetZoom = useCallback(() => {
+    setZoom(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
+  const handleWheel = useCallback((e: ReactWheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    setZoom((prev) => {
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta));
+      if (newZoom === MIN_ZOOM) {
+        setPanOffset({ x: 0, y: 0 });
+      }
+      return newZoom;
+    });
+  }, []);
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (zoom <= 1) return;
+      e.preventDefault();
+      isPanning.current = true;
+      panStart.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+    },
+    [zoom, panOffset]
+  );
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanning.current) return;
+    setPanOffset({
+      x: e.clientX - panStart.current.x,
+      y: e.clientY - panStart.current.y,
+    });
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    isPanning.current = false;
+  }, []);
 
   const tradesWithScreenshots = useMemo(() => {
     return (trades as Trade[]).filter(
@@ -83,13 +141,14 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
     (newIndex: number) => {
       if (newIndex < 0 || newIndex >= sortedTrades.length) return;
       setFadeIn(false);
+      resetZoom();
       setTimeout(() => {
         setCurrentIndex(newIndex);
         setImageLoading(true);
         setFadeIn(true);
       }, 150);
     },
-    [sortedTrades.length]
+    [sortedTrades.length, resetZoom]
   );
 
   const handlePrev = useCallback(() => {
@@ -123,13 +182,23 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
     setFadeIn(true);
   }, [sortOrder]);
 
+  // Prevent default scroll when wheeling over image container
+  useEffect(() => {
+    const container = imageContainerRef.current;
+    if (!container || !open) return;
+    const preventScroll = (e: globalThis.WheelEvent) => e.preventDefault();
+    container.addEventListener('wheel', preventScroll, { passive: false });
+    return () => container.removeEventListener('wheel', preventScroll);
+  }, [open]);
+
   useEffect(() => {
     if (open) {
       setCurrentIndex(0);
       setFadeIn(true);
       setImageLoading(true);
+      resetZoom();
     }
-  }, [open]);
+  }, [open, resetZoom]);
 
   const handleSortChange = (_: React.MouseEvent<HTMLElement>, newSort: SortOrder | null) => {
     if (newSort) setSortOrder(newSort);
@@ -157,7 +226,7 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="lg"
+      maxWidth={false}
       fullWidth
       fullScreen={fullScreen}
       aria-labelledby="screenshot-carousel-title"
@@ -169,9 +238,14 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
       PaperProps={{
         sx: {
           backgroundColor: 'background.paper',
-          borderRadius: fullScreen ? 0 : 3,
+          borderRadius: fullScreen ? 0 : 2,
           overflow: 'hidden',
-          maxHeight: fullScreen ? '100vh' : '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          width: fullScreen ? '100vw' : '95vw',
+          height: fullScreen ? '100vh' : '95vh',
+          maxWidth: '95vw',
+          maxHeight: '95vh',
         },
       }}
     >
@@ -290,14 +364,24 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
 
           {/* Image container */}
           <Box
+            ref={imageContainerRef}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={zoom <= 1 ? handleTouchStart : undefined}
+            onTouchEnd={zoom <= 1 ? handleTouchEnd : undefined}
             sx={{
               position: 'relative',
               width: '100%',
-              height: { xs: '60vh', sm: '65vh', md: '70vh' },
+              flex: 1,
+              minHeight: 0,
               backgroundColor: '#0a0a0a',
+              overflow: 'hidden',
+              cursor: zoom > 1 ? (isPanning.current ? 'grabbing' : 'grab') : 'default',
+              userSelect: 'none',
             }}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
           >
             {/* Screenshot image */}
             {screenshotUrl && (
@@ -306,6 +390,9 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
                   position: 'relative',
                   width: '100%',
                   height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   opacity: fadeIn ? 1 : 0,
                   transition: 'opacity 150ms ease-in-out',
                 }}
@@ -324,15 +411,71 @@ export default function ScreenshotCarousel({ open, onClose }: ScreenshotCarousel
                     <CircularProgress size={32} color="primary" />
                   </Box>
                 )}
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={screenshotUrl}
                   alt={`Trade screenshot: ${currentTrade?.symbol} ${currentTrade?.side} ${formatPnL(pnl)}`}
-                  fill
-                  style={{ objectFit: 'contain' }}
-                  sizes="(max-width: 600px) 100vw, (max-width: 1200px) 80vw, 1200px"
                   onLoad={() => setImageLoading(false)}
-                  priority
+                  draggable={false}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    objectFit: 'contain',
+                    transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
+                    transition: isPanning.current ? 'none' : 'transform 0.1s ease-out',
+                  }}
                 />
+              </Box>
+            )}
+
+            {/* Zoom controls */}
+            {zoom > 1 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  borderRadius: 2,
+                  px: 1,
+                  py: 0.5,
+                  zIndex: 3,
+                }}
+              >
+                <IconButton
+                  size="small"
+                  onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z - 0.25))}
+                  sx={{ color: 'white', p: 0.5 }}
+                  aria-label="Zoom out"
+                >
+                  <ZoomOutIcon fontSize="small" />
+                </IconButton>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'white', minWidth: 40, textAlign: 'center' }}
+                >
+                  {Math.round(zoom * 100)}%
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + 0.25))}
+                  sx={{ color: 'white', p: 0.5 }}
+                  aria-label="Zoom in"
+                >
+                  <ZoomInIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={resetZoom}
+                  sx={{ color: 'white', p: 0.5 }}
+                  aria-label="Reset zoom"
+                >
+                  <ResetZoomIcon fontSize="small" />
+                </IconButton>
               </Box>
             )}
 
