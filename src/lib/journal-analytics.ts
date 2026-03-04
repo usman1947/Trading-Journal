@@ -690,10 +690,12 @@ export async function getSetupPerformance(userId: string, accountId?: string | n
 }
 
 /**
- * Get rule adherence analytics
+ * Get rule adherence analytics based on the unified 4-item trade checklist.
+ *
+ * Each trade has 4 boolean columns: checkPlan, checkJudge, checkExecute, checkManage.
+ * This function calculates per-item and overall adherence stats.
  */
 export async function getRuleAdherence(userId: string, accountId?: string | null) {
-  // Get all trades with their rule checks
   const trades = await prisma.trade.findMany({
     where: {
       userId,
@@ -703,97 +705,95 @@ export async function getRuleAdherence(userId: string, accountId?: string | null
     select: {
       id: true,
       result: true,
-      ruleChecks: {
-        include: {
-          rule: true,
-        },
-      },
+      checkPlan: true,
+      checkJudge: true,
+      checkExecute: true,
+      checkManage: true,
     },
   });
 
-  // Overall rule adherence stats
-  let totalRuleChecks = 0;
-  let followedRules = 0;
+  // The 4 fixed checklist items
+  const checklistItems = [
+    { key: 'checkPlan' as const, label: 'Plan' },
+    { key: 'checkJudge' as const, label: 'Judge' },
+    { key: 'checkExecute' as const, label: 'Execute' },
+    { key: 'checkManage' as const, label: 'Manage' },
+  ];
+
+  // Per-item stats
+  const itemStats = checklistItems.map((item) => {
+    let timesChecked = 0;
+    let timesUnchecked = 0;
+    let pnlWhenFollowed = 0;
+    let pnlWhenBroken = 0;
+
+    for (const trade of trades) {
+      const result = trade.result || 0;
+      if (trade[item.key]) {
+        timesChecked += 1;
+        pnlWhenFollowed += result;
+      } else {
+        timesUnchecked += 1;
+        pnlWhenBroken += result;
+      }
+    }
+
+    const totalTrades = timesChecked + timesUnchecked;
+    const adherenceRate = totalTrades > 0 ? (timesChecked / totalTrades) * 100 : 0;
+    const avgPnLWhenFollowed = timesChecked > 0 ? pnlWhenFollowed / timesChecked : 0;
+    const avgPnLWhenBroken = timesUnchecked > 0 ? pnlWhenBroken / timesUnchecked : 0;
+
+    return {
+      ruleId: item.key,
+      ruleText: item.label,
+      timesChecked,
+      timesUnchecked,
+      pnlWhenFollowed,
+      pnlWhenBroken,
+      adherenceRate,
+      avgPnLWhenFollowed,
+      avgPnLWhenBroken,
+      costOfBreaking: timesUnchecked > 0 ? avgPnLWhenFollowed - avgPnLWhenBroken : 0,
+    };
+  });
+
+  // Overall stats
   let tradesWithPerfectAdherence = 0;
   let pnlWithPerfectAdherence = 0;
-  let pnlWithBrokenRules = 0;
   let tradesWithBrokenRules = 0;
-
-  // Per-rule stats
-  const ruleMap = new Map<
-    string,
-    {
-      text: string;
-      timesChecked: number;
-      timesFollowed: number;
-      pnlWhenFollowed: number;
-      pnlWhenBroken: number;
-      tradesWhenFollowed: number;
-      tradesWhenBroken: number;
-    }
-  >();
+  let pnlWithBrokenRules = 0;
+  let totalAdherenceSum = 0;
 
   for (const trade of trades) {
-    if (trade.ruleChecks.length === 0) continue;
-
-    const allFollowed = trade.ruleChecks.every((rc) => rc.checked);
     const result = trade.result || 0;
+    const checkedCount = [
+      trade.checkPlan,
+      trade.checkJudge,
+      trade.checkExecute,
+      trade.checkManage,
+    ].filter(Boolean).length;
 
-    if (allFollowed) {
+    totalAdherenceSum += (checkedCount / 4) * 100;
+
+    if (checkedCount === 4) {
       tradesWithPerfectAdherence += 1;
       pnlWithPerfectAdherence += result;
     } else {
       tradesWithBrokenRules += 1;
       pnlWithBrokenRules += result;
     }
-
-    for (const ruleCheck of trade.ruleChecks) {
-      totalRuleChecks += 1;
-      if (ruleCheck.checked) followedRules += 1;
-
-      const existing = ruleMap.get(ruleCheck.rule.id) || {
-        text: ruleCheck.rule.text,
-        timesChecked: 0,
-        timesFollowed: 0,
-        pnlWhenFollowed: 0,
-        pnlWhenBroken: 0,
-        tradesWhenFollowed: 0,
-        tradesWhenBroken: 0,
-      };
-
-      existing.timesChecked += 1;
-      if (ruleCheck.checked) {
-        existing.timesFollowed += 1;
-        existing.pnlWhenFollowed += result;
-        existing.tradesWhenFollowed += 1;
-      } else {
-        existing.pnlWhenBroken += result;
-        existing.tradesWhenBroken += 1;
-      }
-
-      ruleMap.set(ruleCheck.rule.id, existing);
-    }
   }
 
-  const ruleStats = Array.from(ruleMap.entries()).map(([id, data]) => ({
-    ruleId: id,
-    ruleText: data.text,
-    timesChecked: data.timesChecked,
-    adherenceRate: data.timesChecked > 0 ? (data.timesFollowed / data.timesChecked) * 100 : 0,
-    avgPnLWhenFollowed:
-      data.tradesWhenFollowed > 0 ? data.pnlWhenFollowed / data.tradesWhenFollowed : 0,
-    avgPnLWhenBroken: data.tradesWhenBroken > 0 ? data.pnlWhenBroken / data.tradesWhenBroken : 0,
-    costOfBreaking:
-      data.tradesWhenBroken > 0
-        ? (data.tradesWhenFollowed > 0 ? data.pnlWhenFollowed / data.tradesWhenFollowed : 0) -
-          data.pnlWhenBroken / data.tradesWhenBroken
-        : 0,
-  }));
+  const overallAdherenceRate = trades.length > 0 ? totalAdherenceSum / trades.length : 0;
+
+  // Sort for mostBroken (lowest adherence first) and mostCostly (highest cost first)
+  const byAdherence = [...itemStats].sort((a, b) => a.adherenceRate - b.adherenceRate);
+  const byCost = [...itemStats].sort((a, b) => b.costOfBreaking - a.costOfBreaking);
 
   return {
     overall: {
-      totalRuleChecks,
-      overallAdherenceRate: totalRuleChecks > 0 ? (followedRules / totalRuleChecks) * 100 : 0,
+      totalRuleChecks: trades.length * 4,
+      overallAdherenceRate,
       tradesWithPerfectAdherence,
       tradesWithBrokenRules,
       avgPnLWithPerfectAdherence:
@@ -801,9 +801,9 @@ export async function getRuleAdherence(userId: string, accountId?: string | null
       avgPnLWithBrokenRules:
         tradesWithBrokenRules > 0 ? pnlWithBrokenRules / tradesWithBrokenRules : 0,
     },
-    byRule: ruleStats.sort((a, b) => a.adherenceRate - b.adherenceRate), // Worst adherence first
-    mostBroken: ruleStats.sort((a, b) => a.adherenceRate - b.adherenceRate).slice(0, 5),
-    mostCostly: ruleStats.sort((a, b) => b.costOfBreaking - a.costOfBreaking).slice(0, 5),
+    byRule: byAdherence,
+    mostBroken: byAdherence.slice(0, 4),
+    mostCostly: byCost.slice(0, 4),
   };
 }
 

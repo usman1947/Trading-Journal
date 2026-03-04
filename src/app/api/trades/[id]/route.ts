@@ -81,6 +81,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       postTradeMood,
       confidenceLevel,
       mistake,
+      // Trade checklist
+      checkPlan,
+      checkJudge,
+      checkExecute,
+      checkManage,
     } = parsed.data;
 
     const tradeDateTime = new Date(tradeTime!);
@@ -112,6 +117,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         postTradeMood: postTradeMood || null,
         confidenceLevel: confidenceLevel ?? null,
         mistake: mistake || null,
+        // Trade checklist
+        checkPlan: checkPlan ?? undefined,
+        checkJudge: checkJudge ?? undefined,
+        checkExecute: checkExecute ?? undefined,
+        checkManage: checkManage ?? undefined,
         holdDurationMins,
       },
       include: TRADE_FULL_INCLUDE,

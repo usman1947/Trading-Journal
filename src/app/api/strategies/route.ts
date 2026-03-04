@@ -3,7 +3,6 @@ import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { handleApiError, validationError } from '@/lib/api-helpers';
 import { applyAccountFilter } from '@/lib/query-helpers';
-import { STRATEGY_WITH_RULES_INCLUDE } from '@/lib/prisma-includes';
 import { deserializeSetups, serializeSetups } from '@/utils/trade-calculations';
 import { createStrategySchema, formatZodError } from '@/lib/validation-schemas';
 
@@ -30,9 +29,6 @@ export async function GET(request: NextRequest) {
               where: tradeCountWhere,
             },
           },
-        },
-        rules: {
-          orderBy: { order: 'asc' as const },
         },
         screenshots: {
           orderBy: { createdAt: 'asc' as const },
@@ -63,7 +59,16 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return validationError(formatZodError(parsed.error));
     }
-    const { name, description, setups, rules, isSwingStrategy } = parsed.data;
+    const {
+      name,
+      description,
+      setups,
+      isSwingStrategy,
+      checkPlanDesc,
+      checkJudgeDesc,
+      checkExecuteDesc,
+      checkManageDesc,
+    } = parsed.data;
 
     const strategy = await prisma.strategy.create({
       data: {
@@ -72,17 +77,16 @@ export async function POST(request: NextRequest) {
         setups: serializeSetups(setups),
         isSwingStrategy: isSwingStrategy ?? false,
         userId: user.id,
-        rules:
-          rules && rules.length > 0
-            ? {
-                create: rules.map((text: string, index: number) => ({
-                  text,
-                  order: index,
-                })),
-              }
-            : undefined,
+        checkPlanDesc: checkPlanDesc || null,
+        checkJudgeDesc: checkJudgeDesc || null,
+        checkExecuteDesc: checkExecuteDesc || null,
+        checkManageDesc: checkManageDesc || null,
       },
-      include: STRATEGY_WITH_RULES_INCLUDE,
+      include: {
+        screenshots: {
+          orderBy: { createdAt: 'asc' as const },
+        },
+      },
     });
 
     return NextResponse.json(

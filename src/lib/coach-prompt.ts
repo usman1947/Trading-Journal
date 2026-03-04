@@ -125,7 +125,17 @@ ${setupBreakdown || '  No setup data available'}
 - Pre-Trade Mood Distribution:
 ${moodBreakdown || '  No mood data available'}
 
-## Symbols
+${
+  stats.checklistAdherence
+    ? `## Checklist Adherence
+- Overall: ${stats.checklistAdherence.overall.toFixed(1)}%
+- Plan (Pre Market Plan): ${stats.checklistAdherence.plan.toFixed(1)}%
+- Judge (Level/Wicks/Tickers): ${stats.checklistAdherence.judge.toFixed(1)}%
+- Execute (Entry From VWAP): ${stats.checklistAdherence.execute.toFixed(1)}%
+- Manage (SL Move/Adding): ${stats.checklistAdherence.manage.toFixed(1)}%
+`
+    : ''
+}## Symbols
 - Symbols Traded: ${stats.symbolsTraded.join(', ') || 'None'}
 - Top Symbol: ${stats.topSymbol ? `${stats.topSymbol.symbol} (${formatCurrency(stats.topSymbol.pnl)})` : 'N/A'}
 

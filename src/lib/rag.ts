@@ -645,6 +645,10 @@ function createTradeChunkText(trade: {
   postTradeMood: string | null;
   mistake: string | null;
   execution: string;
+  checkPlan: boolean;
+  checkJudge: boolean;
+  checkExecute: boolean;
+  checkManage: boolean;
   strategy?: { name: string } | null;
   tags: { tag: { name: string } }[];
 }): string {
@@ -693,6 +697,24 @@ function createTradeChunkText(trade: {
 
   if (trade.tags.length > 0) {
     parts.push(`Tags: ${trade.tags.map((t) => t.tag.name).join(', ')}`);
+  }
+
+  const checklistLabels = ['Plan', 'Judge', 'Execute', 'Manage'];
+  const checklistValues = [
+    trade.checkPlan,
+    trade.checkJudge,
+    trade.checkExecute,
+    trade.checkManage,
+  ];
+  const checkedCount = checklistValues.filter(Boolean).length;
+  const checkedLabels = checklistLabels.filter((_, i) => checklistValues[i]);
+  const missedLabels = checklistLabels.filter((_, i) => !checklistValues[i]);
+
+  if (checkedCount > 0) {
+    parts.push(`Checklist followed: ${checkedLabels.join(', ')} (${checkedCount}/4)`);
+  }
+  if (missedLabels.length > 0) {
+    parts.push(`Checklist missed: ${missedLabels.join(', ')}`);
   }
 
   return parts.join('. ');

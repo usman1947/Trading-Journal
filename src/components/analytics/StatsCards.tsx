@@ -8,15 +8,17 @@ import {
   Assessment as AssessmentIcon,
   CheckCircle as PassIcon,
   Payments as PaymentsIcon,
+  Checklist as ChecklistIcon,
 } from '@mui/icons-material';
 import type { AnalyticsData } from '@/types';
 import { formatCurrency, formatPercent } from '@/utils/formatters';
 
 interface StatsCardsProps {
   analytics: AnalyticsData;
+  avgChecklistAdherence?: number | null;
 }
 
-export default function StatsCards({ analytics }: StatsCardsProps) {
+export default function StatsCards({ analytics, avgChecklistAdherence }: StatsCardsProps) {
   const totalResult = analytics.totalResult ?? 0;
   const winRate = analytics.winRate ?? 0;
   const executionRate = analytics.executionRate ?? 0;
@@ -93,6 +95,22 @@ export default function StatsCards({ analytics }: StatsCardsProps) {
       color: executionRate >= 80 ? 'success.main' : 'warning.main',
       icon: <PassIcon />,
     },
+    ...(avgChecklistAdherence != null
+      ? [
+          {
+            title: 'Checklist Adherence',
+            value: `${avgChecklistAdherence.toFixed(0)}%`,
+            subtitle: 'Across all trades',
+            color:
+              avgChecklistAdherence >= 75
+                ? 'success.main'
+                : avgChecklistAdherence >= 50
+                  ? 'warning.main'
+                  : 'error.main',
+            icon: <ChecklistIcon />,
+          },
+        ]
+      : []),
   ];
 
   return (

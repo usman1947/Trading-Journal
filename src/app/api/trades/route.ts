@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, unauthorizedResponse } from '@/lib/auth-helpers';
 import { handleApiError, validationError } from '@/lib/api-helpers';
-import { applyAccountFilter, buildDateRangeFilter, filterByTimeOfDay } from '@/lib/query-helpers';
+import {
+  applyAccountFilter,
+  buildDateRangeFilter,
+  filterByTimeOfDay,
+  filterByChecklistAdherence,
+} from '@/lib/query-helpers';
 import { TRADE_FULL_INCLUDE } from '@/lib/prisma-includes';
 import {
   calculateHoldDuration,
@@ -34,6 +39,7 @@ export async function GET(request: NextRequest) {
     const accountId = searchParams.get('accountId');
     const timeAfter = searchParams.get('timeAfter');
     const timeBefore = searchParams.get('timeBefore');
+    const minChecklistPercent = searchParams.get('minChecklistPercent');
 
     buildDateRangeFilter(where, dateFrom || undefined, dateTo || undefined);
 
@@ -61,7 +67,11 @@ export async function GET(request: NextRequest) {
       orderBy: { tradeTime: 'desc' },
     });
 
-    const trades = filterByTimeOfDay(allTrades, timeAfter, timeBefore);
+    const timeTrades = filterByTimeOfDay(allTrades, timeAfter, timeBefore);
+    const trades = filterByChecklistAdherence(
+      timeTrades,
+      minChecklistPercent ? Number(minChecklistPercent) : undefined
+    );
 
     return NextResponse.json(trades);
   } catch (error) {
@@ -99,6 +109,11 @@ export async function POST(request: NextRequest) {
       postTradeMood,
       confidenceLevel,
       mistake,
+      // Trade checklist
+      checkPlan,
+      checkJudge,
+      checkExecute,
+      checkManage,
     } = parsed.data;
 
     const tradeDateTime = new Date(tradeTime);
@@ -131,6 +146,11 @@ export async function POST(request: NextRequest) {
         postTradeMood: postTradeMood || null,
         confidenceLevel: confidenceLevel ?? null,
         mistake: mistake || null,
+        // Trade checklist
+        checkPlan: checkPlan ?? false,
+        checkJudge: checkJudge ?? false,
+        checkExecute: checkExecute ?? false,
+        checkManage: checkManage ?? false,
         sequenceInSession,
         holdDurationMins,
       },

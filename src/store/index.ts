@@ -22,7 +22,6 @@ export const api = createApi({
     'Accounts',
     'User',
     'WeeklyCoach',
-    'RuleAdherence',
   ],
   endpoints: (builder) => ({
     // Accounts
@@ -290,20 +289,6 @@ export const api = createApi({
       invalidatesTags: ['Strategies'],
     }),
 
-    // Trade Rule Checks
-    getTradeRuleChecks: builder.query({
-      query: (tradeId) => `/trades/${tradeId}/rule-checks`,
-      providesTags: (_result, _error, tradeId) => [{ type: 'Trade', id: tradeId }],
-    }),
-    updateTradeRuleChecks: builder.mutation({
-      query: ({ tradeId, ruleChecks }) => ({
-        url: `/trades/${tradeId}/rule-checks`,
-        method: 'PUT',
-        body: { ruleChecks },
-      }),
-      invalidatesTags: (_result, _error, { tradeId }) => [{ type: 'Trade', id: tradeId }, 'Trades'],
-    }),
-
     // Auth
     login: builder.mutation<User, { email: string; password: string }>({
       query: (credentials) => ({
@@ -392,30 +377,6 @@ export const api = createApi({
       }),
       providesTags: ['Analytics'],
     }),
-
-    // Daily Rule Adherence
-    getRuleAdherenceEntries: builder.query({
-      query: (params) => ({
-        url: '/rule-adherence',
-        params,
-      }),
-      providesTags: ['RuleAdherence'],
-    }),
-    saveRuleAdherenceEntry: builder.mutation({
-      query: (entry) => ({
-        url: '/rule-adherence',
-        method: 'POST',
-        body: entry,
-      }),
-      invalidatesTags: ['RuleAdherence'],
-    }),
-    deleteRuleAdherenceEntry: builder.mutation({
-      query: (id) => ({
-        url: `/rule-adherence?id=${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['RuleAdherence'],
-    }),
   }),
 });
 
@@ -473,8 +434,6 @@ export const {
   useDeleteScreenshotMutation,
   useUploadStrategyScreenshotsMutation,
   useDeleteStrategyScreenshotMutation,
-  useGetTradeRuleChecksQuery,
-  useUpdateTradeRuleChecksMutation,
   // Auth
   useLoginMutation,
   useSignupMutation,
@@ -488,10 +447,6 @@ export const {
   useAskJournalMutation,
   // Setup Profiler
   useGetSetupProfilerQuery,
-  // Rule Adherence
-  useGetRuleAdherenceEntriesQuery,
-  useSaveRuleAdherenceEntryMutation,
-  useDeleteRuleAdherenceEntryMutation,
 } = api;
 
 // Re-export auth slice actions and types

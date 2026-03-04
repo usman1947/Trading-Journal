@@ -136,6 +136,8 @@ export default function AnalyticsPage() {
         if (filters.symbol) params.append('symbol', filters.symbol);
         if (filters.timeAfter) params.append('timeAfter', filters.timeAfter);
         if (filters.timeBefore) params.append('timeBefore', filters.timeBefore);
+        if (filters.minChecklistPercent)
+          params.append('minChecklistPercent', String(filters.minChecklistPercent));
       }
       const queryString = params.toString();
 
@@ -159,9 +161,22 @@ export default function AnalyticsPage() {
     fetchAnalyticsData();
   }, [filters, viewMode, accountFilter]);
 
-  // Filter only closed trades for the table
+  // Filter only closed trades for the table (checklist filter applied server-side)
   const closedTrades = useMemo(() => {
     return trades.filter((t: Trade) => t.result !== null);
+  }, [trades]);
+
+  // Average checklist adherence across all closed trades
+  const avgChecklistAdherence = useMemo(() => {
+    const closed = trades.filter((t: Trade) => t.result !== null);
+    if (closed.length === 0) return null;
+    const total = closed.reduce((sum: number, t: Trade) => {
+      const checked = [t.checkPlan, t.checkJudge, t.checkExecute, t.checkManage].filter(
+        Boolean
+      ).length;
+      return sum + (checked / 4) * 100;
+    }, 0);
+    return total / closed.length;
   }, [trades]);
 
   const handleFilterChange = (key: keyof TradeFilters, value: string | null) => {
@@ -291,6 +306,31 @@ export default function AnalyticsPage() {
           variant="outlined"
         />
       ),
+    },
+    {
+      field: 'checklist',
+      headerName: 'Checklist',
+      width: 90,
+      headerAlign: 'center',
+      align: 'center',
+      sortable: true,
+      valueGetter: (_, row) => {
+        const checked = [row.checkPlan, row.checkJudge, row.checkExecute, row.checkManage].filter(
+          Boolean
+        ).length;
+        return (checked / 4) * 100;
+      },
+      renderCell: (params: GridRenderCellParams) => {
+        const pct = params.value as number;
+        return (
+          <Typography
+            color={pct >= 75 ? 'success.main' : pct >= 50 ? 'warning.main' : 'error.main'}
+            fontWeight="medium"
+          >
+            {pct.toFixed(0)}%
+          </Typography>
+        );
+      },
     },
   ];
 
@@ -467,13 +507,39 @@ export default function AnalyticsPage() {
                   slotProps={{ inputLabel: { shrink: true } }}
                 />
               </Grid>
+              <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Min Checklist %</InputLabel>
+                  <Select
+                    value={filters.minChecklistPercent ?? ''}
+                    label="Min Checklist %"
+                    onChange={(e) => {
+                      const val = e.target.value as string | number;
+                      dispatch(
+                        updateAnalyticsFilter({
+                          key: 'minChecklistPercent',
+                          value: val === '' ? undefined : Number(val),
+                        })
+                      );
+                    }}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value={25}>25%+</MenuItem>
+                    <MenuItem value={50}>50%+</MenuItem>
+                    <MenuItem value={75}>75%+</MenuItem>
+                    <MenuItem value={100}>100%</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
           </CardContent>
         </Card>
       )}
 
       {/* Stats Cards - show filtered data in reports mode, all data in strategies mode */}
-      {analytics && <StatsCards analytics={analytics} />}
+      {analytics && (
+        <StatsCards analytics={analytics} avgChecklistAdherence={avgChecklistAdherence} />
+      )}
 
       {/* Content based on view mode */}
       {viewMode === 'strategies' ? (

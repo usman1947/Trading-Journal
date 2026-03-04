@@ -55,6 +55,15 @@ export interface WeeklyStats {
   }>;
   bestTimePeriod: { period: string; pnl: number } | null;
   worstTimePeriod: { period: string; pnl: number } | null;
+
+  // Checklist adherence
+  checklistAdherence: {
+    overall: number;
+    plan: number;
+    judge: number;
+    execute: number;
+    manage: number;
+  } | null;
 }
 
 export async function getWeeklyStats(
@@ -296,6 +305,24 @@ export async function getWeeklyStats(
         )
       : null;
 
+  // Checklist adherence
+  const checklistAdherence =
+    trades.length > 0
+      ? {
+          overall:
+            trades.reduce((sum, t) => {
+              const count = [t.checkPlan, t.checkJudge, t.checkExecute, t.checkManage].filter(
+                Boolean
+              ).length;
+              return sum + (count / 4) * 100;
+            }, 0) / trades.length,
+          plan: (trades.filter((t) => t.checkPlan).length / trades.length) * 100,
+          judge: (trades.filter((t) => t.checkJudge).length / trades.length) * 100,
+          execute: (trades.filter((t) => t.checkExecute).length / trades.length) * 100,
+          manage: (trades.filter((t) => t.checkManage).length / trades.length) * 100,
+        }
+      : null;
+
   return {
     weekStart,
     weekEnd,
@@ -319,5 +346,6 @@ export async function getWeeklyStats(
     timeOfDayPerformance,
     bestTimePeriod,
     worstTimePeriod,
+    checklistAdherence,
   };
 }

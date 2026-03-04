@@ -7,16 +7,10 @@ import type { Prisma } from '@prisma/client';
 
 /**
  * Full trade include with all relations.
- * Includes strategy with rules, account, screenshots, tags, and rule checks.
+ * Includes strategy, account, screenshots, and tags.
  */
 export const TRADE_FULL_INCLUDE = {
-  strategy: {
-    include: {
-      rules: {
-        orderBy: { order: 'asc' as const },
-      },
-    },
-  },
+  strategy: true,
   account: true,
   screenshots: true,
   tags: {
@@ -24,21 +18,7 @@ export const TRADE_FULL_INCLUDE = {
       tag: true,
     },
   },
-  ruleChecks: {
-    include: {
-      rule: true,
-    },
-  },
 } satisfies Prisma.TradeInclude;
-
-/**
- * Strategy include with ordered rules.
- */
-export const STRATEGY_WITH_RULES_INCLUDE = {
-  rules: {
-    orderBy: { order: 'asc' as const },
-  },
-} satisfies Prisma.StrategyInclude;
 
 /**
  * Journal entry include with screenshots.
@@ -73,13 +53,12 @@ export const TRADE_LIST_INCLUDE = {
 } satisfies Prisma.TradeInclude;
 
 /**
- * Strategy include for list views (without rules).
+ * Strategy include for list views.
  */
 export const STRATEGY_LIST_INCLUDE = {
   _count: {
     select: {
       trades: true,
-      rules: true,
     },
   },
 } satisfies Prisma.StrategyInclude;

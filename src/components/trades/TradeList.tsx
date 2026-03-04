@@ -76,24 +76,16 @@ export default function TradeList() {
     [dispatch]
   );
 
-  // Helper to calculate strategy score
-  const calculateScore = useCallback(
-    (strategy: Trade['strategy'], ruleChecks: Trade['ruleChecks']) => {
-      if (!strategy?.rules || strategy.rules.length === 0) return null;
-      const ruleChecksMap = new Map(
-        ruleChecks?.map((rc: { ruleId: string; checked: boolean }) => [rc.ruleId, rc.checked]) || []
-      );
-      const checkedCount = strategy.rules.filter(
-        (rule: { id: string }) => ruleChecksMap.get(rule.id) === true
-      ).length;
-      return {
-        score: Math.round((checkedCount / strategy.rules.length) * 100),
-        checkedCount,
-        total: strategy.rules.length,
-      };
-    },
-    []
-  );
+  // Helper to calculate checklist score
+  const calculateScore = useCallback((trade: Trade) => {
+    const checked = [
+      trade.checkPlan,
+      trade.checkJudge,
+      trade.checkExecute,
+      trade.checkManage,
+    ].filter(Boolean).length;
+    return { score: Math.round((checked / 4) * 100), checkedCount: checked, total: 4 };
+  }, []);
 
   // Swing account columns: Symbol, Entry Date, Exit Date, Days in Trade, Strategy, Risk, Result, R, Actions
   const swingColumns: GridColDef[] = useMemo(
@@ -269,12 +261,9 @@ export default function TradeList() {
         width: 100,
         sortable: true,
         renderCell: (params: GridRenderCellParams<Trade>) => {
-          const result = calculateScore(params.row.strategy, params.row.ruleChecks);
-          if (!result) {
-            return <Typography color="text.secondary">-</Typography>;
-          }
+          const result = calculateScore(params.row);
           return (
-            <Tooltip title={`${result.checkedCount}/${result.total} rules satisfied`}>
+            <Tooltip title={`${result.checkedCount}/${result.total} checklist items`}>
               <Chip
                 icon={<ChecklistIcon fontSize="small" />}
                 label={`${result.score}%`}
@@ -287,8 +276,8 @@ export default function TradeList() {
           );
         },
         valueGetter: (_, row) => {
-          const result = calculateScore(row.strategy, row.ruleChecks);
-          return result?.score ?? null;
+          const result = calculateScore(row);
+          return result.score;
         },
       },
       {

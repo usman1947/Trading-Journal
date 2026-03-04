@@ -11,6 +11,7 @@ import {
   applyUserFilter,
   buildDateRangeFilter,
   filterByTimeOfDay,
+  filterByChecklistAdherence,
   excludeBreakevenTrades,
   separateWinLossTrades,
 } from './query-helpers';
@@ -34,6 +35,10 @@ type TradeRecord = {
   tradeTime: Date;
   exitTime: Date | null;
   isBreakEven: boolean;
+  checkPlan: boolean;
+  checkJudge: boolean;
+  checkExecute: boolean;
+  checkManage: boolean;
 };
 
 type TradeWithStrategy = TradeRecord & {
@@ -73,7 +78,8 @@ export async function getAnalytics(filters: TradeFilters = {}): Promise<Analytic
   applyAccountFilter(where, filters.accountId);
 
   const allTrades = await prisma.trade.findMany({ where });
-  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  const timeTrades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  const trades = filterByChecklistAdherence(timeTrades, filters.minChecklistPercent);
 
   if (trades.length === 0) {
     return {
@@ -211,67 +217,56 @@ export async function getStrategyStats(filters: TradeFilters = {}): Promise<Stra
     include: {
       trades: {
         where: tradeWhere,
-        include: {
-          ruleChecks: true,
-        },
       },
-      rules: true,
     },
   });
 
-  type TradeWithRuleChecks = TradeRecord & {
-    ruleChecks: { checked: boolean }[];
+  type TradeWithChecklist = TradeRecord & {
+    checkPlan: boolean;
+    checkJudge: boolean;
+    checkExecute: boolean;
+    checkManage: boolean;
   };
 
-  return strategies.map(
-    (strategy: {
-      id: string;
-      name: string;
-      trades: TradeWithRuleChecks[];
-      rules: { id: string }[];
-    }) => {
-      // Filter out BE trades for win/loss analytics only (not for total counts)
-      const nonBETrades = excludeBreakevenTrades(strategy.trades);
-      const { winningTrades, losingTrades } = separateWinLossTrades(strategy.trades);
-      const tradesWithResult = nonBETrades.filter((t) => t.result !== null && t.risk > 0);
+  return strategies.map((strategy: { id: string; name: string; trades: TradeWithChecklist[] }) => {
+    // Filter out BE trades for win/loss analytics only (not for total counts)
+    const nonBETrades = excludeBreakevenTrades(strategy.trades);
+    const { winningTrades, losingTrades } = separateWinLossTrades(strategy.trades);
+    const tradesWithResult = nonBETrades.filter((t) => t.result !== null && t.risk > 0);
 
-      const averageWinR = calculateAverageRMultiple(winningTrades);
-      const averageLossR = calculateAverageRMultiple(losingTrades);
+    const averageWinR = calculateAverageRMultiple(winningTrades);
+    const averageLossR = calculateAverageRMultiple(losingTrades);
 
-      // Calculate average rule satisfaction (use all trades for this)
-      const totalRules = strategy.rules.length;
-      let averageRuleSatisfaction = 0;
-      if (totalRules > 0 && strategy.trades.length > 0) {
-        const tradesWithRules = strategy.trades.filter((t) => t.ruleChecks.length > 0);
-        if (tradesWithRules.length > 0) {
-          const totalSatisfaction = tradesWithRules.reduce((sum, t) => {
-            const checkedCount = t.ruleChecks.filter((rc) => rc.checked).length;
-            const tradeRuleCount = t.ruleChecks.length;
-            return sum + (tradeRuleCount > 0 ? (checkedCount / tradeRuleCount) * 100 : 0);
-          }, 0);
-          averageRuleSatisfaction = totalSatisfaction / tradesWithRules.length;
-        }
-      }
-
-      return {
-        strategyId: strategy.id,
-        strategyName: strategy.name,
-        totalTrades: strategy.trades.length, // Include BE trades in total count
-        // Win rate uses non-BE trades only to not skew the ratio
-        winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
-        // Total PnL includes all trades (BE trades have ~0 result anyway)
-        totalPnl: strategy.trades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
-        averageRMultiple:
-          tradesWithResult.length > 0
-            ? tradesWithResult.reduce((sum: number, t) => sum + (t.result ?? 0) / t.risk, 0) /
-              tradesWithResult.length
-            : 0,
-        averageWinR,
-        averageLossR,
-        averageRuleSatisfaction,
-      };
+    // Calculate average checklist satisfaction from the 4 boolean columns
+    let averageRuleSatisfaction = 0;
+    if (strategy.trades.length > 0) {
+      const totalSatisfaction = strategy.trades.reduce((sum, t) => {
+        const checkedCount = [t.checkPlan, t.checkJudge, t.checkExecute, t.checkManage].filter(
+          Boolean
+        ).length;
+        return sum + (checkedCount / 4) * 100;
+      }, 0);
+      averageRuleSatisfaction = totalSatisfaction / strategy.trades.length;
     }
-  );
+
+    return {
+      strategyId: strategy.id,
+      strategyName: strategy.name,
+      totalTrades: strategy.trades.length, // Include BE trades in total count
+      // Win rate uses non-BE trades only to not skew the ratio
+      winRate: nonBETrades.length > 0 ? (winningTrades.length / nonBETrades.length) * 100 : 0,
+      // Total PnL includes all trades (BE trades have ~0 result anyway)
+      totalPnl: strategy.trades.reduce((sum: number, t) => sum + (t.result ?? 0), 0),
+      averageRMultiple:
+        tradesWithResult.length > 0
+          ? tradesWithResult.reduce((sum: number, t) => sum + (t.result ?? 0) / t.risk, 0) /
+            tradesWithResult.length
+          : 0,
+      averageWinR,
+      averageLossR,
+      averageRuleSatisfaction,
+    };
+  });
 }
 
 export async function getStrategyDistribution(filters: TradeFilters = {}) {
@@ -306,8 +301,9 @@ export async function getStrategyDistribution(filters: TradeFilters = {}) {
     },
   });
 
-  // Apply time of day filter
-  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  // Apply time of day and checklist filters
+  const timeTrades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  const trades = filterByChecklistAdherence(timeTrades, filters.minChecklistPercent);
 
   // Filter out BE trades for P&L analytics
   const nonBETrades = excludeBreakevenTrades(trades as TradeWithStrategy[]);
@@ -357,8 +353,9 @@ export async function getTradeTimeDistribution(filters: TradeFilters = {}) {
     orderBy: { tradeTime: 'asc' },
   });
 
-  // Apply time of day filter
-  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  // Apply time of day and checklist filters
+  const timeTrades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  const trades = filterByChecklistAdherence(timeTrades, filters.minChecklistPercent);
 
   return (trades as TradeWithId[]).map((trade: TradeWithId) => {
     const tradeDate = new Date(trade.tradeTime);
@@ -413,8 +410,9 @@ export async function getPnLDistribution(filters: TradeFilters = {}) {
     orderBy: { tradeTime: 'asc' },
   });
 
-  // Apply time of day filter
-  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  // Apply time of day and checklist filters
+  const timeTrades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  const trades = filterByChecklistAdherence(timeTrades, filters.minChecklistPercent);
 
   // Filter out BE trades for P&L analytics
   const nonBETrades = excludeBreakevenTrades(trades as TradeWithId[]);
@@ -461,8 +459,9 @@ export async function getTimeDayProfitability(filters: TradeFilters = {}) {
     orderBy: { tradeTime: 'asc' },
   });
 
-  // Apply time of day filter
-  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  // Apply time of day and checklist filters
+  const timeTrades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  const trades = filterByChecklistAdherence(timeTrades, filters.minChecklistPercent);
 
   // Filter out BE trades for P&L analytics
   const nonBETrades = excludeBreakevenTrades(trades as TradeWithId[]);
@@ -564,8 +563,9 @@ export async function getTradeTimeStats(filters: TradeFilters = {}): Promise<Tra
 
   const allTrades = await prisma.trade.findMany({ where });
 
-  // Apply time of day filter
-  const trades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  // Apply time of day and checklist filters
+  const timeTrades = filterByTimeOfDay(allTrades, filters.timeAfter, filters.timeBefore);
+  const trades = filterByChecklistAdherence(timeTrades, filters.minChecklistPercent);
 
   // Separate BE trades and non-BE trades
   const breakevenTrades = trades.filter((t: TradeRecord) => t.isBreakEven);

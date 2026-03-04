@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -32,7 +32,6 @@ import {
   useGetStrategiesQuery,
   useGetSetupsQuery,
   useUploadScreenshotsMutation,
-  useUpdateTradeRuleChecksMutation,
   useGetSettingsQuery,
 } from '@/store';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -43,6 +42,7 @@ import ToggleButtonGroupField, {
   type ToggleOption,
 } from '@/components/common/ToggleButtonGroupField';
 import SliderInput from '@/components/common/SliderInput';
+import { CHECKLIST_ITEMS } from '@/types';
 import type {
   Trade,
   TradeFormData,
@@ -117,7 +117,6 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
   const [createTrade, { isLoading: creating }] = useCreateTradeMutation();
   const [updateTrade, { isLoading: updating }] = useUpdateTradeMutation();
   const [uploadScreenshots] = useUploadScreenshotsMutation();
-  const [updateRuleChecks] = useUpdateTradeRuleChecksMutation();
   const { data: allStrategies = [] } = useGetStrategiesQuery({});
   const { data: existingSetups = [] } = useGetSetupsQuery({});
   const { data: settings } = useGetSettingsQuery({});
@@ -128,30 +127,6 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
   }, [allStrategies]);
 
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
-  const [ruleChecks, setRuleChecks] = useState<Record<string, boolean>>({});
-
-  // Get the currently selected strategy with its rules
-  const selectedStrategy = useMemo(() => {
-    return allStrategies.find((s: Strategy) => s.id === trade?.strategyId) as Strategy | undefined;
-  }, [allStrategies, trade?.strategyId]);
-
-  // Initialize rule checks from trade data
-  useEffect(() => {
-    if (trade?.ruleChecks) {
-      const checks: Record<string, boolean> = {};
-      trade.ruleChecks.forEach((rc) => {
-        checks[rc.ruleId] = rc.checked;
-      });
-      setRuleChecks(checks);
-    }
-  }, [trade?.ruleChecks]);
-
-  const handleRuleToggle = (ruleId: string) => {
-    setRuleChecks((prev) => ({
-      ...prev,
-      [ruleId]: !prev[ruleId],
-    }));
-  };
 
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -197,6 +172,11 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
       postTradeMood: trade?.postTradeMood || null,
       confidenceLevel: trade?.confidenceLevel ?? null,
       mistake: trade?.mistake || null,
+      // Unified trade checklist
+      checkPlan: trade?.checkPlan ?? false,
+      checkJudge: trade?.checkJudge ?? false,
+      checkExecute: trade?.checkExecute ?? false,
+      checkManage: trade?.checkManage ?? false,
     }),
     [trade, defaultRisk, selectedAccountId]
   );
@@ -223,38 +203,9 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
             }
           }
 
-          // Save rule checks if a strategy with rules was selected
-          const newStrategy = strategies.find((s: Strategy) => s.id === values.strategyId) as
-            | Strategy
-            | undefined;
-          if (newStrategy?.rules && newStrategy.rules.length > 0) {
-            const ruleChecksData = newStrategy.rules.map((rule) => ({
-              ruleId: rule.id,
-              checked: ruleChecks[rule.id] || false,
-            }));
-            try {
-              await updateRuleChecks({ tradeId: newTrade.id, ruleChecks: ruleChecksData }).unwrap();
-            } catch {
-              console.error('Failed to save rule checks');
-            }
-          }
-
           dispatch(showSnackbar({ message: 'Trade created successfully', severity: 'success' }));
         } else {
           await updateTrade({ id: trade!.id, ...values }).unwrap();
-
-          // Save rule checks for edit mode
-          if (selectedStrategy?.rules && selectedStrategy.rules.length > 0) {
-            const ruleChecksData = selectedStrategy.rules.map((rule) => ({
-              ruleId: rule.id,
-              checked: ruleChecks[rule.id] || false,
-            }));
-            try {
-              await updateRuleChecks({ tradeId: trade!.id, ruleChecks: ruleChecksData }).unwrap();
-            } catch {
-              console.error('Failed to save rule checks');
-            }
-          }
 
           dispatch(showSnackbar({ message: 'Trade updated successfully', severity: 'success' }));
         }
@@ -536,71 +487,79 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                   name="strategyId"
                   value={formik.values.strategyId || ''}
                   label="Strategy"
-                  onChange={(e) => {
-                    formik.handleChange(e);
-                    // Reset rule checks when strategy changes
-                    setRuleChecks({});
-                  }}
+                  onChange={formik.handleChange}
                 >
                   <MenuItem value="">None</MenuItem>
                   {strategies.map((strategy: Strategy) => (
                     <MenuItem key={strategy.id} value={strategy.id}>
                       {strategy.name}
-                      {strategy.rules && strategy.rules.length > 0 && (
-                        <Chip
-                          size="small"
-                          label={`${strategy.rules.length} rules`}
-                          sx={{ ml: 1 }}
-                        />
-                      )}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
 
-              {/* Strategy Rules Checklist */}
+              {/* Unified Trade Checklist */}
               {(() => {
                 const currentStrategy = strategies.find(
                   (s: Strategy) => s.id === formik.values.strategyId
                 ) as Strategy | undefined;
-                if (!currentStrategy?.rules || currentStrategy.rules.length === 0) return null;
 
-                const checkedCount = currentStrategy.rules.filter(
-                  (rule) => ruleChecks[rule.id]
+                const checkedCount = CHECKLIST_ITEMS.filter(
+                  (item) => formik.values[item.key]
                 ).length;
-                const score = Math.round((checkedCount / currentStrategy.rules.length) * 100);
+                const score = Math.round((checkedCount / CHECKLIST_ITEMS.length) * 100);
 
                 return (
                   <Box sx={{ mt: 2 }}>
                     <Divider sx={{ mb: 2 }} />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                       <ChecklistIcon color="primary" fontSize="small" />
-                      <Typography variant="subtitle2">Strategy Checklist</Typography>
+                      <Typography variant="subtitle2">Trade Checklist</Typography>
                     </Box>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{ mb: 2, display: 'block' }}
                     >
-                      Check the rules this trade satisfied
+                      Check each item this trade satisfied
                     </Typography>
 
-                    {currentStrategy.rules.map((rule) => (
-                      <FormControlLabel
-                        key={rule.id}
-                        control={
-                          <Checkbox
-                            checked={ruleChecks[rule.id] || false}
-                            onChange={() => handleRuleToggle(rule.id)}
-                            size="small"
-                          />
-                        }
-                        label={<Typography variant="body2">{rule.text}</Typography>}
-                        sx={{ display: 'flex', mb: 0.5, ml: 0 }}
-                      />
-                    ))}
+                    {CHECKLIST_ITEMS.map((item) => {
+                      const descKey = `${item.key}Desc` as const;
+                      const customDesc = currentStrategy?.[descKey as keyof Strategy] as
+                        | string
+                        | null
+                        | undefined;
+                      const description = customDesc || item.defaultDesc;
 
-                    {/* Satisfaction Score */}
+                      return (
+                        <FormControlLabel
+                          key={item.key}
+                          control={
+                            <Checkbox
+                              checked={formik.values[item.key] || false}
+                              onChange={() =>
+                                formik.setFieldValue(item.key, !formik.values[item.key])
+                              }
+                              size="small"
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="body2" fontWeight="bold">
+                                {item.label}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {description}
+                              </Typography>
+                            </Box>
+                          }
+                          sx={{ display: 'flex', mb: 0.5, ml: 0, alignItems: 'flex-start' }}
+                        />
+                      );
+                    })}
+
+                    {/* Checklist Score */}
                     <Box sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
                       <Box
                         sx={{
@@ -611,7 +570,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                         }}
                       >
                         <Typography variant="body2" fontWeight="medium">
-                          Strategy Satisfaction Score
+                          Checklist Score
                         </Typography>
                         <Chip
                           label={`${score}%`}
@@ -630,7 +589,7 @@ export default function TradeForm({ trade, mode }: TradeFormProps) {
                         color="text.secondary"
                         sx={{ mt: 0.5, display: 'block' }}
                       >
-                        {checkedCount} of {currentStrategy.rules.length} rules satisfied
+                        {checkedCount} of {CHECKLIST_ITEMS.length} items checked
                       </Typography>
                     </Box>
                   </Box>

@@ -45,7 +45,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { showSnackbar } from '@/store/slices/uiSlice';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
-import { StrategyRule, StrategyScreenshot, Account } from '@/types';
+import { StrategyScreenshot, Account, CHECKLIST_ITEMS } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
 
 interface Strategy {
@@ -54,7 +54,10 @@ interface Strategy {
   description?: string | null;
   setups?: string[];
   isSwingStrategy?: boolean;
-  rules?: StrategyRule[];
+  checkPlanDesc?: string | null;
+  checkJudgeDesc?: string | null;
+  checkExecuteDesc?: string | null;
+  checkManageDesc?: string | null;
   screenshots?: StrategyScreenshot[];
   _count?: { trades: number };
 }
@@ -257,7 +260,7 @@ function StrategyCard({
 
           <Divider />
 
-          {/* NOTES Section */}
+          {/* TRADE CHECKLIST Section */}
           <Box sx={{ px: 3, pt: 2.5, pb: 2.5 }}>
             <Typography
               variant="overline"
@@ -270,26 +273,27 @@ function StrategyCard({
                 display: 'block',
               }}
             >
-              NOTES
+              TRADE CHECKLIST
             </Typography>
-            {strategy.rules && strategy.rules.length > 0 ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {strategy.rules.map((rule, index) => (
-                  <Box key={rule.id} sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {CHECKLIST_ITEMS.map((item, index) => {
+                const descKey = `${item.key}Desc` as keyof Strategy;
+                const customDesc = strategy[descKey] as string | null | undefined;
+                return (
+                  <Box key={item.key} sx={{ display: 'flex', gap: 1 }}>
                     <Typography variant="body2" color="text.secondary" sx={{ minWidth: 20 }}>
                       {index + 1}.
                     </Typography>
+                    <Typography variant="body2" fontWeight={600} sx={{ minWidth: 60 }}>
+                      {item.label}
+                    </Typography>
                     <Typography variant="body2" color="text.primary">
-                      {rule.text}
+                      {customDesc || item.defaultDesc}
                     </Typography>
                   </Box>
-                ))}
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                No rules defined
-              </Typography>
-            )}
+                );
+              })}
+            </Box>
           </Box>
         </Collapse>
       </CardContent>
@@ -334,8 +338,10 @@ export default function StrategiesPage() {
   const [description, setDescription] = useState('');
   const [setups, setSetups] = useState<string[]>([]);
   const [newSetup, setNewSetup] = useState('');
-  const [rules, setRules] = useState<string[]>([]);
-  const [newRule, setNewRule] = useState('');
+  const [checkPlanDesc, setCheckPlanDesc] = useState('');
+  const [checkJudgeDesc, setCheckJudgeDesc] = useState('');
+  const [checkExecuteDesc, setCheckExecuteDesc] = useState('');
+  const [checkManageDesc, setCheckManageDesc] = useState('');
   const [isSwingStrategy, setIsSwingStrategy] = useState(false);
   const [localScreenshots, setLocalScreenshots] = useState<StrategyScreenshot[]>([]);
   const [pendingStrategyFiles, setPendingStrategyFiles] = useState<
@@ -358,7 +364,10 @@ export default function StrategiesPage() {
       setName(strategy.name);
       setDescription(strategy.description || '');
       setSetups(strategy.setups || []);
-      setRules(strategy.rules?.map((r) => r.text) || []);
+      setCheckPlanDesc(strategy.checkPlanDesc || '');
+      setCheckJudgeDesc(strategy.checkJudgeDesc || '');
+      setCheckExecuteDesc(strategy.checkExecuteDesc || '');
+      setCheckManageDesc(strategy.checkManageDesc || '');
       setIsSwingStrategy(strategy.isSwingStrategy || false);
       setLocalScreenshots(strategy.screenshots || []);
     } else {
@@ -366,12 +375,14 @@ export default function StrategiesPage() {
       setName('');
       setDescription('');
       setSetups([]);
-      setRules([]);
+      setCheckPlanDesc('');
+      setCheckJudgeDesc('');
+      setCheckExecuteDesc('');
+      setCheckManageDesc('');
       setIsSwingStrategy(isSwingAccount); // Default to current account type
       setLocalScreenshots([]);
     }
     setNewSetup('');
-    setNewRule('');
     setPendingStrategyFiles([]);
     setDialogOpen(true);
   };
@@ -383,8 +394,10 @@ export default function StrategiesPage() {
     setDescription('');
     setSetups([]);
     setNewSetup('');
-    setRules([]);
-    setNewRule('');
+    setCheckPlanDesc('');
+    setCheckJudgeDesc('');
+    setCheckExecuteDesc('');
+    setCheckManageDesc('');
     setIsSwingStrategy(false);
     setLocalScreenshots([]);
     pendingStrategyFiles.forEach((pf) => URL.revokeObjectURL(pf.preview));
@@ -407,25 +420,6 @@ export default function StrategiesPage() {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAddSetup();
-    }
-  };
-
-  const handleAddRule = () => {
-    const trimmed = newRule.trim();
-    if (trimmed && !rules.includes(trimmed)) {
-      setRules([...rules, trimmed]);
-      setNewRule('');
-    }
-  };
-
-  const handleRemoveRule = (ruleToRemove: string) => {
-    setRules(rules.filter((r) => r !== ruleToRemove));
-  };
-
-  const handleRuleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddRule();
     }
   };
 
@@ -477,7 +471,10 @@ export default function StrategiesPage() {
           name,
           description,
           setups,
-          rules,
+          checkPlanDesc: checkPlanDesc.trim() || null,
+          checkJudgeDesc: checkJudgeDesc.trim() || null,
+          checkExecuteDesc: checkExecuteDesc.trim() || null,
+          checkManageDesc: checkManageDesc.trim() || null,
           isSwingStrategy,
         }).unwrap();
         strategyId = editingStrategy.id;
@@ -486,7 +483,10 @@ export default function StrategiesPage() {
           name,
           description,
           setups,
-          rules,
+          checkPlanDesc: checkPlanDesc.trim() || null,
+          checkJudgeDesc: checkJudgeDesc.trim() || null,
+          checkExecuteDesc: checkExecuteDesc.trim() || null,
+          checkManageDesc: checkManageDesc.trim() || null,
           isSwingStrategy,
         }).unwrap();
         strategyId = created.id;
@@ -664,60 +664,39 @@ export default function StrategiesPage() {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Rules/Checklist Section */}
+          {/* Trade Checklist Descriptions */}
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <ChecklistIcon color="primary" fontSize="small" />
-              <Typography variant="subtitle2">Checklist Rules</Typography>
+              <Typography variant="subtitle2">Trade Checklist</Typography>
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-              Add rules that should be checked before taking a trade with this strategy
+              Customize what each checklist item means for this strategy. Leave blank to use the
+              default.
             </Typography>
 
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="e.g., Price above VWAP, Volume above average..."
-              value={newRule}
-              onChange={(e) => setNewRule(e.target.value)}
-              onKeyDown={handleRuleKeyDown}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Button size="small" onClick={handleAddRule} disabled={!newRule.trim()}>
-                      Add
-                    </Button>
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            {rules.length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                {rules.map((rule, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      py: 0.5,
-                      px: 1,
-                      bgcolor: 'action.hover',
-                      borderRadius: 1,
-                      mb: 0.5,
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ flex: 1 }}>
-                      {index + 1}. {rule}
-                    </Typography>
-                    <IconButton size="small" onClick={() => handleRemoveRule(rule)}>
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ))}
-              </Box>
-            )}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {CHECKLIST_ITEMS.map((item) => {
+                const stateMap: Record<string, [string, (v: string) => void]> = {
+                  checkPlan: [checkPlanDesc, setCheckPlanDesc],
+                  checkJudge: [checkJudgeDesc, setCheckJudgeDesc],
+                  checkExecute: [checkExecuteDesc, setCheckExecuteDesc],
+                  checkManage: [checkManageDesc, setCheckManageDesc],
+                };
+                const [value, setter] = stateMap[item.key];
+                return (
+                  <TextField
+                    key={item.key}
+                    fullWidth
+                    size="small"
+                    label={`${item.label} Description`}
+                    placeholder={item.defaultDesc}
+                    value={value}
+                    onChange={(e) => setter(e.target.value)}
+                  />
+                );
+              })}
+            </Box>
           </Box>
 
           {/* Example Screenshots Section */}

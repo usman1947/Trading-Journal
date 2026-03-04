@@ -42,9 +42,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             screenshots: true,
           },
         },
-        rules: {
-          orderBy: { order: 'asc' },
-        },
         screenshots: true,
       },
     });
@@ -89,7 +86,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         name: strategy.name,
         description: strategy.description,
         setups,
-        rules: strategy.rules,
+        checkPlanDesc: strategy.checkPlanDesc,
+        checkJudgeDesc: strategy.checkJudgeDesc,
+        checkExecuteDesc: strategy.checkExecuteDesc,
+        checkManageDesc: strategy.checkManageDesc,
         screenshots: strategy.screenshots,
         createdAt: strategy.createdAt,
         updatedAt: strategy.updatedAt,

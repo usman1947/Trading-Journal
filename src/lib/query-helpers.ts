@@ -138,6 +138,32 @@ export function filterByTimeOfDay<T extends { tradeTime: Date }>(
 }
 
 /**
+ * Filter trades by minimum checklist adherence percentage.
+ * Checklist adherence is calculated from 4 boolean fields: checkPlan, checkJudge, checkExecute, checkManage.
+ *
+ * @param trades - Array of trades with checklist boolean fields
+ * @param minPercent - Minimum adherence percentage (0-100)
+ * @returns Filtered array of trades meeting the minimum threshold
+ */
+export function filterByChecklistAdherence<
+  T extends {
+    checkPlan: boolean;
+    checkJudge: boolean;
+    checkExecute: boolean;
+    checkManage: boolean;
+  },
+>(trades: T[], minPercent?: number): T[] {
+  if (!minPercent || minPercent <= 0) return trades;
+
+  return trades.filter((t) => {
+    const checked = [t.checkPlan, t.checkJudge, t.checkExecute, t.checkManage].filter(
+      Boolean
+    ).length;
+    return (checked / 4) * 100 >= minPercent;
+  });
+}
+
+/**
  * Filter out break-even trades from an array.
  *
  * @param trades - Array of trades with isBreakEven property
@@ -190,6 +216,9 @@ export function parseTradeFiltersFromParams(
     execution: (searchParams.get('execution') as 'PASS' | 'FAIL') || undefined,
     setup: searchParams.get('setup') || undefined,
     accountId: accountIdParam !== null ? accountIdParam : undefined,
+    minChecklistPercent: searchParams.get('minChecklistPercent')
+      ? Number(searchParams.get('minChecklistPercent'))
+      : undefined,
     userId,
   };
 }

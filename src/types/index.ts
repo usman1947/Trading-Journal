@@ -55,7 +55,11 @@ export interface Trade {
   account?: Account | null;
   screenshots?: Screenshot[];
   tags?: TagOnTrade[];
-  ruleChecks?: TradeRuleCheck[];
+  // Unified trade checklist
+  checkPlan: boolean;
+  checkJudge: boolean;
+  checkExecute: boolean;
+  checkManage: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,18 +71,14 @@ export interface Strategy {
   setups?: string[] | null;
   isSwingStrategy: boolean;
   trades?: Trade[];
-  rules?: StrategyRule[];
+  // Checklist descriptions (customizable per strategy)
+  checkPlanDesc?: string | null;
+  checkJudgeDesc?: string | null;
+  checkExecuteDesc?: string | null;
+  checkManageDesc?: string | null;
   screenshots?: StrategyScreenshot[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface StrategyRule {
-  id: string;
-  strategyId: string;
-  text: string;
-  order: number;
-  createdAt: string;
 }
 
 export interface StrategyScreenshot {
@@ -88,15 +88,6 @@ export interface StrategyScreenshot {
   path: string;
   publicId?: string | null;
   caption?: string | null;
-  createdAt: string;
-}
-
-export interface TradeRuleCheck {
-  id: string;
-  tradeId: string;
-  ruleId: string;
-  rule?: StrategyRule;
-  checked: boolean;
   createdAt: string;
 }
 
@@ -146,29 +137,6 @@ export interface DailyJournal {
   updatedAt: string;
 }
 
-export interface DailyRuleAdherence {
-  id: string;
-  date: string;
-  smartSlMove: boolean;
-  goodEntry: boolean;
-  htfSignal: boolean;
-  notIntoLevel: boolean;
-  avoidSketchyCandle: boolean;
-  notes?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface DailyRuleAdherenceFormData {
-  date: string;
-  smartSlMove: boolean;
-  goodEntry: boolean;
-  htfSignal: boolean;
-  notIntoLevel: boolean;
-  avoidSketchyCandle: boolean;
-  notes?: string;
-}
-
 export interface Settings {
   id: string;
   defaultRisk: number;
@@ -197,7 +165,26 @@ export interface TradeFormData {
   postTradeMood?: PostTradeMood | null;
   confidenceLevel?: number | null;
   mistake?: TradeMistake | null;
+  // Unified trade checklist
+  checkPlan?: boolean;
+  checkJudge?: boolean;
+  checkExecute?: boolean;
+  checkManage?: boolean;
 }
+
+/** Fixed checklist items for all trades/strategies */
+export const CHECKLIST_ITEMS = [
+  { key: 'checkPlan' as const, label: 'Plan', defaultDesc: 'Pre Market Plan' },
+  {
+    key: 'checkJudge' as const,
+    label: 'Judge',
+    defaultDesc: 'Level, Wicks, Tickers Adherence to Plan',
+  },
+  { key: 'checkExecute' as const, label: 'Execute', defaultDesc: 'Entry From VWAP' },
+  { key: 'checkManage' as const, label: 'Manage', defaultDesc: 'Smart StopLoss Move, Adding' },
+] as const;
+
+export type ChecklistKey = (typeof CHECKLIST_ITEMS)[number]['key'];
 
 export interface TradeFilters {
   dateFrom?: string;
@@ -213,6 +200,7 @@ export interface TradeFilters {
   resultMax?: number;
   accountId?: string | null;
   userId?: string;
+  minChecklistPercent?: number; // 0-100, filters trades by minimum checklist adherence
 }
 
 export interface AnalyticsData {

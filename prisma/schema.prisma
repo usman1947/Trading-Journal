@@ -26,7 +26,6 @@ model User {
   journals       DailyJournal[]
   settings       Settings?
   coachReports   WeeklyCoachReport[]
-  ruleAdherence  DailyRuleAdherence[]
 }
 
 model Account {
@@ -74,7 +73,11 @@ model Trade {
   account            Account?         @relation(fields: [accountId], references: [id])
   accountId          String?          // null means Paper Account
   tags               TagOnTrade[]
-  ruleChecks         TradeRuleCheck[]
+  // Unified trade checklist (fixed 4 items)
+  checkPlan          Boolean          @default(false) // Pre Market Plan
+  checkJudge         Boolean          @default(false) // Level, Wicks, Tickers Adherence to Plan
+  checkExecute       Boolean          @default(false) // Entry From VWAP
+  checkManage        Boolean          @default(false) // Smart StopLoss Move, Adding
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId             String
   createdAt          DateTime         @default(now())
@@ -88,7 +91,11 @@ model Strategy {
   setups          String?             // JSON array of setup names
   isSwingStrategy Boolean             @default(false)
   trades          Trade[]
-  rules           StrategyRule[]
+  // Checklist item descriptions (customizable per strategy)
+  checkPlanDesc    String?  // Custom description for "Plan" checklist item
+  checkJudgeDesc   String?  // Custom description for "Judge" checklist item
+  checkExecuteDesc String?  // Custom description for "Execute" checklist item
+  checkManageDesc  String?  // Custom description for "Manage" checklist item
   screenshots     StrategyScreenshot[]
   user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
@@ -98,15 +105,6 @@ model Strategy {
   @@unique([userId, name])
 }
 
-model StrategyRule {
-  id          String           @id @default(cuid())
-  strategyId  String
-  strategy    Strategy         @relation(fields: [strategyId], references: [id], onDelete: Cascade)
-  text        String           // The rule/checklist item text
-  order       Int              @default(0) // For ordering rules
-  tradeChecks TradeRuleCheck[]
-  createdAt   DateTime         @default(now())
-}
 
 model StrategyScreenshot {
   id          String   @id @default(cuid())
@@ -119,17 +117,6 @@ model StrategyScreenshot {
   createdAt   DateTime @default(now())
 }
 
-model TradeRuleCheck {
-  id         String       @id @default(cuid())
-  tradeId    String
-  trade      Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  ruleId     String
-  rule       StrategyRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  checked    Boolean      @default(false)
-  createdAt  DateTime     @default(now())
-
-  @@unique([tradeId, ruleId])
-}
 
 model Tag {
   id     String       @id @default(cuid())
@@ -267,20 +254,3 @@ model WeeklyCoachReport {
   @@unique([userId, accountId, weekStart])
 }
 
-// Daily Rule Adherence Tracking
-model DailyRuleAdherence {
-  id                 String   @id @default(cuid())
-  date               DateTime
-  smartSlMove        Boolean  @default(false)
-  goodEntry          Boolean  @default(false)
-  htfSignal          Boolean  @default(false)
-  notIntoLevel       Boolean  @default(false)
-  avoidSketchyCandle Boolean  @default(false)
-  notes              String?
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId             String
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@unique([userId, date])
-}

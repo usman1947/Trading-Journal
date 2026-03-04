@@ -36,6 +36,7 @@ import { formatCurrency, formatDateTime } from '@/utils/formatters';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import ScreenshotUpload from '@/components/common/ScreenshotUpload';
 import type { Trade } from '@/types';
+import { CHECKLIST_ITEMS } from '@/types';
 
 interface TradeDetailProps {
   trade: Trade;
@@ -76,31 +77,19 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
       ? trade.result / trade.risk
       : null;
 
-  // Calculate strategy satisfaction score
-  const satisfactionData = useMemo(() => {
-    if (!trade.strategy?.rules || trade.strategy.rules.length === 0) {
-      return null;
-    }
-
-    const ruleChecksMap = new Map(trade.ruleChecks?.map((rc) => [rc.ruleId, rc.checked]) || []);
-
-    const checkedCount = trade.strategy.rules.filter(
-      (rule) => ruleChecksMap.get(rule.id) === true
-    ).length;
-
-    const totalRules = trade.strategy.rules.length;
-    const score = Math.round((checkedCount / totalRules) * 100);
-
-    return {
-      checkedCount,
-      totalRules,
-      score,
-      rules: trade.strategy.rules.map((rule) => ({
-        ...rule,
-        checked: ruleChecksMap.get(rule.id) || false,
-      })),
-    };
-  }, [trade.strategy?.rules, trade.ruleChecks]);
+  // Calculate trade checklist score
+  const checklistData = useMemo(() => {
+    const items = CHECKLIST_ITEMS.map((item) => ({
+      key: item.key,
+      label: item.label,
+      desc:
+        (trade.strategy?.[`${item.key}Desc` as keyof typeof trade.strategy] as string) ||
+        item.defaultDesc,
+      checked: trade[item.key],
+    }));
+    const checkedCount = items.filter((i) => i.checked).length;
+    return { items, checkedCount, total: 4, score: Math.round((checkedCount / 4) * 100) };
+  }, [trade]);
 
   return (
     <Box>
@@ -319,80 +308,73 @@ export default function TradeDetail({ trade }: TradeDetailProps) {
                   </>
                 )}
 
-                {/* Strategy Satisfaction Score */}
-                {satisfactionData && (
-                  <>
-                    <Divider />
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <ChecklistIcon fontSize="small" color="primary" />
-                        <Typography variant="caption" color="text.secondary">
-                          Strategy Satisfaction
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          mb: 1,
-                        }}
-                      >
-                        <Typography variant="body2">
-                          {satisfactionData.checkedCount} of {satisfactionData.totalRules} rules
-                        </Typography>
-                        <Chip
-                          label={`${satisfactionData.score}%`}
-                          size="small"
-                          color={
-                            satisfactionData.score >= 75
-                              ? 'success'
-                              : satisfactionData.score >= 50
-                                ? 'warning'
-                                : 'error'
-                          }
-                        />
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={satisfactionData.score}
-                        color={
-                          satisfactionData.score >= 75
-                            ? 'success'
-                            : satisfactionData.score >= 50
-                              ? 'warning'
-                              : 'error'
-                        }
-                        sx={{ height: 6, borderRadius: 1, mb: 1.5 }}
-                      />
-                      {satisfactionData.rules.map((rule) => (
-                        <FormControlLabel
-                          key={rule.id}
-                          control={
-                            <Checkbox
-                              checked={rule.checked}
-                              size="small"
-                              disabled
-                              sx={{ py: 0.25 }}
-                            />
-                          }
-                          label={
-                            <Typography
-                              variant="body2"
-                              color={rule.checked ? 'text.primary' : 'text.secondary'}
-                              sx={{
-                                textDecoration: rule.checked ? 'none' : 'none',
-                              }}
-                            >
-                              {rule.text}
-                            </Typography>
-                          }
-                          sx={{ ml: 0, mr: 0, display: 'flex' }}
-                        />
-                      ))}
-                    </Box>
-                  </>
-                )}
+                {/* Trade Checklist */}
+                <Divider />
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <ChecklistIcon fontSize="small" color="primary" />
+                    <Typography variant="caption" color="text.secondary">
+                      Trade Checklist
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="body2">
+                      {checklistData.checkedCount} of {checklistData.total} items
+                    </Typography>
+                    <Chip
+                      label={`${checklistData.score}%`}
+                      size="small"
+                      color={
+                        checklistData.score >= 75
+                          ? 'success'
+                          : checklistData.score >= 50
+                            ? 'warning'
+                            : 'error'
+                      }
+                    />
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={checklistData.score}
+                    color={
+                      checklistData.score >= 75
+                        ? 'success'
+                        : checklistData.score >= 50
+                          ? 'warning'
+                          : 'error'
+                    }
+                    sx={{ height: 6, borderRadius: 1, mb: 1.5 }}
+                  />
+                  {checklistData.items.map((item) => (
+                    <FormControlLabel
+                      key={item.key}
+                      control={
+                        <Checkbox checked={item.checked} size="small" disabled sx={{ py: 0.25 }} />
+                      }
+                      label={
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            color={item.checked ? 'text.primary' : 'text.secondary'}
+                          >
+                            {item.label}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.desc}
+                          </Typography>
+                        </Box>
+                      }
+                      sx={{ ml: 0, mr: 0, display: 'flex', alignItems: 'flex-start' }}
+                    />
+                  ))}
+                </Box>
 
                 {trade.setup && (
                   <>

@@ -61,7 +61,7 @@ export default function StrategyBreakdown() {
             <TableCell align="right">Total P&L</TableCell>
             <TableCell align="right">Avg Win R</TableCell>
             <TableCell align="right">Avg Lose R</TableCell>
-            <TableCell align="right">Avg Rule %</TableCell>
+            <TableCell align="right">Checklist %</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

@@ -112,6 +112,11 @@ export const createTradeSchema = z.object({
   postTradeMood: z.string().optional().nullable(),
   confidenceLevel: z.number().int().min(1).max(10).optional().nullable(),
   mistake: z.string().optional().nullable(),
+  // Unified trade checklist
+  checkPlan: z.boolean().optional().default(false),
+  checkJudge: z.boolean().optional().default(false),
+  checkExecute: z.boolean().optional().default(false),
+  checkManage: z.boolean().optional().default(false),
 });
 
 export type CreateTradeInput = z.infer<typeof createTradeSchema>;
@@ -139,6 +144,11 @@ export const updateTradeSchema = z.object({
   postTradeMood: z.string().optional().nullable(),
   confidenceLevel: z.number().int().min(1).max(10).optional().nullable(),
   mistake: z.string().optional().nullable(),
+  // Unified trade checklist
+  checkPlan: z.boolean().optional(),
+  checkJudge: z.boolean().optional(),
+  checkExecute: z.boolean().optional(),
+  checkManage: z.boolean().optional(),
 });
 
 export type UpdateTradeInput = z.infer<typeof updateTradeSchema>;
@@ -154,7 +164,10 @@ export const createStrategySchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
   description: z.string().max(2000).optional().nullable(),
   setups: z.array(z.string()).optional().nullable(),
-  rules: z.array(z.string().min(1)).optional().nullable(),
+  checkPlanDesc: z.string().max(500).optional().nullable(),
+  checkJudgeDesc: z.string().max(500).optional().nullable(),
+  checkExecuteDesc: z.string().max(500).optional().nullable(),
+  checkManageDesc: z.string().max(500).optional().nullable(),
   isSwingStrategy: z.boolean().optional().default(false),
 });
 
@@ -167,7 +180,10 @@ export const updateStrategySchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional().nullable(),
   setups: z.array(z.string()).optional().nullable(),
-  rules: z.array(z.string().min(1)).optional().nullable(),
+  checkPlanDesc: z.string().max(500).optional().nullable(),
+  checkJudgeDesc: z.string().max(500).optional().nullable(),
+  checkExecuteDesc: z.string().max(500).optional().nullable(),
+  checkManageDesc: z.string().max(500).optional().nullable(),
   isSwingStrategy: z.boolean().optional(),
 });
 

@@ -8,7 +8,6 @@ import {
   validationError,
 } from '@/lib/api-helpers';
 import { deserializeSetups, serializeSetups } from '@/utils/trade-calculations';
-import { STRATEGY_WITH_RULES_INCLUDE } from '@/lib/prisma-includes';
 import { updateStrategySchema, formatZodError } from '@/lib/validation-schemas';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +22,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const strategy = await prisma.strategy.findFirst({
       where: { id, userId: user.id },
       include: {
-        ...STRATEGY_WITH_RULES_INCLUDE,
         screenshots: {
           orderBy: { createdAt: 'asc' as const },
         },
@@ -67,37 +65,34 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (!parsed.success) {
       return validationError(formatZodError(parsed.error));
     }
-    const { name, description, setups, rules, isSwingStrategy } = parsed.data;
+    const {
+      name,
+      description,
+      setups,
+      isSwingStrategy,
+      checkPlanDesc,
+      checkJudgeDesc,
+      checkExecuteDesc,
+      checkManageDesc,
+    } = parsed.data;
 
-    // Update strategy with rules in a transaction
-    const strategy = await prisma.$transaction(async (tx) => {
-      // Delete existing rules and create new ones
-      await tx.strategyRule.deleteMany({
-        where: { strategyId: id },
-      });
-
-      // Create new rules if provided
-      if (rules && rules.length > 0) {
-        await tx.strategyRule.createMany({
-          data: rules.map((text: string, index: number) => ({
-            strategyId: id,
-            text,
-            order: index,
-          })),
-        });
-      }
-
-      // Update strategy
-      return tx.strategy.update({
-        where: { id },
-        data: {
-          name,
-          description: description || null,
-          setups: serializeSetups(setups),
-          isSwingStrategy: isSwingStrategy ?? existing.isSwingStrategy,
+    const strategy = await prisma.strategy.update({
+      where: { id },
+      data: {
+        name,
+        description: description || null,
+        setups: serializeSetups(setups),
+        isSwingStrategy: isSwingStrategy ?? existing.isSwingStrategy,
+        checkPlanDesc: checkPlanDesc !== undefined ? checkPlanDesc || null : undefined,
+        checkJudgeDesc: checkJudgeDesc !== undefined ? checkJudgeDesc || null : undefined,
+        checkExecuteDesc: checkExecuteDesc !== undefined ? checkExecuteDesc || null : undefined,
+        checkManageDesc: checkManageDesc !== undefined ? checkManageDesc || null : undefined,
+      },
+      include: {
+        screenshots: {
+          orderBy: { createdAt: 'asc' as const },
         },
-        include: STRATEGY_WITH_RULES_INCLUDE,
-      });
+      },
     });
 
     return NextResponse.json({
